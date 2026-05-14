@@ -1,8 +1,8 @@
 // API 설정 파일
-// 백엔드 개발 완료 후 BASE_URL을 실제 서버 주소로 변경하세요
+// BASE_URL은 .env / .env.production 의 VITE_API_BASE_URL 로 설정
 
 export const API_CONFIG = {
-  BASE_URL: "https://api.your-backend.com", // TODO: 실제 백엔드 URL로 변경
+  BASE_URL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000",
   ENDPOINTS: {
     // 채팅 세션 관련
     CHAT_SESSION_START: "/api/v1/chat/sessions", // POST - 세션 시작/재개
