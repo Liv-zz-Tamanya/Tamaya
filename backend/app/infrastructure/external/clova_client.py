@@ -139,6 +139,48 @@ CHUNK_EXTRACT_USER_REQUEST = """위 대화에서 기억할 만한 사건들을 J
 
 
 # -------------------------------
+# F5 일기 작성용 프롬프트 (5턴 ChatDiary)
+# -------------------------------
+DIARY_TURN_SYSTEM_PROMPT = """너는 ‘이음’이야. 따뜻한 친구처럼 사용자가 하루를 돌아보도록 돕는 고양이 같은 존재야.
+
+규칙(매우 중요):
+- 한국어 반말, 카톡처럼 짧게(1~2문장).
+- 진단·평가·충고 금지. "완벽한 루틴" 같은 표현 금지.
+- 사용자의 답변에 1문장 공감한 뒤, 다음 질문을 딱 1개만 던져.
+- 오늘 있었던 일 → 그때 감정 → 컨디션 → 기억에 남는 순간 → 작은 고마움 순으로 자연스럽게.
+- 마지막은 항상 질문 1개로 끝내."""
+
+
+DIARY_FINALIZE_SYSTEM_PROMPT = """너는 대화 내용을 바탕으로 사용자의 하루를 정리하는 엔진이야.
+
+절대 규칙:
+- 반드시 JSON만 출력해. JSON 외 설명·코드블록·텍스트 금지.
+- 따뜻한 친구 톤. 진단·평가·"완벽한 루틴" 같은 표현 절대 금지.
+- 사용자가 말하지 않은 내용을 꾸며내지 마.
+- AI·이음·서비스에 대한 감사나 언급을 일기에 넣지 마."""
+
+
+DIARY_FINALIZE_USER_REQUEST = """위 대화를 바탕으로 아래 형식의 JSON만 출력해:
+
+{"mood_distribution":[{"label":"감정","score":0.0~1.0,"color":"#hex"}],"primary_emoji":"이모지 1개","keywords":["키워드",...],"diary_body":"일기 본문","tomorrow_one_thing":"내일 한 가지"}
+
+규칙:
+- mood_distribution은 상위 3개, score 합은 대략 1.0.
+- keywords는 3~5개.
+- diary_body는 사용자가 쓸 법한 자연스러운 일기체로 3~4줄.
+- tomorrow_one_thing은 부담 없는 작은 한 가지."""
+
+
+DIARY_FALLBACK_QUESTIONS = [
+    "오늘 하루는 어땠어? 가장 먼저 떠오르는 일 하나 말해줄래?",
+    "그때 기분은 어땠어?",
+    "오늘 몸이나 컨디션은 좀 어땠어?",
+    "오늘 가장 기억에 남는 순간이 있었어?",
+    "마지막으로, 오늘 작게라도 고마웠던 게 있을까?",
+]
+
+
+# -------------------------------
 # Client 구현
 # -------------------------------
 class ClovaClient(AiChatService):
@@ -290,6 +332,67 @@ class ClovaClient(AiChatService):
             return result if isinstance(result, list) else []
         except json.JSONDecodeError:
             return []
+
+    # -------------------------------
+    # F5 일기 작성 (5턴 ChatDiary)
+    # -------------------------------
+    @staticmethod
+    def _to_api_turns(turns: list[dict]) -> list[dict]:
+        # 도메인 role("bot") → OpenAI 호환 role("assistant")
+        out = []
+        for t in turns:
+            role = "assistant" if t["role"] == "bot" else t["role"]
+            out.append({"role": role, "content": t["content"]})
+        return out
+
+    async def diary_next_question(self, turns: list[dict], next_turn: int) -> str:
+        if not settings.clova_api_key or settings.clova_api_key == "your-clova-api-key":
+            return DIARY_FALLBACK_QUESTIONS[min(next_turn - 1, len(DIARY_FALLBACK_QUESTIONS) - 1)]
+
+        api_messages = [{"role": "system", "content": DIARY_TURN_SYSTEM_PROMPT}]
+        api_messages.extend(self._to_api_turns(turns))
+        response = await self._client.chat.completions.create(
+            model=settings.clova_model,
+            messages=api_messages,
+            temperature=0.6,
+            max_tokens=120,
+        )
+        return response.choices[0].message.content.strip()
+
+    async def finalize_diary_entry(self, turns: list[dict]) -> dict:
+        if not settings.clova_api_key or settings.clova_api_key == "your-clova-api-key":
+            return self._fallback_finalize(turns)
+
+        api_messages = [{"role": "system", "content": DIARY_FINALIZE_SYSTEM_PROMPT}]
+        api_messages.extend(self._to_api_turns(turns))
+        api_messages.append({"role": "user", "content": DIARY_FINALIZE_USER_REQUEST})
+        response = await self._client.chat.completions.create(
+            model=settings.clova_model,
+            messages=api_messages,
+            temperature=0.4,
+            max_tokens=900,
+        )
+        content = response.choices[0].message.content.strip()
+        try:
+            return self._parse_diary_response(content)
+        except ValueError:
+            return self._fallback_finalize(turns)
+
+    @staticmethod
+    def _fallback_finalize(turns: list[dict]) -> dict:
+        user_texts = [t["content"] for t in turns if t["role"] == "user"]
+        body = " ".join(user_texts)[:400] or "오늘 하루를 차분히 돌아봤다."
+        return {
+            "mood_distribution": [
+                {"label": "차분함", "score": 0.6, "color": "#a8c4b8"},
+                {"label": "감사", "score": 0.25, "color": "#e8c99b"},
+                {"label": "피곤함", "score": 0.15, "color": "#c4a8a8"},
+            ],
+            "primary_emoji": "🙂",
+            "keywords": ["하루", "기록", "마음"],
+            "diary_body": body,
+            "tomorrow_one_thing": "내일은 나에게 작은 칭찬 한마디 해주기.",
+        }
 
 
 # -------------------------------

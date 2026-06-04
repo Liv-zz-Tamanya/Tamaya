@@ -1,24 +1,42 @@
-// API 설정 파일
+// API 설정 파일 — 명세(feature-spec v3) /v1 계약
 // BASE_URL은 .env / .env.production 의 VITE_API_BASE_URL 로 설정
 
 export const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000",
   ENDPOINTS: {
-    // 채팅 세션 관련
-    CHAT_SESSION_START: "/api/v1/chat/sessions", // POST - 세션 시작/재개
-    CHAT_SESSION_GET: "/api/v1/chat/sessions/:session_id", // GET - 세션 조회
-    CHAT_MESSAGE_SEND: "/api/v1/chat/sessions/:session_id/messages", // POST - 메시지 전송
+    // F1 — 인증
+    AUTH_ANONYMOUS: "/v1/auth/anonymous", // POST
+    AUTH_REFRESH: "/v1/auth/refresh", // POST
 
-    // 일기 관련
-    DIARY_FINALIZE: "/api/v1/diaries/:session_id/finalize", // POST - 일기 생성
-    DIARY_LIST: "/api/v1/diaries", // GET - 일기 목록 조회
-    DIARY_BY_DATE: "/api/v1/diaries/:diary_date", // GET - 날짜별 일기 조회
+    // F1 — 온보딩 + 캐릭터
+    ONBOARDING_CONSENT: "/v1/onboarding/privacy-consent", // POST
+    ONBOARDING_COMPLETE: "/v1/onboarding/complete", // POST
+    CHARACTER: "/v1/character", // POST(생성) / GET(조회)
 
-    // 음성 (네이버 API) - 백엔드에서 프록시 처리
+    // F4 — 데일리 체크
+    DAILY_CHECK_DATE: "/v1/daily-check/:date", // PUT / GET
+    DAILY_CHECK_MONTH: "/v1/daily-check", // GET ?month=YYYY-MM
+
+    // F5 — 일기 작성
+    DIARY_SESSION_START: "/v1/diary-session/start", // POST
+    DIARY_SESSION_TURN: "/v1/diary-session/:session_id/turn", // POST
+    DIARY_SESSION_FINALIZE: "/v1/diary-session/:session_id/finalize", // POST
+    DIARY_SAVE: "/v1/diary", // POST
+    DIARY_LIST: "/v1/diary", // GET ?month=YYYY-MM
+    DIARY_BY_DATE: "/v1/diary/:diary_date", // GET
+
+    // 음성 (네이버 API) - 백엔드 프록시 (P1)
     NAVER_STT: "/api/voice/stt",
     NAVER_TTS: "/api/voice/tts",
   },
 };
 
-// Mock 모드 설정 (개발 중에는 true, 백엔드 연결 시 false)
-export const USE_MOCK_DATA = true;
+// 실제 백엔드 연동 (목업 비활성화)
+export const USE_MOCK_DATA = false;
+
+// 토큰/디바이스 localStorage 키
+export const STORAGE_KEYS = {
+  ACCESS: "tamaya_access_token",
+  REFRESH: "tamaya_refresh_token",
+  DEVICE: "tamaya_device_id",
+};
