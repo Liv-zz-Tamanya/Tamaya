@@ -14,4 +14,5 @@ dependencies = [
     "langgraph>=0.2",
     "sentence-transformers>=3.0",
     "pgvector>=0.3",
+    "pyjwt>=2.13.0",
 ]
