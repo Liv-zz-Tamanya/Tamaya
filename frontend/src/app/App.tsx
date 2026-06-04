@@ -9,7 +9,13 @@ import { WelcomeScreen } from "./components/WelcomeScreen";
 import { BottomNav } from "./components/BottomNav";
 import { DiaryDetail } from "./components/DiaryDetail";
 import { RewardModal } from "./components/RewardModal";
-import { Diary } from "./utils/api";
+import {
+  Diary,
+  ensureAuth,
+  onboardingApi,
+  characterApi,
+} from "./utils/api";
+import { getUserProfile } from "./utils/userProfile";
 import {
   getNewRewards,
   claimReward,
@@ -31,17 +37,33 @@ function App() {
     useState<Diary | null>(null);
   const [newRewards, setNewRewards] = useState<any[]>([]);
 
-  // 첫 방문 확인
+  // 앱 시작: 익명 로그인 부트스트랩 + 첫 방문 확인
   useEffect(() => {
+    ensureAuth().catch((e) => console.error("auth bootstrap failed", e));
     const hasVisited = localStorage.getItem("hasVisited");
     if (!hasVisited) {
       setShowWelcome(true);
     }
   }, []);
 
-  const handleWelcomeComplete = () => {
+  const handleWelcomeComplete = async () => {
     localStorage.setItem("hasVisited", "true");
     setShowWelcome(false);
+
+    // 온보딩 백엔드 연동 (best-effort): 약관 → 캐릭터 생성 → 완료
+    try {
+      await ensureAuth();
+      const profile = getUserProfile();
+      await onboardingApi.privacyConsent("v1");
+      await characterApi.create({
+        name: (profile?.nickname || "이음").slice(0, 10),
+        color: "#d8a777",
+        personalities: ["다정한"],
+      });
+      await onboardingApi.complete();
+    } catch (e) {
+      console.error("onboarding sync failed", e);
+    }
   };
 
   const handleStartDiary = () => {
