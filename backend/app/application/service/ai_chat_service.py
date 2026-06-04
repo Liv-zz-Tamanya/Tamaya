@@ -26,3 +26,14 @@ class AiChatService(ABC):
 
     @abstractmethod
     async def extract_event_chunks(self, messages: list[ChatMessage]) -> list[dict]: ...
+
+    # --- F5 일기 작성 (5턴 ChatDiary) ---
+    @abstractmethod
+    async def diary_next_question(self, turns: list[dict], next_turn: int) -> str:
+        """turns: [{role: "user"|"bot", content}]. 다음 질문 1문장 생성."""
+        ...
+
+    @abstractmethod
+    async def finalize_diary_entry(self, turns: list[dict]) -> dict:
+        """5턴 대화를 mood_distribution/primary_emoji/keywords/diary_body/tomorrow_one_thing JSON으로 정리."""
+        ...
