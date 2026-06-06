@@ -19,6 +19,9 @@ build/
 *.tsbuildinfo
 .eslintcache
 
+# 2026-05-27 Tamaya v3 풀 재구현 — 이전 frontend는 git commit `30ce5e5`에 정본 보존
+frontend.legacy/
+
 # Env (모든 secrets — Tamanya invariant)
 .env
 .env.local
