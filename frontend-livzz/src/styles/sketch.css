@@ -1,0 +1,331 @@
+/* Tamanya Wireframes — handsketched low-fi system */
+
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;700&family=Patrick+Hand&family=Architects+Daughter&family=Gaegu:wght@400;700&display=swap');
+
+/* Coffee Palette 색상 토큰은 tokens.css(SSOT)로 이관됨 — 여기서 재정의 금지.
+   var(--paper) 등은 tokens.css :root 에서 전역 해석된다. */
+
+html, body { margin: 0; font-family: 'Patrick Hand', 'Gaegu', sans-serif; color: var(--ink); }
+
+/* Phone shell */
+.phone {
+  position: relative;
+  width: 375px;
+  height: 812px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 32px;
+  overflow: hidden;
+  font-family: 'Patrick Hand', 'Gaegu', sans-serif;
+  box-shadow: 4px 6px 0 rgba(0,0,0,0.08);
+}
+.phone-inner { position: absolute; inset: 0; }
+
+/* Status bar */
+.statusbar {
+  position: absolute; top: 0; left: 0; right: 0; height: 36px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 18px;
+  font-family: 'Patrick Hand'; font-size: 13px;
+  color: var(--ink);
+  border-bottom: 1.5px dashed var(--line);
+}
+.statusbar > * { white-space: nowrap; flex-shrink: 0; }
+.statusbar .notch { width: 80px; height: 18px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper); }
+
+/* Tab bar */
+.tabbar {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 64px;
+  border-top: 2px solid var(--ink);
+  background: var(--paper-2);
+  display: grid; grid-template-columns: repeat(5, 1fr);
+}
+.tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-family: 'Patrick Hand'; font-size: 11px; color: var(--pencil); position: relative; }
+.tab .tab-icon { width: 26px; height: 26px; border: 1.5px solid var(--ink); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--paper); }
+.tab.active { color: var(--ink); font-weight: 700; }
+.tab.active .tab-icon { background: var(--accent); color: #fff; border-color: var(--ink); }
+.tab.active::before { content: ''; position: absolute; top: -2px; left: 14%; right: 14%; height: 3px; background: var(--accent); }
+
+/* Center prominent home tab — circle pops above the bar */
+.tab-center { position: relative; }
+.tab-center .tab-icon-lg {
+  width: 52px; height: 52px; border-radius: 50%; font-size: 22px;
+  background: var(--accent); color: #fff; border: 2px solid var(--ink);
+  box-shadow: 2px 3px 0 var(--ink);
+  position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+}
+.tab-center > div:last-child { margin-top: 32px; font-weight: 700; }
+.tab.tab-center.active::before { display: none; }
+
+/* Hand-drawn box */
+.hbox {
+  border: 1.5px solid var(--ink);
+  border-radius: 14px;
+  background: #fff;
+  position: relative;
+}
+.hbox.dashed { border-style: dashed; background: transparent; }
+.hbox.filled { background: var(--paper-2); }
+.hbox.accent { background: var(--accent-soft); border-color: var(--ink); }
+.hbox.night { background: var(--night); color: #fff; }
+.hbox.day { background: var(--day-soft); }
+.hbox.ink { background: var(--ink); color: #fbf8f3; }
+
+/* Slight rotate variants for sketchy feel — applied to direct children */
+.sketch > * { will-change: transform; }
+.r-l { transform: rotate(-0.4deg); }
+.r-r { transform: rotate(0.5deg); }
+.r-ll { transform: rotate(-0.8deg); }
+.r-rr { transform: rotate(0.7deg); }
+
+/* Typography */
+.h-display { font-family: 'Caveat'; font-weight: 700; font-size: 32px; line-height: 1; letter-spacing: -0.5px; }
+.h-title { font-family: 'Caveat'; font-weight: 700; font-size: 24px; line-height: 1.1; }
+.h-section { font-family: 'Patrick Hand'; font-weight: 400; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; color: var(--pencil); }
+.h-label { font-family: 'Patrick Hand'; font-size: 13px; color: var(--pencil); }
+.body { font-family: 'Gaegu'; font-size: 14px; color: var(--ink); }
+.tiny { font-family: 'Patrick Hand'; font-size: 11px; color: var(--muted); letter-spacing: 0.4px; }
+.handwriting { font-family: 'Caveat'; font-size: 18px; color: var(--ink-soft); }
+
+/* Placeholder shapes */
+.ph-circle { border: 1.5px solid var(--ink); border-radius: 50%; background: var(--paper-2); display: flex; align-items: center; justify-content: center; }
+.ph-square { border: 1.5px solid var(--ink); border-radius: 6px; background: var(--paper-2); display: flex; align-items: center; justify-content: center; }
+.ph-stripe { background: repeating-linear-gradient(135deg, transparent, transparent 6px, rgba(26,26,26,0.08) 6px, rgba(26,26,26,0.08) 7px); border: 1.5px solid var(--ink); }
+.ph-stripe-dense { background: repeating-linear-gradient(135deg, transparent, transparent 3px, rgba(26,26,26,0.12) 3px, rgba(26,26,26,0.12) 4px); border: 1.5px solid var(--ink); }
+
+/* Chips */
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; font-family: 'Patrick Hand'; font-size: 12px; }
+.chip.solid { background: var(--ink); color: #fff; }
+.chip.accent { background: var(--accent); color: #fff; border-color: var(--ink); }
+.chip.dashed { border-style: dashed; background: transparent; }
+
+/* Button */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px 18px; border: 1.5px solid var(--ink); border-radius: 12px;
+  background: var(--paper); font-family: 'Patrick Hand'; font-size: 14px;
+  box-shadow: 2px 3px 0 var(--ink);
+}
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.ink { background: var(--ink); color: #fff; }
+.btn.ghost { background: transparent; box-shadow: none; }
+.btn.block { display: flex; width: 100%; }
+
+/* Checkbox circle */
+.check { width: 20px; height: 20px; border: 1.5px solid var(--ink); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex: none; background: #fff; font-size: 14px; }
+.check.on { background: var(--ink); color: #fff; }
+.check.sq { border-radius: 4px; }
+
+/* Sticky note */
+.sticky { background: var(--cream); border: 1.5px solid var(--ink); padding: 8px 10px; border-radius: 4px; font-family: 'Patrick Hand'; font-size: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08); transform: rotate(-1deg); }
+
+/* Annotation */
+.anno { position: absolute; font-family: 'Caveat'; font-weight: 500; font-size: 16px; color: var(--accent); display: flex; gap: 6px; align-items: flex-start; }
+.anno svg { flex: none; }
+
+/* Star */
+.star::before { content: '★'; }
+
+/* Squiggly underline */
+.squiggle { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 6'><path d='M0 3 Q 5 0 10 3 T 20 3 T 30 3 T 40 3 T 50 3 T 60 3 T 70 3 T 80 3' fill='none' stroke='%238c4a1f' stroke-width='1.5'/></svg>"); background-repeat: repeat-x; background-position: bottom; background-size: 80px 6px; padding-bottom: 4px; }
+
+/* Cat SVG placeholders sized by container */
+.cat-spot { display: inline-flex; align-items: center; justify-content: center; }
+
+/* Flow arrow */
+.flow-arrow { font-family: 'Caveat'; font-size: 24px; color: var(--accent); display: flex; align-items: center; gap: 4px; }
+
+/* Section meta on canvas */
+.meta-card { background: var(--cream); border: 1.5px solid var(--ink); padding: 10px 14px; border-radius: 6px; font-family: 'Patrick Hand'; font-size: 12px; box-shadow: 3px 3px 0 rgba(0,0,0,0.08); max-width: 280px; }
+.meta-card b { font-family: 'Caveat'; font-weight: 700; font-size: 16px; display: block; margin-bottom: 4px; }
+
+/* Bar / progress */
+.bar { height: 8px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 999px; overflow: hidden; position: relative; }
+.bar > i { display: block; height: 100%; background: var(--accent); border-right: 1.5px solid var(--ink); }
+
+/* Mood blobs */
+.mood-blob { width: 28px; height: 28px; border: 1.5px solid var(--ink); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: 'Caveat'; font-size: 14px; background: #fff; }
+
+/* Calendar cell */
+.cal-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: 'Patrick Hand'; font-size: 13px; position: relative; }
+.cal-cell.has::after { content: ''; position: absolute; bottom: 4px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.cal-cell.today { border: 1.5px solid var(--ink); border-radius: 50%; background: var(--ink); color: #fbf8f3; }
+.cal-cell.off { color: var(--muted); }
+
+/* Design note — second line in artboard caption (replaces in-page Callouts) */
+.note {
+  margin-top: 6px;
+  font-family: 'Caveat', 'Patrick Hand', sans-serif;
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* ── Tweaks: Vibe ─────────────────────────────────────────────────────────
+   sketchy (default) → as authored.
+   crisp             → square up: kill rotations, dashed → solid, soft shadow.
+   playful           → exaggerate: bigger tilt + chunkier shadow + tickered sticky.
+   Apply via body[data-vibe="..."] so every screen re-tones in lockstep.
+   ──────────────────────────────────────────────────────────────────────── */
+body[data-vibe="crisp"] .sketch > .r-l,
+body[data-vibe="crisp"] .sketch > .r-r,
+body[data-vibe="crisp"] .sketch > .r-ll,
+body[data-vibe="crisp"] .sketch > .r-rr,
+body[data-vibe="crisp"] .hbox.r-l,
+body[data-vibe="crisp"] .hbox.r-r,
+body[data-vibe="crisp"] .hbox.r-ll,
+body[data-vibe="crisp"] .hbox.r-rr,
+body[data-vibe="crisp"] .sticky,
+body[data-vibe="crisp"] .meta-card { transform: none !important; }
+body[data-vibe="crisp"] .hbox.dashed,
+body[data-vibe="crisp"] .chip.dashed,
+body[data-vibe="crisp"] .statusbar { border-style: solid; }
+body[data-vibe="crisp"] .phone { box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.05); border-radius: 24px; }
+body[data-vibe="crisp"] .btn { box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+body[data-vibe="crisp"] .sticky { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+body[data-vibe="crisp"] .meta-card { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+body[data-vibe="crisp"] .tab-center .tab-icon-lg { box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+body[data-vibe="crisp"] .hbox { border-radius: 10px; }
+
+body[data-vibe="playful"] .r-l  { transform: rotate(-1.4deg); }
+body[data-vibe="playful"] .r-r  { transform: rotate(1.6deg); }
+body[data-vibe="playful"] .r-ll { transform: rotate(-2.2deg); }
+body[data-vibe="playful"] .r-rr { transform: rotate(2.0deg); }
+body[data-vibe="playful"] .sticky { transform: rotate(-3deg); box-shadow: 3px 3px 0 rgba(0,0,0,0.18); }
+body[data-vibe="playful"] .phone { box-shadow: 8px 10px 0 rgba(0,0,0,0.12); border-radius: 38px; }
+body[data-vibe="playful"] .btn { box-shadow: 3px 4px 0 var(--ink); }
+body[data-vibe="playful"] .hbox { border-radius: 18px; border-width: 2px; }
+body[data-vibe="playful"] .chip { border-width: 2px; }
+
+/* ── Tweaks: Density ───────────────────────────────────────────────────────
+   minimal  → hide secondary deco (sticky, squiggle, dashed chips, design notes)
+   standard → as authored
+   detailed → emphasise notes + sticky, add subtle dotted page background
+   ──────────────────────────────────────────────────────────────────────── */
+body[data-density="minimal"] .sticky,
+body[data-density="minimal"] .squiggle,
+body[data-density="minimal"] .chip.dashed,
+body[data-density="minimal"] .note { display: none !important; }
+body[data-density="minimal"] .squiggle { background: none; padding-bottom: 0; }
+
+body[data-density="detailed"] .note {
+  background: rgba(140, 74, 31, 0.07);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border-left: 3px solid var(--accent);
+}
+body[data-density="detailed"] .sticky { transform: rotate(-2deg) scale(1.04); }
+body[data-density="detailed"] .design-canvas {
+  background-image:
+    radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+    linear-gradient(0deg, #f5f1e8, #f5f1e8);
+  background-size: 18px 18px, 100% 100%;
+}
+
+/* Canvas / page background — soft warm-white, independent of artwork palette */
+html, body { background: #f5f1e8; }
+
+/* ── App-shell responsiveness ────────────────────────────────────────────
+   Mobile (≤540px) — phone becomes a full-screen container, lose bezel.
+   Tablet+desktop — keep the 375×812 phone frame with bezel/shadow.
+   ──────────────────────────────────────────────────────────────────── */
+@media (max-width: 540px) {
+  .app-shell { padding: 0 !important; min-height: 100vh; }
+  .app-toolbar {
+    width: 100% !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    padding: 8px 10px !important;
+    gap: 6px !important;
+  }
+  .app-toolbar button, .app-toolbar span { font-size: 11px !important; }
+  .phone-frame { padding: 0 !important; margin-top: 0 !important; }
+  .phone-frame .phone {
+    width: 100vw !important;
+    height: calc(100vh - 56px) !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .app-hint { display: none; }
+}
+
+/* Desktop with limited height — scale the phone down */
+@media (min-width: 541px) and (max-height: 900px) {
+  .phone-frame .phone { transform: scale(0.86); transform-origin: top center; margin-bottom: -110px; }
+}
+@media (min-width: 541px) and (max-height: 760px) {
+  .phone-frame .phone { transform: scale(0.74); margin-bottom: -210px; }
+}
+
+/* ── Inputs (typing) ──────────────────────────────────────────────────── */
+.input-row {
+  position: absolute; left: 0; right: 0;
+  padding: 10px 14px 16px;
+  background: rgba(251,248,243,0.95);
+  border-top: 1.5px dashed var(--line, #c9a877);
+  display: flex; gap: 8px; align-items: center;
+}
+.input-row input {
+  flex: 1;
+  background: #fff;
+  border: 1.5px solid var(--ink, #3a2414);
+  border-radius: 999px;
+  padding: 12px 16px;
+  font-family: 'Patrick Hand', 'Gaegu', sans-serif;
+  font-size: 14px;
+  color: var(--ink, #3a2414);
+  outline: none;
+  min-width: 0;
+}
+.input-row input::placeholder { color: var(--muted, #b39570); }
+.input-row input:focus { border-color: var(--accent, #8c4a1f); box-shadow: 0 0 0 2px rgba(140,74,31,0.15); }
+
+/* Toast — bottom of phone */
+.toast {
+  position: absolute; left: 24px; right: 24px; bottom: 84px;
+  background: var(--ink, #3a2414); color: var(--paper, #f5e6cf);
+  border-radius: 12px; padding: 10px 14px;
+  font-family: 'Patrick Hand'; font-size: 13px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  animation: toastIn 200ms ease-out;
+  z-index: 50;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Typing indicator */
+.typing-dot {
+  display: inline-block;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--pencil, #7a5634);
+  margin: 0 2px;
+  animation: typing 1.2s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-2px); }
+}
+
+/* Reset native button styles in chip/btn role */
+button.chip, button.btn { font-family: inherit; cursor: pointer; }
+button.chip:disabled, button.btn:disabled { cursor: not-allowed; opacity: 0.55; }
+
+/* Scrollable inner area */
+.phone-scroll {
+  position: absolute; inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+.phone-scroll::-webkit-scrollbar { width: 4px; }
+.phone-scroll::-webkit-scrollbar-thumb { background: rgba(58,36,20,0.18); border-radius: 2px; }

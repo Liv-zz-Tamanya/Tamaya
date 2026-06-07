@@ -1,0 +1,12 @@
+{
+  "codeConnect": {
+    "parser": "react",
+    "include": ["src/**/*.figma.tsx", "src/components/**", "src/screens/**"],
+    "exclude": ["node_modules/**", "dist/**", "**/*.test.tsx"],
+    "importPaths": {
+      "src/components/*": "@/components",
+      "src/screens/*": "@/screens"
+    },
+    "label": "Tamaya Web (React)"
+  }
+}

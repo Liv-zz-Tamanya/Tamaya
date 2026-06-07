@@ -1,0 +1,98 @@
+/* ============================================================================
+ * tokens.css — DESIGN TOKEN SSOT (Figma ↔ Code interop layer)
+ * ----------------------------------------------------------------------------
+ * 이 파일이 Figma Variables 와 코드 사이의 "중간 호환 레이어"다.
+ * 특정 Figma 파일에 종속되지 않는다 — 어떤 디자이너 파일이 와도, 그 파일의
+ * Variables 이름이 아래 토큰 이름과 정합하면 그대로 꽂힌다.
+ *
+ * 재생성(regen) 방법 — FIGMA-WORKFLOW.md §2 참조:
+ *   1. Figma MCP `get_variable_defs` 로 정본 파일의 Variables 추출
+ *   2. 아래 COLOR 블록을 그 출력으로 교체 (이름 1:1 유지)
+ *   3. 나머지 스케일(SPACE/RADIUS/TYPE/BP)은 코드 SSOT — 디자인과 합의해 갱신
+ *
+ * 원칙: 컴포넌트 CSS 는 raw hex/px 를 쓰지 말고 var(--token) 만 참조한다.
+ * ========================================================================== */
+
+:root {
+  /* ===== COLOR — Coffee Palette (Figma Variables 와 1:1) ==================== */
+  --paper: #f5e6cf;          /* 라떼 크림 — 배경 */
+  --paper-2: #ead0a6;        /* 밀크폼 — 카드 표면 */
+  --paper-3: #e0c08c;        /* 깊은 카라멜 */
+  --ink: #3a2414;            /* 다크 에스프레소 — 본문 */
+  --ink-soft: #5a3a22;
+  --pencil: #7a5634;
+  --muted: #b39570;
+  --line: #c9a877;
+  --accent: #8c4a1f;         /* 리치 커피 브라운 — CTA(포인트 1) */
+  --accent-soft: #d8a777;    /* 카페오레 */
+  --accent-2: #a66838;       /* 미디엄 로스트 — 포인트 2 */
+  --night: #2b1810;          /* 깊은 에스프레소 — 밤 배경 */
+  --night-2: #3d2618;
+  --night-soft: #d8a777;     /* 밤 위 강조 */
+  --day: #b8804a;            /* 따뜻한 캐러멜 — 낮 강조 */
+  --day-soft: #f0d9b5;
+  --good: #6b5a3a;           /* 브론즈 */
+  --good-soft: #d9c69e;
+  --cream: #fff5e1;          /* 휘핑크림 — 메모 */
+  --canvas: #f5f1e8;         /* 페이지(앱 바깥) 배경 — 아트워크 팔레트와 독립 */
+
+  /* ===== SPACE — 4pt 기반 스케일 ========================================== */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ===== RADIUS =========================================================== */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --radius-pill: 999px;
+
+  /* ===== TYPE — 손글씨 3종 + 스케일 ====================================== */
+  --font-display: 'Caveat', cursive;          /* 큰 제목 */
+  --font-hand: 'Patrick Hand', sans-serif;     /* UI 라벨 */
+  --font-body: 'Gaegu', sans-serif;            /* 본문 */
+  --font-system: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  --text-display: 32px;
+  --text-title: 24px;
+  --text-handwriting: 18px;
+  --text-section: 15px;
+  --text-body: 14px;
+  --text-label: 13px;
+  --text-tiny: 11px;
+
+  /* ===== BREAKPOINTS — 풀 반응형 reflow 기준선 ============================
+   * ⚠️ @media 는 var() 를 못 받는다. 미디어쿼리엔 아래 '리터럴 값'을 직접 쓰고,
+   *    이 토큰은 JS(matchMedia)·문서 기준값으로 쓴다. 값 바꾸면 양쪽 동기화.
+   *    mobile  : ~479px  (단일 컬럼, 하단 탭바)
+   *    tablet  : 480~1023px (넓은 단일 컬럼)
+   *    desktop : 1024px~ (사이드 네비 + 2컬럼 reflow) */
+  --bp-mobile: 480px;
+  --bp-tablet: 768px;
+  --bp-desktop: 1024px;
+  --bp-wide: 1440px;
+
+  /* ===== LAYOUT =========================================================== */
+  --container-max: 1200px;   /* 데스크톱 전체 폭 한계 */
+  --content-max: 720px;      /* 읽기 콘텐츠 폭 한계 */
+  --app-max: 520px;          /* 모바일-우선 앱 본문 폭 (태블릿 이상서 중앙 정렬) */
+  --sidenav-w: 240px;        /* 데스크톱 사이드 네비 폭 */
+
+  /* ===== ELEVATION / Z ==================================================== */
+  --z-base: 1;
+  --z-sticky: 10;
+  --z-nav: 20;
+  --z-dropdown: 30;
+  --z-toast: 50;
+  --z-modal: 100;
+}
