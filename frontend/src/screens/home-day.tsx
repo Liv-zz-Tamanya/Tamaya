@@ -2,6 +2,7 @@ import { KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { CatSketch, StatusBar, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { DailyKey, simulateAiReply, useStore } from '../lib/store';
+import { AI_ENABLED, sendAiChat } from '../lib/api';
 
 // 06-09 · Home Day / Home Night / Daily Check / AI Chat
 
@@ -625,11 +626,29 @@ export const S09_AIChat = () => {
     dispatch({ type: 'ai-chat/append', msg: { role: 'user', text: t } });
     setInput('');
     setTyping(true);
-    setTimeout(() => {
-      const reply = simulateAiReply(t);
-      dispatch({ type: 'ai-chat/append', msg: reply });
-      setTyping(false);
-    }, 700 + Math.random() * 400);
+    // 로컬 시뮬레이션 모드 (VITE_AI_ENABLED=false): backend 미경유
+    if (!AI_ENABLED) {
+      setTimeout(() => {
+        dispatch({ type: 'ai-chat/append', msg: simulateAiReply(t) });
+        setTyping(false);
+      }, 700 + Math.random() * 400);
+      return;
+    }
+    // backend 결선: maskPII로 PII 제거 후 전송 → CLOVA(mock) 응답.
+    // 원문 평문은 기기를 떠나지 않는다(liv-I1). 실패 시 로컬 폴백.
+    void (async () => {
+      try {
+        const { text: aiText } = await sendAiChat(t);
+        dispatch({
+          type: 'ai-chat/append',
+          msg: { role: 'bot', text: aiText || simulateAiReply(t).text },
+        });
+      } catch {
+        dispatch({ type: 'ai-chat/append', msg: simulateAiReply(t) });
+      } finally {
+        setTyping(false);
+      }
+    })();
   };
 
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
