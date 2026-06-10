@@ -17,3 +17,35 @@ dependencies = [
     "sentence-transformers>=3.0",
     "pgvector>=0.3",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.15.16",
+]
+
+[tool.ruff]
+# 클린 아키텍처 백엔드 린트 설정 (pre-commit / lint-staged에서 사용)
+line-length = 100
+target-version = "py313"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+# E/W(pycodestyle), F(pyflakes), I(isort), UP(pyupgrade), B(bugbear)
+select = ["E", "W", "F", "I", "UP", "B"]
+ignore = [
+    "E501",  # 라인 길이는 ruff format이 처리
+    "B008",  # FastAPI 표준 패턴(Depends를 기본 인자로) false positive
+    # 아래 두 룰은 의미 있으나 기존 코드 호환을 위해 도입 단계에서는 보류 (TODO: 점진 활성화)
+    "B904",  # except 내 raise ... from
+    "B905",  # zip(strict=) 명시
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"

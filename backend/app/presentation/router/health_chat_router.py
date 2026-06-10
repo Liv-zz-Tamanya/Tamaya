@@ -14,10 +14,10 @@ from app.infrastructure.config.dependencies import (
     get_health_session_repo,
 )
 from app.presentation.router.health_schemas import (
+    HealthMessageResponse,
     HealthSessionResponse,
     SendHealthMessageRequest,
     SendHealthMessageResponse,
-    HealthMessageResponse,
 )
 
 router = APIRouter(prefix="/api/v1/health-chat", tags=["health-chat"])

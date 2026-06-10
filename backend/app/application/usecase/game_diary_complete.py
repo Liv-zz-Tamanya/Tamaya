@@ -4,13 +4,13 @@ GET /game/state · POST /game/diary-complete · POST /game/claim-reward
 
 best-effort 원칙: 게임 로직 실패 시 로그만 남기고 finalize 성공 유지.
 """
+
 from __future__ import annotations
 
 import logging
-import uuid
 from datetime import date, datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.model.game_progress import GameProgress, RewardInventory, apply_diary_completion
@@ -36,9 +36,11 @@ class GameProgressUseCase:
         return _to_domain(row)
 
     async def get_inventory(self, device_id: str) -> list[RewardInventory]:
-        rows = (await self._db.scalars(
-            select(RewardInventoryModel).where(RewardInventoryModel.device_id == device_id)
-        )).all()
+        rows = (
+            await self._db.scalars(
+                select(RewardInventoryModel).where(RewardInventoryModel.device_id == device_id)
+            )
+        ).all()
         return [_reward_to_domain(r) for r in rows]
 
     async def on_diary_complete(self, device_id: str, diary_date: date) -> list[tuple[str, str]]:
@@ -76,11 +78,13 @@ class GameProgressUseCase:
                     )
                 )
                 if existing is None:
-                    self._db.add(RewardInventoryModel(
-                        device_id=device_id,
-                        reward_id=reward_id,
-                        reward_type=reward_type,
-                    ))
+                    self._db.add(
+                        RewardInventoryModel(
+                            device_id=device_id,
+                            reward_id=reward_id,
+                            reward_type=reward_type,
+                        )
+                    )
 
             await self._db.commit()
             return new_rewards
@@ -108,6 +112,7 @@ class GameProgressUseCase:
 
 
 # ─── ORM → Domain 변환 ──────────────────────────────────────────────────────────
+
 
 def _to_domain(row: GameProgressModel) -> GameProgress:
     return GameProgress(

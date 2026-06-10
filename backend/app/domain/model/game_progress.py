@@ -2,18 +2,19 @@
 키우기 게임 도메인 모델 — DEC-019 Must-Have 9번 (DEC-022.B, DEC-020 BUG-07 정합)
 FE rewardSystem.ts와 1:1 매핑.
 """
+
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from uuid import UUID, uuid4
 
 # FE rewardSystem.ts REWARDS 배열과 동일한 streak gate → reward_id 매핑
 STREAK_REWARDS: dict[int, tuple[str, str]] = {
-    3:  ("churu_1",      "snack"),
-    5:  ("toy_ball",     "toy"),
-    7:  ("churu_2",      "snack"),
-    10: ("toy_mouse",    "toy"),
-    14: ("toy_feather",  "toy"),
-    21: ("churu_premium","snack"),
+    3: ("churu_1", "snack"),
+    5: ("toy_ball", "toy"),
+    7: ("churu_2", "snack"),
+    10: ("toy_mouse", "toy"),
+    14: ("toy_feather", "toy"),
+    21: ("churu_premium", "snack"),
 }
 
 
@@ -24,13 +25,14 @@ class GameProgress:
     level = (total_diaries // 10) + 1
     affinity = 0~100 (일기 1건 finalize 시 +2, DEC-020 정합)
     """
+
     id: UUID = field(default_factory=uuid4)
     device_id: str = ""
     current_streak: int = 0
     total_diaries: int = 0
-    points: int = 0               # 일기 1건 = +10
+    points: int = 0  # 일기 1건 = +10
     level: int = 1
-    affinity: int = 0             # 0~100
+    affinity: int = 0  # 0~100
     last_diary_date: date | None = None
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
@@ -42,10 +44,11 @@ class RewardInventory:
     획득·수령한 보상 인벤토리.
     reward_id: FE REWARDS[].id ('churu_1', 'toy_ball' 등)
     """
+
     id: UUID = field(default_factory=uuid4)
     device_id: str = ""
     reward_id: str = ""
-    reward_type: str = ""     # 'toy' | 'snack'
+    reward_type: str = ""  # 'toy' | 'snack'
     claimed_at: datetime = field(default_factory=datetime.now)
     is_used: bool = False
     used_at: datetime | None = None
@@ -61,8 +64,7 @@ def apply_diary_completion(
     반환: (갱신된 progress, 신규 보상 [(reward_id, reward_type), …])
     """
     is_consecutive = (
-        progress.last_diary_date is not None
-        and (diary_date - progress.last_diary_date).days == 1
+        progress.last_diary_date is not None and (diary_date - progress.last_diary_date).days == 1
     )
 
     if is_consecutive:

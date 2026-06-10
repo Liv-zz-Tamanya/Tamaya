@@ -29,6 +29,10 @@ import {
   S17_Insights,
 } from '../screens/records';
 import { S18_CatRoom, S19_Inventory, S20_Report } from '../screens/character';
+import { S23_Coach } from '../screens/coach';
+import { S24_Wellbeing } from '../screens/wellbeing';
+import { S25_Byok } from '../screens/byok';
+import { S26_HealthChat } from '../screens/health-chat';
 
 const SCREENS: Record<Route, () => ReactNode> = {
   splash: () => <S01_Splash />,
@@ -53,6 +57,10 @@ const SCREENS: Record<Route, () => ReactNode> = {
   report: () => <S20_Report />,
   login: () => <S21_Login />,
   settings: () => <S22_Settings />,
+  coach: () => <S23_Coach />,
+  wellbeing: () => <S24_Wellbeing />,
+  byok: () => <S25_Byok />,
+  'health-chat': () => <S26_HealthChat />,
 };
 
 const ROUTE_LABEL: Record<Route, string> = {
@@ -78,6 +86,10 @@ const ROUTE_LABEL: Record<Route, string> = {
   report: '20 주간 리포트',
   login: '21 로그인',
   settings: '22 설정',
+  coach: '23 밤 코칭 (건강냥)',
+  wellbeing: '24 웰빙 인사이트',
+  byok: '25 CLOVA 키 (BYOK)',
+  'health-chat': '26 건강 기록 Q&A',
 };
 
 // Real-time-of-day determines whether the home tab routes to S06 (day) or

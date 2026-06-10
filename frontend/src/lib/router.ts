@@ -26,7 +26,12 @@ export type Route =
   | 'inventory'
   | 'report'
   | 'login'
-  | 'settings';
+  | 'settings'
+  // 건강냥(Medlife) 통합 — BE-only 기능 신규 화면 (feat/healthcat-backend)
+  | 'coach'
+  | 'wellbeing'
+  | 'byok'
+  | 'health-chat';
 
 export type NavApi = {
   go: (route: Route) => void;       // push to history

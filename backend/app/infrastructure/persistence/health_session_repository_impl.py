@@ -27,7 +27,9 @@ class HealthSessionRepositoryImpl(HealthSessionRepository):
             existing_count = len(existing.messages)
             for msg in session.messages[existing_count:]:
                 existing.messages.append(
-                    HealthMessageModel(role=msg.role, content=msg.content, created_at=msg.created_at)
+                    HealthMessageModel(
+                        role=msg.role, content=msg.content, created_at=msg.created_at
+                    )
                 )
             await self._db.flush()
         else:
@@ -37,7 +39,9 @@ class HealthSessionRepositoryImpl(HealthSessionRepository):
             )
             for msg in session.messages:
                 model.messages.append(
-                    HealthMessageModel(role=msg.role, content=msg.content, created_at=msg.created_at)
+                    HealthMessageModel(
+                        role=msg.role, content=msg.content, created_at=msg.created_at
+                    )
                 )
             self._db.add(model)
             await self._db.flush()

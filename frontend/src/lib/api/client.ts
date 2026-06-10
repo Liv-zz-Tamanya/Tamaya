@@ -41,15 +41,18 @@ export type ApiOpts = {
   body?: unknown;
   auth?: boolean;
   timeoutMs?: number;
+  /** 추가 헤더 (예: BYOK X-Clova-Api-Key). Content-Type/Authorization 위에 머지됨. */
+  headers?: Record<string, string>;
 };
 
 export async function apiFetch<T>(path: string, opts: ApiOpts = {}): Promise<T> {
-  const { method = 'GET', body, auth = true, timeoutMs = 8000 } = opts;
+  const { method = 'GET', body, auth = true, timeoutMs = 8000, headers: extra } = opts;
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (auth) {
     const t = getToken();
     if (t) headers.Authorization = `Bearer ${t}`;
   }
+  if (extra) Object.assign(headers, extra);
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {

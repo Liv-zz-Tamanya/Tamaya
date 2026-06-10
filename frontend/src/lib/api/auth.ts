@@ -3,8 +3,9 @@ import { apiFetch, getToken, setToken } from './client';
 
 const DEVICE_KEY = 'tamaya-device-id';
 
-/** device_id를 localStorage에서 가져오거나 새로 발급해 캐시. */
-function getDeviceId(): string {
+/** device_id를 localStorage에서 가져오거나 새로 발급해 캐시.
+ *  coaching·insight·clova(BYOK) 등 device_id 키잉 엔드포인트가 공유한다. */
+export function getDeviceId(): string {
   try {
     let id = localStorage.getItem(DEVICE_KEY);
     if (!id) {

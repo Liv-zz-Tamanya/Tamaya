@@ -66,6 +66,7 @@ class FinalizeDiaryUseCase:
         if device_id and self._db is not None:
             try:
                 from app.application.usecase.game_diary_complete import GameProgressUseCase
+
                 game_uc = GameProgressUseCase(self._db)
                 new_rewards = await game_uc.on_diary_complete(device_id, session.session_date)
                 if new_rewards:

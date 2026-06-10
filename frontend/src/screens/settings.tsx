@@ -19,7 +19,11 @@ export const S22_Settings = () => {
     { label: '알림 — 주간 리포트', value: '월요일 09:00' },
     { label: '데이터 — 로컬 저장', value: `일기 ${state.diaries.length}건` },
     { label: '데이터 — 백업', value: '직접 내보내기' },
-    { label: '버전', value: 'v1.0 · Wireframes v3' },
+    { label: '🐱 밤 코칭 (건강냥)', value: 'BE 연동 · 코칭 대화', onClick: () => nav.go('coach') },
+    { label: '📈 웰빙 인사이트', value: 'BE 연동 · 주간 스코어', onClick: () => nav.go('wellbeing') },
+    { label: '✚ 건강 기록 Q&A', value: 'BE 연동 · RAG 챗', onClick: () => nav.go('health-chat') },
+    { label: '🔑 CLOVA 키 (BYOK)', value: 'BE 연동 · 키 설정', onClick: () => nav.go('byok') },
+    { label: '버전', value: 'v1.0 · healthcat-backend' },
   ];
 
   return (

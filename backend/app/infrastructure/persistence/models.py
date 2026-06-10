@@ -2,8 +2,19 @@ import uuid
 from datetime import date, datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Date, DateTime, Float, ForeignKey, Index, Integer, String, Text, Boolean, UniqueConstraint
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -25,7 +36,9 @@ class ChatSessionModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     messages: Mapped[list["ChatMessageModel"]] = relationship(
-        back_populates="session", cascade="all, delete-orphan", order_by="ChatMessageModel.created_at"
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="ChatMessageModel.created_at",
     )
 
 
@@ -33,7 +46,9 @@ class ChatMessageModel(Base):
     __tablename__ = "chat_messages"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("chat_sessions.id"), nullable=False)
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("chat_sessions.id"), nullable=False
+    )
     role: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
@@ -120,6 +135,7 @@ class UserSessionModel(Base):
     신규 로그인 시 기존 레코드 revoked_at = now(), 새 레코드 insert.
     보호 라우트 요청마다 jti 조회 → revoked_at IS NOT NULL → 401.
     """
+
     __tablename__ = "user_sessions"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -143,7 +159,9 @@ class HealthSessionModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     messages: Mapped[list["HealthMessageModel"]] = relationship(
-        back_populates="session", cascade="all, delete-orphan", order_by="HealthMessageModel.created_at"
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="HealthMessageModel.created_at",
     )
 
 
@@ -151,7 +169,9 @@ class HealthMessageModel(Base):
     __tablename__ = "health_messages"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("health_sessions.id"), nullable=False)
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("health_sessions.id"), nullable=False
+    )
     role: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
@@ -159,7 +179,47 @@ class HealthMessageModel(Base):
     session: Mapped["HealthSessionModel"] = relationship(back_populates="messages")
 
 
+# ─── 정성신호 도메인 (G002 Backend-Insight) ────────────────────────────────────
+
+
+class QualitativeSignalModel(Base):
+    """코칭 대화에서 추출한 정성신호 — device_id 키잉(User 테이블 없음).
+
+    session_id는 coaching_sessions 테이블 부재로 FK 없이 단순 UUID로 둔다.
+    behavior_mentions는 [{"behavior": str, "polarity": int}] 형태의 JSONB.
+    (device_id, recorded_date) 복합 인덱스로 주/월 기간 집계를 가속한다.
+    """
+
+    __tablename__ = "qualitative_signals"
+    __table_args__ = (Index("ix_qualitative_signals_device_date", "device_id", "recorded_date"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    device_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    session_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    emotion: Mapped[str] = mapped_column(String(20), nullable=False)
+    behavior_mentions: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, default=list)
+    recorded_date: Mapped[date] = mapped_column(Date, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+class ClovaSettingModel(Base):
+    """BYOK CLOVA 설정 — device_id별 마스킹 키 프리뷰. 원문 키는 저장하지 않는다."""
+
+    __tablename__ = "clova_settings"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # unique=True가 암묵적 인덱스를 만들므로 index=True는 중복(autogenerate drift 방지).
+    device_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    masked_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    has_key: Mapped[bool] = mapped_column(Boolean, default=False)
+    # onupdate로 키 재저장 시 갱신 시각을 반영한다(upsert 업데이트 경로 정합).
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now, onupdate=datetime.now
+    )
+
+
 # ─── 키우기 게임 도메인 (DEC-019, DEC-022.B) ───────────────────────────────────
+
 
 class GameProgressModel(Base):
     """
@@ -167,6 +227,7 @@ class GameProgressModel(Base):
     level = (total_diaries // 10) + 1
     affinity = 0~100 (일기 1건당 +2, DEC-020 BUG-07 정합)
     """
+
     __tablename__ = "game_progress"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -175,7 +236,7 @@ class GameProgressModel(Base):
     total_diaries: Mapped[int] = mapped_column(Integer, default=0)
     points: Mapped[int] = mapped_column(Integer, default=0)
     level: Mapped[int] = mapped_column(Integer, default=1)
-    affinity: Mapped[int] = mapped_column(Integer, default=0)   # 0–100
+    affinity: Mapped[int] = mapped_column(Integer, default=0)  # 0–100
     last_diary_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
@@ -186,10 +247,9 @@ class RewardInventoryModel(Base):
     reward_id: FE rewardSystem.ts REWARDS[].id ('churu_1', 'toy_ball', …)
     device_id + reward_id 복합 UNIQUE — 보상 중복 지급 방지
     """
+
     __tablename__ = "reward_inventory"
-    __table_args__ = (
-        UniqueConstraint("device_id", "reward_id", name="uq_device_reward"),
-    )
+    __table_args__ = (UniqueConstraint("device_id", "reward_id", name="uq_device_reward"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     device_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)

@@ -6,6 +6,7 @@ POST /game/claim-reward/{reward_id}
 
 X-Device-Id 헤더 기반 device_id 인증 (MVP Phase 1 단계).
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -22,15 +23,16 @@ router = APIRouter(prefix="/game", tags=["game"])
 
 # ─── 스키마 ─────────────────────────────────────────────────────────────────────
 
+
 class GameStateResponse(BaseModel):
     device_id: str
     current_streak: int
     total_diaries: int
     points: int
     level: int
-    affinity: int           # 0~100 (이음이 호감도, DEC-020 정합)
+    affinity: int  # 0~100 (이음이 호감도, DEC-020 정합)
     last_diary_date: date | None
-    inventory: list[str]    # FE rewardSystem.ts와 1:1 매핑 (reward_id 목록)
+    inventory: list[str]  # FE rewardSystem.ts와 1:1 매핑 (reward_id 목록)
 
 
 class DiaryCompleteRequest(BaseModel):
@@ -50,6 +52,7 @@ class ClaimRewardResponse(BaseModel):
 
 # ─── 헬퍼 ───────────────────────────────────────────────────────────────────────
 
+
 def _require_device_id(x_device_id: str | None = Header(default=None)) -> str:
     if not x_device_id:
         raise HTTPException(
@@ -60,6 +63,7 @@ def _require_device_id(x_device_id: str | None = Header(default=None)) -> str:
 
 
 # ─── 라우트 ─────────────────────────────────────────────────────────────────────
+
 
 @router.get("/state", response_model=GameStateResponse, summary="게임 진행 상태 조회")
 async def get_game_state(
@@ -81,7 +85,9 @@ async def get_game_state(
     )
 
 
-@router.post("/diary-complete", response_model=DiaryCompleteResponse, summary="일기 완료 → 게임 보상")
+@router.post(
+    "/diary-complete", response_model=DiaryCompleteResponse, summary="일기 완료 → 게임 보상"
+)
 async def diary_complete(
     body: DiaryCompleteRequest,
     device_id: str = Depends(_require_device_id),

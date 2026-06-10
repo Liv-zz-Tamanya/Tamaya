@@ -6,9 +6,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.infrastructure.config.database import engine
 from app.presentation.router.auth_router import router as auth_router
 from app.presentation.router.chat_router import router as chat_router
+from app.presentation.router.coaching_router import router as coaching_router
 from app.presentation.router.diary_router import router as diary_router
 from app.presentation.router.game_router import router as game_router
 from app.presentation.router.health_chat_router import router as health_chat_router
+from app.presentation.router.insight_router import router as insight_router
+from app.presentation.router.settings_router import router as settings_router
 
 
 @asynccontextmanager
@@ -27,6 +30,9 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:19006",  # Expo Web
+        # 127.0.0.1 동등 허용 — Playwright e2e/일부 로컬 환경은 localhost 대신 127.0.0.1 사용
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -35,9 +41,12 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(chat_router)
+app.include_router(coaching_router)
 app.include_router(diary_router)
 app.include_router(game_router)
 app.include_router(health_chat_router)
+app.include_router(insight_router)
+app.include_router(settings_router)
 
 
 @app.get("/health")

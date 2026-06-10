@@ -6,10 +6,11 @@ DEC-023: jti 기반 strict 1세션 무효화
 의존: python-jose (JOSE/JWT) — pyproject.toml에 추가 필요
 fallback: python-jose 없는 환경에선 더미 토큰 반환 (MOCK MODE)
 """
+
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from app.infrastructure.config.settings import settings
 
@@ -26,12 +27,13 @@ def issue_access_token(identity: str, jti: str) -> str:
     """access token — 15분 만료"""
     try:
         from jose import jwt  # type: ignore[import]
+
         payload = {
             "sub": identity,
             "jti": jti,
             "type": "access",
-            "iat": datetime.now(timezone.utc),
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=_ACCESS_EXPIRE_MIN),
+            "iat": datetime.now(UTC),
+            "exp": datetime.now(UTC) + timedelta(minutes=_ACCESS_EXPIRE_MIN),
         }
         return jwt.encode(payload, _secret(), algorithm=_JWT_ALGORITHM)
     except ImportError:
@@ -44,12 +46,13 @@ def issue_refresh_token(identity: str) -> tuple[str, str]:
     jti = str(uuid.uuid4())
     try:
         from jose import jwt  # type: ignore[import]
+
         payload = {
             "sub": identity,
             "jti": jti,
             "type": "refresh",
-            "iat": datetime.now(timezone.utc),
-            "exp": datetime.now(timezone.utc) + timedelta(days=_REFRESH_EXPIRE_DAYS),
+            "iat": datetime.now(UTC),
+            "exp": datetime.now(UTC) + timedelta(days=_REFRESH_EXPIRE_DAYS),
         }
         return jwt.encode(payload, _secret(), algorithm=_JWT_ALGORITHM), jti
     except ImportError:
@@ -64,6 +67,7 @@ def decode_token(token: str) -> dict:
     """
     try:
         from jose import jwt  # type: ignore[import]
+
         return jwt.decode(token, _secret(), algorithms=[_JWT_ALGORITHM])
     except ImportError:
         # MOCK 모드: token 파싱

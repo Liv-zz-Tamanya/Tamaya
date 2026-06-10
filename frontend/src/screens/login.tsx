@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { CatSketch, StatusBar } from '../components/primitives';
 import { useNav } from '../lib/router';
+import { ensureDeviceToken } from '../lib/api';
 
 // 21 · Login — kakao + anonymous device_id (DEC-022.4 정합)
+// 건강냥이 BE 연동: 익명/카카오 모두 POST /auth/device 로 device 토큰 확보.
+// (실 카카오 OAuth code 플로우는 Phase 2. PoC는 device 신원으로 진입.)
+// BE 미기동/오프라인이어도 온보딩은 진행(graceful) — 토큰은 다음 호출 때 lazy 확보.
 
 export const S21_Login = () => {
   const nav = useNav();
@@ -10,11 +14,16 @@ export const S21_Login = () => {
 
   const enter = (kind: 'kakao' | 'anon') => {
     setLoading(kind);
-    // simulate brief auth → onboarding entry
-    setTimeout(() => {
-      setLoading(null);
-      nav.reset('welcome');
-    }, 700);
+    void (async () => {
+      try {
+        await ensureDeviceToken(); // 실제 /auth/device 토큰 확보 (liv-I1: device_id 익명)
+      } catch {
+        // BE 미기동/오프라인 — 진입은 막지 않음(토큰은 첫 API 호출 때 재시도)
+      } finally {
+        setLoading(null);
+        nav.reset('welcome');
+      }
+    })();
   };
 
   return (

@@ -47,10 +47,7 @@ class HealthChatAgent:
             embedding=query_embedding,
             limit=5,
         )
-        context = [
-            f"- {chunk.record_date.strftime('%Y-%m-%d')}: {chunk.text}"
-            for chunk in chunks
-        ]
+        context = [f"- {chunk.record_date.strftime('%Y-%m-%d')}: {chunk.text}" for chunk in chunks]
         return {"retrieved_health_data": context}
 
     async def _chat_node(self, state: HealthChatAgentState) -> dict:

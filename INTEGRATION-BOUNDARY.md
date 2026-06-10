@@ -45,3 +45,19 @@
 
 - `VITE_API_BASE` (기본 `http://localhost:8000`) — backend FastAPI. `frontend/.env.example` 참조.
 - backend `CLOVA_MOCK_MODE=true` (실 NCP 키 수령 전, DEC-022.4) — AI 응답은 mock으로 발현.
+
+---
+
+## 🚩 미해결 경계 — `feat/healthcat-backend` 통합 (2026-06-11, liv-zz CTO)
+
+건강냥이 BE 통합으로 **서버 전송 표면이 넓어졌다**. 다음은 production 진입 전 반드시 결정해야 할 경계 항목(현재 PoC 배선은 "전송 가능"을 증명한 것이지 "전송해야 함"을 결정한 게 아님):
+
+| 데이터/기능 | 현재(PoC 브랜치) | 미해결 결정 | 정합 Invariant |
+|---|---|---|---|
+| **밤 코칭 발화** (S23 → `/api/v1/coaching/messages`) | maskPII 후 전송, history 클라 보관, BE 세션 미보관 | 코칭 정성신호(emotion/behavior)가 서버에 영속됨 — 원문 대비 무엇을 저장/폐기할지 보존정책 | liv-I1 / liv-I4(≥95%) |
+| **건강 기록 RAG** (S26 → `/api/v1/health-chat`) | 세션·메시지 서버 보관, 건강기록 embedding 검색 | 건강기록(생체·복약 등) 자체의 서버 보관 = liv-I1 "생체 raw 온디바이스" 원칙과 정면 충돌 가능 → **온디바이스 RAG vs 서버 RAG** 결정 | **liv-I1 (생체 raw)** |
+| **데일리체크·일기·통계** (S08·S11/12·S16) | 로컬 store 전용(미배선) | 서버 배선 시 일기 원문/체크가 서버로 — 현 SSOT는 "일기 원문 서버 0". 배선 범위·마스킹·암호화 확정 필요 | liv-I1 |
+| **BYOK CLOVA 키** (S25 → `/settings/clova`) | 마스킹(••••last4)만 저장, 원문 미저장 | 키 회전·만료·디바이스 변경 시 정책 | (보안 일반) |
+| **마스킹 본 구현** | FE maskPII 경량 정규식(1차 방어선) | HCX 실연동 트리거 시 SEC On-Demand 재호출(PDL-050) — 문맥기반 ≥95% | liv-I4 |
+
+> **결론**: 통합 브랜치는 "FE 22화면 + 건강냥이 BE가 한 저장소에서 빌드·기동되고, 신규 4기능이 실 BE에 배선됨"을 달성. **단 일기 원문·건강 raw의 서버 전송 여부는 미결** — 위 표 결정 전 production 배포 금지. 마스킹 본 구현은 SEC On-Demand 사안.

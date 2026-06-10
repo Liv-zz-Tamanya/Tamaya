@@ -9,15 +9,16 @@ POST /auth/logout   : 현 세션 revoke
   - 신규 로그인 시 동일 identity의 기존 active 세션 revoke → 새 세션 insert
   - 보호 라우트는 get_current_session dependency로 jti 검증 (revoked_at IS NOT NULL → 401)
 """
+
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select, update
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.auth.jwt_handler import (
@@ -34,8 +35,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 # ─── Request / Response 스키마 ──────────────────────────────────────────────────
 
+
 class KakaoLoginRequest(BaseModel):
-    code: str       # 카카오 인가 코드
+    code: str  # 카카오 인가 코드
 
 
 class DeviceLoginRequest(BaseModel):
@@ -50,14 +52,17 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
-    identity: str   # device_id 또는 kakao_id
+    identity: str  # device_id 또는 kakao_id
 
 
 # ─── 동시접속 strict 1세션 헬퍼 ────────────────────────────────────────────────
 
-async def _revoke_existing_sessions(db: AsyncSession, *, device_id: str | None = None, kakao_id: str | None = None) -> None:
+
+async def _revoke_existing_sessions(
+    db: AsyncSession, *, device_id: str | None = None, kakao_id: str | None = None
+) -> None:
     """동일 identity의 모든 active 세션 revoke (DEC-023)"""
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(UTC).replace(tzinfo=None)
     if device_id:
         await db.execute(
             update(UserSessionModel)
@@ -90,7 +95,7 @@ async def _create_session(
     await _revoke_existing_sessions(db, device_id=device_id, kakao_id=kakao_id)
 
     access_jti = str(uuid.uuid4())
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(UTC).replace(tzinfo=None)
 
     session = UserSessionModel(
         id=uuid.uuid4(),
@@ -110,15 +115,14 @@ async def _create_session(
 
 # ─── 라우트 ────────────────────────────────────────────────────────────────────
 
+
 @router.post("/device", response_model=TokenResponse, summary="device_id 익명 인증")
 async def login_device(body: DeviceLoginRequest, db: AsyncSession = Depends(get_db)):
     """
     device_id 기반 익명 인증. 동일 device_id 재로그인 시 기존 세션 자동 revoke.
     Phase 1 Closed Beta 전용. Open Beta 직전 카카오/Apple OAuth로 머지.
     """
-    access_token, refresh_token, _, identity = await _create_session(
-        db, device_id=body.device_id
-    )
+    access_token, refresh_token, _, identity = await _create_session(db, device_id=body.device_id)
     return TokenResponse(access_token=access_token, refresh_token=refresh_token, identity=identity)
 
 
@@ -145,7 +149,9 @@ async def login_kakao(body: KakaoLoginRequest, db: AsyncSession = Depends(get_db
                 timeout=10,
             )
         if token_res.status_code != 200:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="카카오 토큰 발급 실패")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="카카오 토큰 발급 실패"
+            )
 
         kakao_access = token_res.json().get("access_token", "")
 
@@ -156,7 +162,9 @@ async def login_kakao(body: KakaoLoginRequest, db: AsyncSession = Depends(get_db
                 timeout=10,
             )
         if user_res.status_code != 200:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="카카오 사용자 정보 조회 실패")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="카카오 사용자 정보 조회 실패"
+            )
 
         kakao_id = str(user_res.json().get("id", ""))
 
@@ -173,10 +181,14 @@ async def refresh_token(body: RefreshRequest, db: AsyncSession = Depends(get_db)
     try:
         payload = decode_token(body.refresh_token)
     except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="유효하지 않은 refresh token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="유효하지 않은 refresh token"
+        )
 
     if payload.get("type") != "refresh":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="refresh token이 아닙니다")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="refresh token이 아닙니다"
+        )
 
     identity = payload.get("sub", "")
     # identity 형식 추론: kakao_id는 숫자 문자열, device_id는 UUID
@@ -200,7 +212,7 @@ async def logout(
     db: AsyncSession = Depends(get_db),
 ):
     """jti로 세션 revoke — 클라이언트 로그아웃"""
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(UTC).replace(tzinfo=None)
     result = await db.execute(
         update(UserSessionModel)
         .where(UserSessionModel.jti == jti, UserSessionModel.revoked_at.is_(None))
@@ -208,4 +220,6 @@ async def logout(
     )
     await db.commit()
     if result.rowcount == 0:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="세션을 찾을 수 없거나 이미 로그아웃됨")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="세션을 찾을 수 없거나 이미 로그아웃됨"
+        )
