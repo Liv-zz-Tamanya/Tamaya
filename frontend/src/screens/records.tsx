@@ -494,6 +494,13 @@ export const S16_Stats = () => {
         ))}
       </div>
 
+      {s.count === 0 && (
+        <div className="hbox dashed r-l" style={{ padding: 16, marginTop: 12, textAlign: 'center' }}>
+          <div className="body">아직 통계가 없어요</div>
+          <div className="tiny" style={{ marginTop: 6 }}>회고를 시작하면 작성·감정·라이프스타일 통계가 채워져요</div>
+        </div>
+      )}
+
       <div className="hbox r-l" style={{ padding: 14, marginTop: 12 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
           <div className="h-display" style={{ fontSize: 56 }}>
@@ -618,7 +625,10 @@ export const S16_Stats = () => {
 
 export const S17_Insights = () => {
   const nav = useNav();
+  const { state } = useStore();
   const [routine, setRoutine] = useState<null | 'added' | 'later'>(null);
+  // 데이터 부족(<5건) 시 인사이트 대신 안내 (feature-spec §F7: 7일 미만 안내).
+  const enough = state.diaries.length >= 5;
   return (
   <div className="phone-inner">
     <StatusBar mode="day" time="11:22 AM" />
@@ -626,6 +636,8 @@ export const S17_Insights = () => {
       <div className="h-title">인사이트</div>
       <div className="tiny">이음이가 정리해준 이번 주</div>
 
+      {enough ? (
+        <>
       <div className="hbox night r-l" style={{ padding: 16, marginTop: 14 }}>
         <div className="h-section" style={{ color: '#d8a777' }}>
           이번 주 메인 패턴
@@ -718,6 +730,23 @@ export const S17_Insights = () => {
           </div>
         )}
       </div>
+        </>
+      ) : (
+        <div className="hbox dashed r-l" style={{ padding: 18, marginTop: 14, textAlign: 'center' }}>
+          <div className="body">아직 인사이트를 만들 데이터가 적어요</div>
+          <div className="tiny" style={{ marginTop: 6 }}>
+            회고를 5번 이상 쌓으면 이음이가 패턴을 찾아줘요 (현재 {state.diaries.length}건)
+          </div>
+          <button
+            type="button"
+            onClick={() => nav.go('recap-start')}
+            className="btn primary"
+            style={{ marginTop: 12, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            회고 시작하기 →
+          </button>
+        </div>
+      )}
 
       <div
         className="hbox r-r"
