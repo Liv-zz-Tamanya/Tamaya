@@ -6,6 +6,10 @@ const DEVICE_KEY = 'tamaya-device-id';
 /** device_id를 localStorage에서 가져오거나 새로 발급해 캐시.
  *  coaching·insight·clova(BYOK) 등 device_id 키잉 엔드포인트가 공유한다. */
 export function getDeviceId(): string {
+  // 데모/개발 편의: 고정 device로 시드 데이터(웰빙 인사이트 등) 확인.
+  // VITE_DEMO_DEVICE_ID 미설정 시(=production) 정상 익명 device 발급 경로.
+  const demo = import.meta.env.VITE_DEMO_DEVICE_ID;
+  if (demo) return demo;
   try {
     let id = localStorage.getItem(DEVICE_KEY);
     if (!id) {
