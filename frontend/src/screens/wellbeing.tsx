@@ -15,8 +15,8 @@ const Bar = ({ label, value, max = 100 }: { label: string; value: number; max?: 
       <span className="tiny">{label}</span>
       <span className="tiny" style={{ fontWeight: 700 }}>{value}</span>
     </div>
-    <div style={{ height: 10, background: '#efe7d8', borderRadius: 6, marginTop: 3, overflow: 'hidden' }}>
-      <div style={{ width: `${Math.max(0, Math.min(100, (value / max) * 100))}%`, height: '100%', background: '#c2682f', borderRadius: 6 }} />
+    <div style={{ height: 10, background: 'var(--paper-2)', borderRadius: 6, marginTop: 3, overflow: 'hidden' }}>
+      <div style={{ width: `${Math.max(0, Math.min(100, (value / max) * 100))}%`, height: '100%', background: 'var(--accent)', borderRadius: 6 }} />
     </div>
   </div>
 );
@@ -90,9 +90,9 @@ export const S24_Wellbeing = () => {
           <>
             <div className="hbox accent" style={{ padding: 18, textAlign: 'center' }}>
               <div className="tiny">종합 웰빙 스코어</div>
-              <div style={{ fontFamily: 'Caveat', fontSize: 52, fontWeight: 700, lineHeight: 1.1, color: '#c2682f' }}>
+              <div style={{ fontFamily: 'Caveat', fontSize: 52, fontWeight: 700, lineHeight: 1.1, color: 'var(--accent)' }}>
                 {data.report.score}
-                <span style={{ fontSize: 22, color: '#7a5634' }}> / 100</span>
+                <span style={{ fontSize: 22, color: 'var(--pencil)' }}> / 100</span>
               </div>
               <div className="tiny" style={{ marginTop: 4 }}>신호 {data.report.signal_count}건 · {data.start_date} ~ {data.end_date}</div>
             </div>
@@ -113,7 +113,7 @@ export const S24_Wellbeing = () => {
                       title={`${t.score} (신호 ${t.signal_count})`}
                       style={{
                         height: `${Math.max(4, (t.score / maxTrend) * 70)}px`,
-                        background: t.signal_count > 0 ? '#c2682f' : '#e0d5c2',
+                        background: t.signal_count > 0 ? 'var(--accent)' : 'var(--good-soft)',
                         borderRadius: 4,
                       }}
                     />
@@ -123,7 +123,7 @@ export const S24_Wellbeing = () => {
               </div>
             </div>
 
-            <div className="tiny" style={{ marginTop: 14, color: '#7a5634' }}>
+            <div className="tiny" style={{ marginTop: 14, color: 'var(--pencil)' }}>
               ※ 웰빙 스코어는 코칭 대화에서 추출한 정성신호의 결정론 집계(순수함수)입니다. 진단·의료 지표 아님.
             </div>
           </>
