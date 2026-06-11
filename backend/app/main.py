@@ -11,6 +11,7 @@ from app.presentation.router.diary_router import router as diary_router
 from app.presentation.router.game_router import router as game_router
 from app.presentation.router.health_chat_router import router as health_chat_router
 from app.presentation.router.insight_router import router as insight_router
+from app.presentation.router.me_router import router as me_router
 from app.presentation.router.settings_router import router as settings_router
 
 
@@ -47,6 +48,7 @@ app.include_router(game_router)
 app.include_router(health_chat_router)
 app.include_router(insight_router)
 app.include_router(settings_router)
+app.include_router(me_router)
 
 
 @app.get("/health")

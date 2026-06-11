@@ -1,12 +1,39 @@
+import { useState } from 'react';
 import { StatusBar, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { useStore } from '../lib/store';
+import { purgeMyData } from '../lib/api';
 
 // 22 · Settings — character name, notifications, data, logout
 
 export const S22_Settings = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
+  const [purging, setPurging] = useState(false);
+
+  // 완전 삭제(liv-I1): 서버 device 데이터 purge(best-effort) + 로컬 store/세션 clear → 리로드.
+  const purgeAll = async () => {
+    if (!confirm('모든 데이터를 완전히 삭제할까요?\n· 서버: 일기·대화·정성신호·CLOVA설정·게임·인벤토리\n· 기기: 로컬 저장 전부\n되돌릴 수 없습니다.')) return;
+    setPurging(true);
+    let serverMsg = '서버 데이터 삭제 완료';
+    try {
+      const r = await purgeMyData();
+      const n = Object.values(r.items_removed).reduce((a, b) => a + b, 0);
+      serverMsg = `서버 데이터 삭제 완료 (${n}행)`;
+    } catch {
+      serverMsg = '서버 연결 실패 — 로컬만 삭제(서버는 기동 후 재시도)';
+    }
+    try {
+      localStorage.removeItem('tamaya-state-v2');
+      localStorage.removeItem('tamaya-auth-token');
+      localStorage.removeItem('tamaya-chat-session');
+      localStorage.removeItem('tamaya-healthchat-session');
+    } catch {
+      /* ignore */
+    }
+    alert(serverMsg + '\n기기 데이터 삭제 완료. 처음 화면으로 돌아갑니다.');
+    location.reload();
+  };
 
   const rows: {
     label: string;
@@ -77,24 +104,24 @@ export const S22_Settings = () => {
 
         <button
           type="button"
-          onClick={() => {
-            if (confirm('모든 로컬 데이터를 초기화할까요?')) {
-              localStorage.removeItem('tamaya-state-v2');
-              location.reload();
-            }
-          }}
+          onClick={() => void purgeAll()}
+          disabled={purging}
           className="btn block"
           style={{
             marginTop: 18,
             color: '#8a2c33',
             borderColor: '#8a2c33',
             background: '#fff',
-            cursor: 'pointer',
+            cursor: purging ? 'wait' : 'pointer',
             fontFamily: 'inherit',
+            opacity: purging ? 0.6 : 1,
           }}
         >
-          데이터 초기화
+          {purging ? '완전 삭제 중…' : '데이터 완전 삭제 (서버 + 기기)'}
         </button>
+        <div className="tiny" style={{ marginTop: 6, textAlign: 'center', color: 'var(--pencil)' }}>
+          서버·기기의 내 데이터를 모두 지웁니다 · liv-zz Private-First 약속
+        </div>
 
         <div style={{ marginTop: 10, textAlign: 'center' }}>
           <span

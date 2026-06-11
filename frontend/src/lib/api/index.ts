@@ -25,3 +25,4 @@ export {
   type ClovaTestResult,
 } from './clova';
 export { sendHealthChat } from './healthchat';
+export { purgeMyData, type PurgeResult } from './me';
