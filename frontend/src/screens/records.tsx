@@ -140,6 +140,21 @@ export const S14_Calendar = () => {
         </div>
       </div>
 
+      {state.diaries.length === 0 && (
+        <div className="hbox dashed r-l" style={{ padding: 16, marginTop: 12, textAlign: 'center' }}>
+          <div className="body">아직 기록이 없어요</div>
+          <div className="tiny" style={{ marginTop: 6 }}>밤에 첫 회고를 시작하면 달력이 채워져요</div>
+          <button
+            type="button"
+            onClick={() => nav.go('recap-start')}
+            className="btn primary"
+            style={{ marginTop: 12, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            회고 시작하기 →
+          </button>
+        </div>
+      )}
+
       <div
         style={{
           display: 'flex',

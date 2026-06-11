@@ -295,13 +295,19 @@ export const S07_HomeNight = () => {
           gap: 12,
         }}
       >
-        <div style={{ fontFamily: 'Caveat', fontSize: 42, color: '#8c4a1f' }}>🔥12</div>
+        <div style={{ fontFamily: 'Caveat', fontSize: 42, color: '#8c4a1f' }}>🔥{state.streak}</div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>12일 연속!</div>
-          <div className="tiny">+3일이면 새 옷 잠금해제 🎁</div>
+          <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>
+            {state.streak > 0 ? `${state.streak}일 연속!` : '오늘부터 시작해요'}
+          </div>
+          <div className="tiny">
+            {state.streak >= 14
+              ? '새 옷 잠금해제 완료 🎁'
+              : `+${14 - state.streak}일이면 새 옷 잠금해제 🎁`}
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 3 }}>
-          {[1, 1, 1, 1, 1, 0, 0].map((on, i) => (
+          {Array.from({ length: 7 }, (_, i) => (i < Math.min(state.streak, 7) ? 1 : 0)).map((on, i) => (
             <div
               key={i}
               className="ph-circle"
