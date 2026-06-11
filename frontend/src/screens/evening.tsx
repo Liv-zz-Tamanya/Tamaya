@@ -12,6 +12,19 @@ import {
 
 export const S10_RecapStart = () => {
   const nav = useNav();
+  const { state } = useStore();
+  // 낮 동안의 기록(AI 채팅·데일리체크)을 회고 입력으로 인계 — 없으면 빈상태. (C)경계: 로컬 유지.
+  const d = state.daily;
+  const memos: string[] = [
+    ...state.aiChat
+      .filter((m) => m.role === 'user')
+      .slice(-2)
+      .map((m) => '💬 ' + m.text.trim().slice(0, 18)),
+    ...(d.food.done ? ['🍚 식사 기록'] : []),
+    ...(d.water >= 6 ? [`💧 물 ${d.water}컵`] : []),
+    ...(d.movement.done ? ['🚶 운동'] : []),
+    ...(d.sun.done ? ['☼ 햇볕'] : []),
+  ];
   return (
   <div
     className="phone-inner"
@@ -84,18 +97,26 @@ export const S10_RecapStart = () => {
       >
         <div className="h-section">낮 동안 메모해둔 것</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-          {['🍜 점심 우동', '🚶 산책 안 함', '💧 물 4컵', '😣 회의 후 피곤'].map((t, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div className="check on sq" style={{ width: 16, height: 16 }}>
-                ✓
+          {memos.length > 0 ? (
+            memos.map((t, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div className="check on sq" style={{ width: 16, height: 16 }}>
+                  ✓
+                </div>
+                <span className="body">{t}</span>
               </div>
-              <span className="body">{t}</span>
-            </div>
-          ))}
+            ))
+          ) : (
+            <span className="body" style={{ opacity: 0.85 }}>
+              오늘은 낮 기록이 없어요 — 그래도 천천히 시작해요 🌙
+            </span>
+          )}
         </div>
-        <div className="tiny" style={{ marginTop: 8, color: '#8c4a1f' }}>
-          ↳ 대화에서 이걸 바탕으로 물어볼게
-        </div>
+        {memos.length > 0 && (
+          <div className="tiny" style={{ marginTop: 8, color: '#8c4a1f' }}>
+            ↳ 대화에서 이걸 바탕으로 물어볼게
+          </div>
+        )}
       </div>
 
       <div className="h-label" style={{ marginTop: 18, color: '#d8a777' }}>
@@ -377,13 +398,33 @@ export const S12_MoodFinalize = () => {
 
   const tomorrowLine = userAnswers[4] ?? '회의 종료 후 · 3분 호흡 알람';
 
+  // 실제 답변에서 키워드 추출(로컬 휴리스틱) — 없으면 기본값.
+  const keywords =
+    userAnswers.length > 0
+      ? Array.from(
+          new Set(
+            userAnswers
+              .slice(0, 3)
+              .map((a) => a.trim().split(/[\s,.!?·]+/).filter(Boolean)[0])
+              .filter((w): w is string => Boolean(w)),
+          ),
+        ).slice(0, 3)
+      : ['오늘', '기록'];
+
+  // 분석 로딩 → 결과(성공) 전환 (온디바이스 시뮬, 서버 미전송 — (C)경계).
+  const [analyzing, setAnalyzing] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setAnalyzing(false), 1100);
+    return () => clearTimeout(t);
+  }, []);
+
   const save = () => {
     dispatch({
       type: 'diary/save',
       entry: {
         day: TODAY_DAY,
         moods: ['😣', '😌', '😊'],
-        keywords: userAnswers[0] ? [userAnswers[0].slice(0, 8)] : ['긴 회의', '우동'],
+        keywords,
         body: bodyPreview,
         check: {
           food: state.daily.food.done,
@@ -413,6 +454,20 @@ export const S12_MoodFinalize = () => {
         하루였어 ⌇
       </div>
 
+      {analyzing ? (
+        <div className="hbox r-l" style={{ padding: 22, marginTop: 18, textAlign: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <CatSketch size={78} mood="wink" />
+          </div>
+          <div className="h-section" style={{ marginTop: 10 }}>이음이가 일기를 정리하는 중…</div>
+          <div style={{ display: 'flex', gap: 5, justifyContent: 'center', marginTop: 10 }}>
+            <span className="typing-dot" />
+            <span className="typing-dot" />
+            <span className="typing-dot" />
+          </div>
+        </div>
+      ) : (
+        <>
       <div className="hbox r-l" style={{ padding: 14, marginTop: 14 }}>
         <div className="h-section">이음이가 읽은 오늘 감정</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
@@ -474,9 +529,12 @@ export const S12_MoodFinalize = () => {
           </div>
         </div>
         <div className="tiny" style={{ marginTop: 8 }}>
-          키워드: <span className="chip dashed">긴 회의</span>{' '}
-          <span className="chip dashed">우동</span>{' '}
-          <span className="chip dashed">5분이 없음</span>
+          키워드:{' '}
+          {keywords.map((k, i) => (
+            <span key={i} className="chip dashed" style={{ marginRight: 4 }}>
+              {k}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -529,6 +587,8 @@ export const S12_MoodFinalize = () => {
           </button>
         </div>
       </div>
+        </>
+      )}
     </div>
     {toast && <div className="toast">{toast}</div>}
     <div
@@ -555,10 +615,11 @@ export const S12_MoodFinalize = () => {
       <button
         type="button"
         onClick={save}
+        disabled={analyzing}
         className="btn primary block"
-        style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+        style={{ cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'inherit', opacity: analyzing ? 0.55 : 1 }}
       >
-        저장하기
+        {analyzing ? '정리 중…' : '저장하기'}
       </button>
     </div>
   </div>
