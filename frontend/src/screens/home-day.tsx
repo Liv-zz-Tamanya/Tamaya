@@ -1,7 +1,14 @@
 import { KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { CatSketch, StatusBar, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
-import { DailyKey, simulateAiReply, useStore } from '../lib/store';
+import {
+  DailyKey,
+  MOOD_LABEL,
+  TODAY_DAY,
+  latestEntry,
+  simulateAiReply,
+  useStore,
+} from '../lib/store';
 import { AI_ENABLED, sendAiChat } from '../lib/api';
 
 // 06-09 · Home Day / Home Night / Daily Check / AI Chat
@@ -23,6 +30,16 @@ export const S06_HomeDay = () => {
     ['🚶', '운동', d.movement.done],
     ['☼', '햇볕', d.sun.done],
   ];
+  // 로컬 store 실값 바인딩(서버 미전송, (C)경계 = 온디바이스 유지) + 빈상태.
+  const latest = latestEntry(state.diaries);
+  const cond = latest ? `${latest.moods[0]} ${MOOD_LABEL[latest.moods[0]]}` : '😴 기록 전';
+  const weekCount = state.diaries.filter((e) => e.day > TODAY_DAY - 7 && e.day <= TODAY_DAY).length;
+  const summary: [string, string, string][] = [
+    ['오늘 컨디션', cond, latest ? '최근 회고 기준' : '첫 회고를 해봐요'],
+    ['이번 주', `${weekCount} / 7 일`, weekCount >= 3 ? '목표 달성 ✓' : `+${Math.max(0, 3 - weekCount)}회로 목표`],
+    ['포인트', `◉ ${state.points}`, `보상 ${state.unlockedItems.length}개`],
+    ['키우기', state.unlockedItems.length ? `아이템 ${state.unlockedItems.length}` : '시작하기', '보러가기 ›'],
+  ];
   return (
   <div className="phone-inner">
     <StatusBar mode="day" time="10:42 AM" />
@@ -40,7 +57,7 @@ export const S06_HomeDay = () => {
           <div className="h-title" style={{ marginTop: 2 }}>
             좋은 아침,
             <br />
-            해미 ☀
+            {state.character.name || '친구'} ☀
           </div>
         </div>
         <div
@@ -158,14 +175,7 @@ export const S06_HomeDay = () => {
       <div
         style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}
       >
-        {(
-          [
-            ['오늘 컨디션', '😌 평온', '지난주와 비슷'],
-            ['이번 주', '3 / 7 일', '+1회로 목표'],
-            ['포인트', '◉ 240', '보상 2 개'],
-            ['키우기', '옷장 NEW', '보러가기 ›'],
-          ] as [string, string, string][]
-        ).map(([t, big, sub], i) => (
+        {summary.map(([t, big, sub], i) => (
           <div
             key={i}
             className={'hbox r-' + (i % 2 ? 'l' : 'r')}
