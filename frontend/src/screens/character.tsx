@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { CatSketch, ImgPh, StatusBar, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
+import { MOOD_LABEL, TODAY_DAY, latestEntry, useStore } from '../lib/store';
 
 // 18-20 · Cat Room / Inventory · Wardrobe / Weekly Report
 
 export const S18_CatRoom = () => {
   const nav = useNav();
+  const { state } = useStore();
   const [toast, setToast] = useState<string | null>(null);
+  // 친밀도=회고 연속일 비례(읽기) · 배부름/활력=먹이/놀이로 반응(세션 인터랙션). (C)경계 로컬.
+  const intimacy = Math.min(100, 20 + state.streak * 6);
+  const [satiety, setSatiety] = useState(55);
+  const [vitality, setVitality] = useState(65);
   const flash = (m: string) => {
     setToast(m);
     setTimeout(() => setToast(null), 1400);
@@ -166,14 +172,14 @@ export const S18_CatRoom = () => {
       }}
     >
       <div className="chip" style={{ background: '#f5e6cf', color: '#3a2414' }}>
-        이음이 · Lv.3
+        {state.character.name || '이음이'} · Lv.{state.level}
       </div>
       <div style={{ display: 'flex', gap: 6 }}>
         <span className="chip" style={{ background: '#f5e6cf', color: '#3a2414' }}>
-          ◉ 240
+          ◉ {state.points}
         </span>
         <span className="chip" style={{ background: '#f5e6cf', color: '#3a2414' }}>
-          ♡ 8/10
+          ♡ {Math.round(intimacy / 10)}/10
         </span>
       </div>
     </div>
@@ -187,9 +193,9 @@ export const S18_CatRoom = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
           {(
             [
-              ['♡ 친밀도', '80%', '#8c4a1f'],
-              ['◍ 배부름', '55%', '#c9a266'],
-              ['☼ 활력', '65%', '#7a5634'],
+              ['♡ 친밀도', `${intimacy}%`, '#8c4a1f'],
+              ['◍ 배부름', `${satiety}%`, '#c9a266'],
+              ['☼ 활력', `${vitality}%`, '#7a5634'],
             ] as [string, string, string][]
           ).map(([n, p, c], i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -215,9 +221,9 @@ export const S18_CatRoom = () => {
       >
         {(
           [
-            ['🍖', '먹이주기', () => flash('냠냠 🐟 배부름이 올랐어요')],
+            ['🍖', '먹이주기', () => { setSatiety((s) => Math.min(100, s + 15)); flash('냠냠 🐟 배부름 +15'); }],
             ['👕', '옷장', () => nav.go('inventory')],
-            ['◐', '놀이', () => flash('꺄르륵! 활력이 올랐어요 ✦')],
+            ['◐', '놀이', () => { setVitality((v) => Math.min(100, v + 10)); flash('꺄르륵! 활력 +10 ✦'); }],
             ['◰', '방꾸미기', () => nav.go('inventory')],
           ] as [string, string, () => void][]
         ).map(([ic, t, onAct], i) => (
@@ -255,6 +261,13 @@ export const S18_CatRoom = () => {
 
 export const S19_Inventory = () => {
   const nav = useNav();
+  const { state, dispatch } = useStore();
+  const [sel, setSel] = useState<string | null>(state.equippedItem);
+  const [toast, setToast] = useState<string | null>(null);
+  const flash = (m: string) => {
+    setToast(m);
+    setTimeout(() => setToast(null), 1400);
+  };
   return (
   <div className="phone-inner">
     <StatusBar mode="day" time="11:30 AM" />
@@ -268,7 +281,7 @@ export const S19_Inventory = () => {
         </span>
         <div className="h-title">인벤토리 / 옷장</div>
       </div>
-      <div className="tiny">모은 아이템 · 24개 · 240 포인트</div>
+      <div className="tiny">보유 아이템 {state.unlockedItems.length}개 · {state.points} 포인트</div>
 
       <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
         {['전체', '👕 옷', '🎩 모자', '🍖 먹이', '◰ 방', '🎁 보상'].map((t, i) => (
@@ -295,15 +308,19 @@ export const S19_Inventory = () => {
               ['🥽 안경', '30일', false, false],
               ['👔 셔츠', '월간 리포트', false, false],
             ] as [string, string, boolean, boolean][]
-          ).map(([n, sub, have, eq], i) => (
+          ).map(([n, sub, have], i) => (
             <div
               key={i}
+              onClick={have ? () => setSel(n) : undefined}
               className="hbox dashed"
               style={{
                 padding: 10,
                 position: 'relative',
                 background: have ? '#fff' : 'rgba(0,0,0,0.04)',
                 opacity: have ? 1 : 0.6,
+                cursor: have ? 'pointer' : 'default',
+                outline: sel === n ? '2px solid #8c4a1f' : 'none',
+                outlineOffset: 1,
               }}
             >
               <ImgPh h={64} label={have ? '아이템' : '잠금'} />
@@ -318,7 +335,7 @@ export const S19_Inventory = () => {
                 {n}
               </div>
               <div className="tiny">{sub}</div>
-              {eq && (
+              {state.equippedItem === n && (
                 <span
                   className="chip accent"
                   style={{ position: 'absolute', top: -8, right: -8, fontSize: 10 }}
@@ -372,13 +389,21 @@ export const S19_Inventory = () => {
     <div style={{ position: 'absolute', bottom: 78, left: 18, right: 18 }}>
       <button
         type="button"
-        onClick={() => nav.back()}
+        onClick={() => {
+          if (sel) {
+            dispatch({ type: 'item/equip', item: sel });
+            flash(`${sel} 입었어요 ✓`);
+          } else {
+            flash('아이템을 먼저 선택해 주세요');
+          }
+        }}
         className="btn primary block"
         style={{ cursor: 'pointer', fontFamily: 'inherit' }}
       >
-        선택 입히기
+        {sel ? `${sel} 입히기` : '선택 입히기'}
       </button>
     </div>
+    {toast && <div className="toast">{toast}</div>}
     <TabBar active="cat" />
   </div>
   );
@@ -386,6 +411,16 @@ export const S19_Inventory = () => {
 
 export const S20_Report = () => {
   const nav = useNav();
+  const { state } = useStore();
+  const [toast, setToast] = useState<string | null>(null);
+  const flash = (m: string) => {
+    setToast(m);
+    setTimeout(() => setToast(null), 1400);
+  };
+  const weekCount = state.diaries.filter((e) => e.day > TODAY_DAY - 7 && e.day <= TODAY_DAY).length;
+  const recent = latestEntry(state.diaries);
+  const moodCell = recent ? recent.moods[0] : '🌙';
+  const moodLabel = recent ? MOOD_LABEL[recent.moods[0]] : '기록 전';
   return (
   <div className="phone-inner">
     <StatusBar mode="day" time="9:08 AM" />
@@ -433,12 +468,12 @@ export const S20_Report = () => {
       >
         {(
           [
-            ['일기', '6', '회'],
+            ['일기', `${weekCount}`, '회'],
             ['평균 수면', '6.4', '시간'],
-            ['이번 주 감정', '😌', '평온'],
-            ['포인트', '+ 280', '◉'],
-            ['스트릭', '12', '일'],
-            ['새 아이템', '2', '개'],
+            ['이번 주 감정', moodCell, moodLabel],
+            ['포인트', `${state.points}`, '◉'],
+            ['스트릭', `${state.streak}`, '일'],
+            ['새 아이템', `${state.unlockedItems.length}`, '개'],
           ] as [string, string, string][]
         ).map(([t, n, u], i) => (
           <div
@@ -475,12 +510,14 @@ export const S20_Report = () => {
 
       <div
         className="hbox night r-l"
+        onClick={() => flash('🖼 리포트 카드 이미지 저장은 곧 지원돼요')}
         style={{
           padding: 12,
           marginTop: 12,
           display: 'flex',
           alignItems: 'center',
           gap: 10,
+          cursor: 'pointer',
         }}
       >
         <div className="ph-circle" style={{ width: 36, height: 36, background: '#fff' }}>
@@ -497,6 +534,7 @@ export const S20_Report = () => {
         <span style={{ fontFamily: 'Caveat', fontSize: 22, color: '#fff' }}>›</span>
       </div>
     </div>
+    {toast && <div className="toast">{toast}</div>}
     <TabBar active="ins" />
   </div>
   );
