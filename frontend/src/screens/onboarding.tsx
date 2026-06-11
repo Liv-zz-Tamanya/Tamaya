@@ -359,6 +359,7 @@ export const S04_CreateCat = () => {
 
 export const S05_FirstMeet = () => {
   const nav = useNav();
+  const { state } = useStore();
   return (
   <div
     className="phone-inner"
@@ -416,7 +417,7 @@ export const S05_FirstMeet = () => {
         }}
       >
         <div className="handwriting" style={{ fontSize: 20 }}>
-          "안녕. 난 너의 밤 친구야.
+          "안녕. 난 {state.character.name || '이음이'}, 너의 밤 친구야.
           <br />
           낮엔 자고 — 밤이 되면 같이 오늘을 정리해."
         </div>

@@ -473,6 +473,13 @@ export const S08_DailyCheck = () => {
         {doneCount} / 5 완료 · 오늘 누적 포인트 {state.points} ◉
       </div>
 
+      {doneCount === 5 && (
+        <div className="hbox accent r-r" style={{ padding: 12, marginTop: 10, textAlign: 'center' }}>
+          <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>🎉 오늘 5가지 모두 완료!</div>
+          <div className="tiny" style={{ marginTop: 2 }}>꾸준함이 이음이를 키워요</div>
+        </div>
+      )}
+
       {/* 식사 */}
       <div className="hbox r-l" style={{ padding: 14, marginTop: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
