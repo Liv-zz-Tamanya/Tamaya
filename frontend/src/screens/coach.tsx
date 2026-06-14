@@ -84,7 +84,7 @@ export const S23_Coach = () => {
           {msgs.map((m, i) =>
             m.role === 'bot' ? (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-                <div className="ph-circle" style={{ width: 28, height: 28, fontSize: 13, flex: 'none' }}>🐱</div>
+                <div className="ph-circle" style={{ width: 28, height: 28, flex: 'none', overflow: 'hidden' }}><img src="/character/head-glasses.png" alt="건강냥" style={{ width: '100%', height: '100%', objectFit: 'contain' }} draggable={false} /></div>
                 <div className="hbox" style={{ padding: '10px 12px', maxWidth: 280 }}>
                   <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
                 </div>
@@ -99,7 +99,7 @@ export const S23_Coach = () => {
           )}
           {typing && (
             <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-              <div className="ph-circle" style={{ width: 28, height: 28, fontSize: 13, flex: 'none' }}>🐱</div>
+              <div className="ph-circle" style={{ width: 28, height: 28, flex: 'none', overflow: 'hidden' }}><img src="/character/head-glasses.png" alt="건강냥" style={{ width: '100%', height: '100%', objectFit: 'contain' }} draggable={false} /></div>
               <div className="hbox" style={{ padding: '12px 16px' }}>
                 <span className="typing-dot" />
                 <span className="typing-dot" />

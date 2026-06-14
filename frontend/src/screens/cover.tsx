@@ -1,4 +1,4 @@
-import { CatSketch, HandArrow } from '../components/primitives';
+import { CatSketch, HandArrow, MoodFace } from '../components/primitives';
 
 // 00 · Cover / System / Flow — Foundation cards (900×720)
 
@@ -137,7 +137,7 @@ export const C01_System = () => (
           <span className="chip dashed">dashed</span>
           <div className="check on">✓</div>
           <div className="check sq">○</div>
-          <div className="mood-blob">😌</div>
+          <div className="mood-blob"><MoodFace mood="😌" size={26} /></div>
         </div>
         <div className="hbox r-l" style={{ padding: 10, marginTop: 8 }}>
           박스 (살짝 기운)

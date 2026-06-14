@@ -511,7 +511,7 @@ export const S08_DailyCheck = () => {
       {/* 수면 */}
       <div className="hbox r-r" style={{ padding: 14, marginTop: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="ph-circle" style={{ width: 36, height: 36 }}>😴</div>
+          <div className="ph-circle" style={{ width: 36, height: 36, overflow: 'hidden' }}><img src="/character/sleepy.png" alt="자는 중" style={{ width: '100%', height: '100%', objectFit: 'contain' }} draggable={false} /></div>
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>어젯밤 수면</div>
             <div className="tiny">

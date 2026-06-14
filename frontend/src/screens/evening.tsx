@@ -1,5 +1,5 @@
 import { KeyboardEvent, useEffect, useRef, useState } from 'react';
-import { CatSketch, ImgPh, StatusBar } from '../components/primitives';
+import { CatSketch, ImgPh, MoodFace, StatusBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import {
   CHAT_DIARY_INTRO,
@@ -502,7 +502,7 @@ export const S12_MoodFinalize = () => {
                 justifyContent: 'center',
               }}
             >
-              <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>😣</span>
+              <MoodFace mood="😣" size={24} />
             </div>
           </div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StatusBar, TabBar } from '../components/primitives';
+import { MoodFace, StatusBar, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import {
   Period,
@@ -273,7 +273,7 @@ export const S14_Calendar = () => {
                   fontFamily: 'inherit',
                 }}
               >
-                {e}
+                <MoodFace mood={e} size={30} />
               </button>
             ))}
           </div>
