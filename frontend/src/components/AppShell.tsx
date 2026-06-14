@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useMemo, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { NavApi, NavContext, Route } from '../lib/router';
 import { StoreProvider } from '../lib/store';
 import { S21_Login } from '../screens/login';
@@ -130,11 +130,59 @@ export const AppShell = ({ onExitToDesign }: { onExitToDesign: () => void }) => 
   // Public helper for the header dropdown — jump to any screen, fresh history.
   const jump = (r: Route) => reset(r);
 
+  // ── responsive: real-phone fullscreen device mode ──────────────────────
+  // 좁은 뷰포트(실제 폰)에선 미리보기 크롬을 제거하고, 375×812 디자인을
+  // 뷰포트에 contain-scale 해 풀스크린 앱처럼 보이게 한다. 데스크톱은 미리보기 유지.
+  const [vp, setVp] = useState(() => ({
+    w: typeof window !== 'undefined' ? window.innerWidth : 1024,
+    h: typeof window !== 'undefined' ? window.innerHeight : 768,
+  }));
+  useEffect(() => {
+    const on = () => setVp({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener('resize', on);
+    window.addEventListener('orientationchange', on);
+    return () => {
+      window.removeEventListener('resize', on);
+      window.removeEventListener('orientationchange', on);
+    };
+  }, []);
+  const device = vp.w <= 700;
+  const scale = device ? Math.min(vp.w / 375, vp.h / 812) : 1;
+
   // Hook the time-of-day decision into the home tab — passed indirectly via
   // a default behavior, but the TabBar's onHome prop is already wired per
   // screen. We only need to ensure a sane default landing when /home picked.
 
-  // ── chrome / layout ────────────────────────────────────────────────
+  // ── real-phone fullscreen device mode ──────────────────────────────
+  if (device) {
+    return (
+      <StoreProvider>
+        <NavContext.Provider value={api}>
+          <div className="device-shell">
+            <div
+              className="phone sketch device-phone"
+              style={{
+                transform: `translate(-50%, -50%) scale(${scale})`,
+                transformOrigin: 'center center',
+              }}
+            >
+              {SCREENS[displayRoute]()}
+            </div>
+            <DeviceControls
+              current={displayRoute}
+              mode={mode}
+              night={night}
+              onJump={jump}
+              onMode={setMode}
+              onExitToDesign={onExitToDesign}
+            />
+          </div>
+        </NavContext.Provider>
+      </StoreProvider>
+    );
+  }
+
+  // ── chrome / layout (desktop preview) ──────────────────────────────
   return (
     <StoreProvider>
       <NavContext.Provider value={api}>
@@ -172,6 +220,74 @@ export const AppShell = ({ onExitToDesign }: { onExitToDesign: () => void }) => 
         </div>
       </NavContext.Provider>
     </StoreProvider>
+  );
+};
+
+// Compact floating control for real-phone device mode — review aid only.
+// 평상시엔 우상단 작은 ⋯ 버튼; 누르면 화면 점프 + 시간대 + 캔버스 복귀.
+const DeviceControls = ({
+  current,
+  mode,
+  night,
+  onJump,
+  onMode,
+  onExitToDesign,
+}: {
+  current: Route;
+  mode: Mode;
+  night: boolean;
+  onJump: (r: Route) => void;
+  onMode: (m: Mode) => void;
+  onExitToDesign: () => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        className="device-fab"
+        aria-label="리뷰 메뉴"
+        onClick={() => setOpen((o) => !o)}
+      >
+        {open ? '✕' : '⋯'}
+      </button>
+      {open && (
+        <div className="device-sheet">
+          <div className="device-sheet-row">
+            <span>시간대</span>
+            {(['auto', 'day', 'night'] as Mode[]).map((m) => (
+              <button
+                key={m}
+                type="button"
+                className={'ds-chip' + (mode === m ? ' on' : '')}
+                onClick={() => onMode(m)}
+              >
+                {m}
+                {m === 'auto' ? ` (${night ? '밤' : '낮'})` : ''}
+              </button>
+            ))}
+          </div>
+          <div className="device-sheet-list">
+            {(Object.entries(ROUTE_LABEL) as [Route, string][]).map(([r, label]) => (
+              <button
+                key={r}
+                type="button"
+                className={'ds-item' + (r === current ? ' on' : '')}
+                onClick={() => {
+                  onJump(r);
+                  setOpen(false);
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="ds-exit" onClick={onExitToDesign}>
+            ⤴ 와이어프레임 캔버스
+          </button>
+        </div>
+      )}
+    </>
   );
 };
 
