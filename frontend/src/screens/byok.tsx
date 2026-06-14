@@ -69,7 +69,7 @@ export const S25_Byok = () => {
       <StatusBar mode="day" time="10:05 AM" />
       <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontFamily: 'Caveat', fontSize: 22, cursor: 'pointer' }} onClick={() => nav.back()}>‹</span>
+          <span style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }} onClick={() => nav.back()}>‹</span>
           <div className="h-title">CLOVA 키 (BYOK)</div>
         </div>
         <div className="tiny" style={{ marginTop: 2, marginBottom: 14 }}>

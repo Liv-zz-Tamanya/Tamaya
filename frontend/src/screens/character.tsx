@@ -56,7 +56,7 @@ export const S18_CatRoom = () => {
         ].map(([x, y], i) => (
           <circle key={i} cx={x} cy={y} r="1.5" fill="#f5e6cf" />
         ))}
-        <text x="40" y="160" fontFamily="Patrick Hand" fontSize="10" fill="#d8a777">
+        <text x="40" y="160" fontFamily="Pretendard" fontSize="10" fill="#d8a777">
           창문 (밤)
         </text>
 
@@ -77,7 +77,7 @@ export const S18_CatRoom = () => {
           stroke="#f5e6cf"
           strokeWidth="1.5"
         />
-        <text x="200" y="138" fontFamily="Patrick Hand" fontSize="10" fill="#d8a777">
+        <text x="200" y="138" fontFamily="Pretendard" fontSize="10" fill="#d8a777">
           선반 · 모은 아이템
         </text>
 
@@ -109,7 +109,7 @@ export const S18_CatRoom = () => {
           strokeWidth="1.5"
           fill="none"
         />
-        <text x="50" y="300" fontFamily="Patrick Hand" fontSize="10" fill="#d8a777">
+        <text x="50" y="300" fontFamily="Pretendard" fontSize="10" fill="#d8a777">
           밥그릇
         </text>
 
@@ -123,7 +123,7 @@ export const S18_CatRoom = () => {
           stroke="#3a2414"
           strokeWidth="2"
         />
-        <text x="270" y="310" fontFamily="Patrick Hand" fontSize="10" fill="#d8a777">
+        <text x="270" y="310" fontFamily="Pretendard" fontSize="10" fill="#d8a777">
           방석
         </text>
       </svg>
@@ -199,7 +199,7 @@ export const S18_CatRoom = () => {
             ] as [string, string, string][]
           ).map(([n, p, c], i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: 'Patrick Hand', fontSize: 12, width: 70 }}>{n}</span>
+              <span style={{ fontFamily: 'Pretendard', fontSize: 12, width: 70 }}>{n}</span>
               <div className="bar" style={{ flex: 1 }}>
                 <i style={{ width: p, background: c }} />
               </div>
@@ -274,7 +274,7 @@ export const S19_Inventory = () => {
     <div className="phone-scroll" style={{ padding: '46px 18px 140px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
-          style={{ fontFamily: 'Caveat', fontSize: 22, cursor: 'pointer' }}
+          style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
           onClick={() => nav.back()}
         >
           ‹
@@ -326,7 +326,7 @@ export const S19_Inventory = () => {
               <ImgPh h={64} label={have ? '아이템' : '잠금'} />
               <div
                 style={{
-                  fontFamily: 'Patrick Hand',
+                  fontFamily: 'Pretendard',
                   fontWeight: 700,
                   fontSize: 13,
                   marginTop: 6,
@@ -379,7 +379,7 @@ export const S19_Inventory = () => {
           >
             <div style={{ fontSize: 22 }}>{n.split(' ')[0]}</div>
             <div className="tiny">{n.split(' ').slice(1).join(' ')}</div>
-            <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700, fontSize: 13 }}>
+            <div style={{ fontFamily: 'Pretendard', fontWeight: 700, fontSize: 13 }}>
               × {c}
             </div>
           </div>
@@ -427,7 +427,7 @@ export const S20_Report = () => {
     <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
-          style={{ fontFamily: 'Caveat', fontSize: 22, cursor: 'pointer' }}
+          style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
           onClick={() => nav.back()}
         >
           ‹
@@ -484,7 +484,7 @@ export const S20_Report = () => {
             <div className="tiny">{t}</div>
             <div
               style={{
-                fontFamily: 'Caveat',
+                fontFamily: 'Pretendard',
                 fontWeight: 700,
                 fontSize: 26,
                 marginTop: 2,
@@ -524,14 +524,14 @@ export const S20_Report = () => {
           ◇
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700, color: '#fff' }}>
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700, color: '#fff' }}>
             리포트 카드 저장
           </div>
           <div className="tiny" style={{ color: '#d8a777' }}>
             나만 보기 / 이미지로 내보내기
           </div>
         </div>
-        <span style={{ fontFamily: 'Caveat', fontSize: 22, color: '#fff' }}>›</span>
+        <span style={{ fontFamily: 'Pretendard', fontSize: 22, color: '#fff' }}>›</span>
       </div>
     </div>
     {toast && <div className="toast">{toast}</div>}

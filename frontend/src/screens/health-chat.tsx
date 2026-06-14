@@ -64,7 +64,7 @@ export const S26_HealthChat = () => {
       <div ref={scrollRef} className="phone-scroll" style={{ padding: '46px 14px 140px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span
-            style={{ fontFamily: 'Caveat', fontSize: 22, cursor: 'pointer' }}
+            style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
             onClick={() => nav.back()}
           >
             ‹

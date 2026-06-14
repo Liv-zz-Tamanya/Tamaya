@@ -1,11 +1,12 @@
 /* Tamanya Wireframes — handsketched low-fi system */
 
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;700&family=Patrick+Hand&family=Architects+Daughter&family=Gaegu:wght@400;700&display=swap');
+/* Pretendard 는 index.html 에서 로드(Design System 정본 폰트). */
 
 /* Coffee Palette 색상 토큰은 tokens.css(SSOT)로 이관됨 — 여기서 재정의 금지.
-   var(--paper) 등은 tokens.css :root 에서 전역 해석된다. */
+   var(--paper) 등은 tokens.css :root 에서 전역 해석된다.
+   폰트는 2026-06-14 Pretendard 단일로 통일(var(--font-body)=Pretendard). */
 
-html, body { margin: 0; font-family: 'Patrick Hand', 'Gaegu', sans-serif; color: var(--ink); }
+html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif; color: var(--ink); }
 
 /* Phone shell */
 .phone {
@@ -16,7 +17,7 @@ html, body { margin: 0; font-family: 'Patrick Hand', 'Gaegu', sans-serif; color:
   border: 2px solid var(--ink);
   border-radius: 32px;
   overflow: hidden;
-  font-family: 'Patrick Hand', 'Gaegu', sans-serif;
+  font-family: 'Pretendard', 'Pretendard', sans-serif;
   box-shadow: 4px 6px 0 rgba(0,0,0,0.08);
 }
 .phone-inner { position: absolute; inset: 0; }
@@ -26,7 +27,7 @@ html, body { margin: 0; font-family: 'Patrick Hand', 'Gaegu', sans-serif; color:
   position: absolute; top: 0; left: 0; right: 0; height: 36px;
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 18px;
-  font-family: 'Patrick Hand'; font-size: 13px;
+  font-family: 'Pretendard'; font-size: 13px;
   color: var(--ink);
   border-bottom: 1.5px dashed var(--line);
 }
@@ -41,7 +42,7 @@ html, body { margin: 0; font-family: 'Patrick Hand', 'Gaegu', sans-serif; color:
   display: grid; grid-template-columns: repeat(5, 1fr);
 }
 .tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  font-family: 'Patrick Hand'; font-size: 11px; color: var(--pencil); position: relative; }
+  font-family: 'Pretendard'; font-size: 11px; color: var(--pencil); position: relative; }
 .tab .tab-icon { width: 26px; height: 26px; border: 1.5px solid var(--ink); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--paper); }
 .tab.active { color: var(--ink); font-weight: 700; }
 .tab.active .tab-icon { background: var(--accent); color: #fff; border-color: var(--ink); }
@@ -80,13 +81,13 @@ html, body { margin: 0; font-family: 'Patrick Hand', 'Gaegu', sans-serif; color:
 .r-rr { transform: rotate(0.7deg); }
 
 /* Typography */
-.h-display { font-family: 'Caveat'; font-weight: 700; font-size: 32px; line-height: 1; letter-spacing: -0.5px; }
-.h-title { font-family: 'Caveat'; font-weight: 700; font-size: 24px; line-height: 1.1; }
-.h-section { font-family: 'Patrick Hand'; font-weight: 400; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; color: var(--pencil); }
-.h-label { font-family: 'Patrick Hand'; font-size: 13px; color: var(--pencil); }
-.body { font-family: 'Gaegu'; font-size: 14px; color: var(--ink); }
-.tiny { font-family: 'Patrick Hand'; font-size: 11px; color: var(--muted); letter-spacing: 0.4px; }
-.handwriting { font-family: 'Caveat'; font-size: 18px; color: var(--ink-soft); }
+.h-display { font-family: 'Pretendard'; font-weight: 700; font-size: 32px; line-height: 1; letter-spacing: -0.5px; }
+.h-title { font-family: 'Pretendard'; font-weight: 700; font-size: 24px; line-height: 1.1; }
+.h-section { font-family: 'Pretendard'; font-weight: 400; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; color: var(--pencil); }
+.h-label { font-family: 'Pretendard'; font-size: 13px; color: var(--pencil); }
+.body { font-family: 'Pretendard'; font-size: 14px; color: var(--ink); }
+.tiny { font-family: 'Pretendard'; font-size: 11px; color: var(--muted); letter-spacing: 0.4px; }
+.handwriting { font-family: 'Pretendard'; font-size: 18px; color: var(--ink-soft); }
 
 /* Placeholder shapes */
 .ph-circle { border: 1.5px solid var(--ink); border-radius: 50%; background: var(--paper-2); display: flex; align-items: center; justify-content: center; }
@@ -95,7 +96,7 @@ html, body { margin: 0; font-family: 'Patrick Hand', 'Gaegu', sans-serif; color:
 .ph-stripe-dense { background: repeating-linear-gradient(135deg, transparent, transparent 3px, rgba(26,26,26,0.12) 3px, rgba(26,26,26,0.12) 4px); border: 1.5px solid var(--ink); }
 
 /* Chips */
-.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; font-family: 'Patrick Hand'; font-size: 12px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; font-family: 'Pretendard'; font-size: 12px; }
 .chip.solid { background: var(--ink); color: #fff; }
 .chip.accent { background: var(--accent); color: #fff; border-color: var(--ink); }
 .chip.dashed { border-style: dashed; background: transparent; }
@@ -104,7 +105,7 @@ html, body { margin: 0; font-family: 'Patrick Hand', 'Gaegu', sans-serif; color:
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 12px 18px; border: 1.5px solid var(--ink); border-radius: 12px;
-  background: var(--paper); font-family: 'Patrick Hand'; font-size: 14px;
+  background: var(--paper); font-family: 'Pretendard'; font-size: 14px;
   box-shadow: 2px 3px 0 var(--ink);
 }
 .btn.primary { background: var(--accent); color: #fff; }
@@ -118,10 +119,10 @@ html, body { margin: 0; font-family: 'Patrick Hand', 'Gaegu', sans-serif; color:
 .check.sq { border-radius: 4px; }
 
 /* Sticky note */
-.sticky { background: var(--cream); border: 1.5px solid var(--ink); padding: 8px 10px; border-radius: 4px; font-family: 'Patrick Hand'; font-size: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08); transform: rotate(-1deg); }
+.sticky { background: var(--cream); border: 1.5px solid var(--ink); padding: 8px 10px; border-radius: 4px; font-family: 'Pretendard'; font-size: 12px; box-shadow: 2px 2px 0 rgba(0,0,0,0.08); transform: rotate(-1deg); }
 
 /* Annotation */
-.anno { position: absolute; font-family: 'Caveat'; font-weight: 500; font-size: 16px; color: var(--accent); display: flex; gap: 6px; align-items: flex-start; }
+.anno { position: absolute; font-family: 'Pretendard'; font-weight: 500; font-size: 16px; color: var(--accent); display: flex; gap: 6px; align-items: flex-start; }
 .anno svg { flex: none; }
 
 /* Star */
@@ -134,21 +135,21 @@ html, body { margin: 0; font-family: 'Patrick Hand', 'Gaegu', sans-serif; color:
 .cat-spot { display: inline-flex; align-items: center; justify-content: center; }
 
 /* Flow arrow */
-.flow-arrow { font-family: 'Caveat'; font-size: 24px; color: var(--accent); display: flex; align-items: center; gap: 4px; }
+.flow-arrow { font-family: 'Pretendard'; font-size: 24px; color: var(--accent); display: flex; align-items: center; gap: 4px; }
 
 /* Section meta on canvas */
-.meta-card { background: var(--cream); border: 1.5px solid var(--ink); padding: 10px 14px; border-radius: 6px; font-family: 'Patrick Hand'; font-size: 12px; box-shadow: 3px 3px 0 rgba(0,0,0,0.08); max-width: 280px; }
-.meta-card b { font-family: 'Caveat'; font-weight: 700; font-size: 16px; display: block; margin-bottom: 4px; }
+.meta-card { background: var(--cream); border: 1.5px solid var(--ink); padding: 10px 14px; border-radius: 6px; font-family: 'Pretendard'; font-size: 12px; box-shadow: 3px 3px 0 rgba(0,0,0,0.08); max-width: 280px; }
+.meta-card b { font-family: 'Pretendard'; font-weight: 700; font-size: 16px; display: block; margin-bottom: 4px; }
 
 /* Bar / progress */
 .bar { height: 8px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 999px; overflow: hidden; position: relative; }
 .bar > i { display: block; height: 100%; background: var(--accent); border-right: 1.5px solid var(--ink); }
 
 /* Mood blobs */
-.mood-blob { width: 28px; height: 28px; border: 1.5px solid var(--ink); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: 'Caveat'; font-size: 14px; background: #fff; }
+.mood-blob { width: 28px; height: 28px; border: 1.5px solid var(--ink); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: 'Pretendard'; font-size: 14px; background: #fff; }
 
 /* Calendar cell */
-.cal-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: 'Patrick Hand'; font-size: 13px; position: relative; }
+.cal-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: 'Pretendard'; font-size: 13px; position: relative; }
 .cal-cell.has::after { content: ''; position: absolute; bottom: 4px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
 .cal-cell.today { border: 1.5px solid var(--ink); border-radius: 50%; background: var(--ink); color: #fbf8f3; }
 .cal-cell.off { color: var(--muted); }
@@ -156,7 +157,7 @@ html, body { margin: 0; font-family: 'Patrick Hand', 'Gaegu', sans-serif; color:
 /* Design note — second line in artboard caption (replaces in-page Callouts) */
 .note {
   margin-top: 6px;
-  font-family: 'Caveat', 'Patrick Hand', sans-serif;
+  font-family: 'Pretendard', 'Pretendard', sans-serif;
   font-size: 15px;
   line-height: 1.35;
   color: var(--accent);
@@ -276,7 +277,7 @@ html, body { background: #f5f1e8; }
   border: 1.5px solid var(--ink, #3a2414);
   border-radius: 999px;
   padding: 12px 16px;
-  font-family: 'Patrick Hand', 'Gaegu', sans-serif;
+  font-family: 'Pretendard', 'Pretendard', sans-serif;
   font-size: 14px;
   color: var(--ink, #3a2414);
   outline: none;
@@ -290,7 +291,7 @@ html, body { background: #f5f1e8; }
   position: absolute; left: 24px; right: 24px; bottom: 84px;
   background: var(--ink, #3a2414); color: var(--paper, #f5e6cf);
   border-radius: 12px; padding: 10px 14px;
-  font-family: 'Patrick Hand'; font-size: 13px;
+  font-family: 'Pretendard'; font-size: 13px;
   text-align: center;
   box-shadow: 0 4px 16px rgba(0,0,0,0.18);
   animation: toastIn 200ms ease-out;

@@ -52,7 +52,7 @@ export const S24_Wellbeing = () => {
       <StatusBar mode="day" time="9:30 AM" />
       <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontFamily: 'Caveat', fontSize: 22, cursor: 'pointer' }} onClick={() => nav.back()}>‹</span>
+          <span style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }} onClick={() => nav.back()}>‹</span>
           <div className="h-title">웰빙 인사이트</div>
         </div>
         <div className="tiny" style={{ marginTop: 2, marginBottom: 14 }}>{week} · 이번 주 웰빙 스코어</div>
@@ -90,7 +90,7 @@ export const S24_Wellbeing = () => {
           <>
             <div className="hbox accent" style={{ padding: 18, textAlign: 'center' }}>
               <div className="tiny">종합 웰빙 스코어</div>
-              <div style={{ fontFamily: 'Caveat', fontSize: 52, fontWeight: 700, lineHeight: 1.1, color: 'var(--accent)' }}>
+              <div style={{ fontFamily: 'Pretendard', fontSize: 52, fontWeight: 700, lineHeight: 1.1, color: 'var(--accent)' }}>
                 {data.report.score}
                 <span style={{ fontSize: 22, color: 'var(--pencil)' }}> / 100</span>
               </div>

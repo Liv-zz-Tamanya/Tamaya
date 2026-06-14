@@ -1,5 +1,5 @@
 import { KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { CatSketch, StatusBar, TabBar } from '../components/primitives';
+import { CatSketch, MoodFace, StatusBar, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import {
   DailyKey,
@@ -162,7 +162,7 @@ export const S06_HomeDay = () => {
           ✦
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
             AI 코칭에게 물어봐요
           </div>
           <div className="tiny">"점심 뭐 먹지?" "잠이 안 와요"</div>
@@ -295,9 +295,9 @@ export const S07_HomeNight = () => {
           gap: 12,
         }}
       >
-        <div style={{ fontFamily: 'Caveat', fontSize: 42, color: '#8c4a1f' }}>🔥{state.streak}</div>
+        <div style={{ fontFamily: 'Pretendard', fontSize: 42, color: '#8c4a1f' }}>🔥{state.streak}</div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
             {state.streak > 0 ? `${state.streak}일 연속!` : '오늘부터 시작해요'}
           </div>
           <div className="tiny">
@@ -343,10 +343,10 @@ export const S07_HomeNight = () => {
                 width: 38,
                 height: 38,
                 background: on ? '#ead0a6' : '#fff',
-                fontSize: 18,
+                opacity: on ? 1 : 0.4,
               }}
             >
-              {e}
+              <MoodFace mood={e} size={26} />
             </div>
           ))}
         </div>
@@ -378,15 +378,15 @@ export const S07_HomeNight = () => {
           >
             <div
               className="ph-square"
-              style={{ width: 36, height: 36, fontFamily: 'Patrick Hand', fontSize: 16 }}
+              style={{ width: 36, height: 36, fontFamily: 'Pretendard', fontSize: 16 }}
             >
               {ic}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>{t}</div>
+              <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>{t}</div>
               <div className="tiny">{s}</div>
             </div>
-            <span style={{ fontFamily: 'Caveat', fontSize: 22 }}>›</span>
+            <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>›</span>
           </div>
         ))}
       </div>
@@ -457,7 +457,7 @@ export const S08_DailyCheck = () => {
     <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <span
-          style={{ fontFamily: 'Caveat', fontSize: 22, cursor: 'pointer' }}
+          style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
           onClick={() => nav.back()}
         >
           ‹
@@ -475,7 +475,7 @@ export const S08_DailyCheck = () => {
 
       {doneCount === 5 && (
         <div className="hbox accent r-r" style={{ padding: 12, marginTop: 10, textAlign: 'center' }}>
-          <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>🎉 오늘 5가지 모두 완료!</div>
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>🎉 오늘 5가지 모두 완료!</div>
           <div className="tiny" style={{ marginTop: 2 }}>꾸준함이 이음이를 키워요</div>
         </div>
       )}
@@ -485,7 +485,7 @@ export const S08_DailyCheck = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div className="ph-circle" style={{ width: 36, height: 36 }}>🍚</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>오늘 식사</div>
+            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>오늘 식사</div>
             <div className="tiny">아침 / 점심 / 저녁 — 탭해서 토글</div>
           </div>
           <div className={'check ' + (d.food.done ? 'on' : '')}>{d.food.done ? '✓' : '○'}</div>
@@ -513,7 +513,7 @@ export const S08_DailyCheck = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div className="ph-circle" style={{ width: 36, height: 36 }}>😴</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>어젯밤 수면</div>
+            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>어젯밤 수면</div>
             <div className="tiny">
               {d.sleep.quality ? `선택: ${d.sleep.quality}` : '취침 1:20 → 기상 7:40 · 약 6h 20m'}
             </div>
@@ -539,7 +539,7 @@ export const S08_DailyCheck = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div className="ph-circle" style={{ width: 36, height: 36 }}>🚶</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>몸을 움직였나</div>
+            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>몸을 움직였나</div>
             <div className="tiny">
               {d.movement.bucket ? `선택: ${d.movement.bucket}` : '스트레칭도 포함 — 정직하게'}
             </div>
@@ -569,7 +569,7 @@ export const S08_DailyCheck = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div className="ph-circle" style={{ width: 32, height: 32 }}>💧</div>
             <div>
-              <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>물</div>
+              <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>물</div>
               <div className="tiny">{d.water} / 8잔 — 탭</div>
             </div>
           </div>
@@ -597,7 +597,7 @@ export const S08_DailyCheck = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div className="ph-circle" style={{ width: 32, height: 32 }}>☼</div>
             <div>
-              <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>햇볕</div>
+              <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>햇볕</div>
               <div className="tiny">
                 {d.sun.level ?? '바깥 공기 쐰 시간'}
               </div>
@@ -693,7 +693,7 @@ export const S09_AIChat = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span
-            style={{ fontFamily: 'Caveat', fontSize: 22, cursor: 'pointer' }}
+            style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
             onClick={() => nav.back()}
           >
             ‹

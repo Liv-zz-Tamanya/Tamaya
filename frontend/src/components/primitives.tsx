@@ -8,9 +8,9 @@ export const StatusBar = ({ time = '11:42 PM', mode = 'night' }: { time?: string
     className="statusbar"
     style={{ background: mode === 'night' ? 'rgba(61,74,120,0.08)' : 'rgba(214,154,58,0.08)' }}
   >
-    <span style={{ fontFamily: 'Patrick Hand' }}>{time}</span>
+    <span style={{ fontFamily: 'Pretendard' }}>{time}</span>
     <div className="notch" />
-    <span style={{ fontFamily: 'Patrick Hand', display: 'flex', gap: 4, alignItems: 'center' }}>
+    <span style={{ fontFamily: 'Pretendard', display: 'flex', gap: 4, alignItems: 'center' }}>
       <span>{mode === 'night' ? '🌙' : '☀︎'}</span>
       <span>100%</span>
     </span>
@@ -86,185 +86,56 @@ type CatProps = {
   accessory?: 'bowtie' | 'apron' | 'none';
 };
 
-// Hand-drawn barista butler cat — coffee tabby with bowtie
-export const CatSketch = ({
-  size = 110,
-  mood = 'awake',
-  sleeping = false,
-  color = '#3a2414',
-  accent = '#8c4a1f',
-  accessory = 'bowtie',
-}: CatProps) => {
-  if (sleeping) {
-    return (
-      <svg width={size} height={size * 0.75} viewBox="0 0 140 100" fill="none">
-        <path
-          d="M20 70 Q 20 35 60 30 Q 110 25 122 55 Q 128 80 95 86 Q 60 90 30 85 Q 18 82 20 70 Z"
-          stroke={color}
-          strokeWidth="2"
-          strokeLinejoin="round"
-          fill="#f5e6cf"
-        />
-        <path
-          d="M95 50 Q 110 48 118 56 Q 122 64 115 70 Q 108 74 100 70"
-          stroke={color}
-          strokeWidth="2"
-          fill="#f5e6cf"
-        />
-        <path d="M100 50 L 96 42 L 105 48" stroke={color} strokeWidth="2" fill="none" />
-        <path d="M112 50 L 116 42 L 118 50" stroke={color} strokeWidth="2" fill="none" />
-        <path
-          d="M104 62 Q 108 64 112 62"
-          stroke={color}
-          strokeWidth="2"
-          fill="none"
-          strokeLinecap="round"
-        />
-        <path d="M25 72 Q 5 72 8 50 Q 12 32 30 35" stroke={color} strokeWidth="2" fill="none" />
-        <path
-          d="M55 38 Q 70 36 85 40"
-          stroke={accent}
-          strokeWidth="1.2"
-          fill="none"
-          opacity="0.5"
-        />
-        <path
-          d="M50 50 Q 70 48 90 52"
-          stroke={accent}
-          strokeWidth="1.2"
-          fill="none"
-          opacity="0.5"
-        />
-        <text x="60" y="22" fontFamily="Caveat" fontSize="18" fill={accent}>
-          z z Z
-        </text>
-      </svg>
-    );
-  }
-  return (
-    <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
-      <path
-        d="M28 38 L 22 12 L 46 28"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinejoin="round"
-        fill="#f5e6cf"
-      />
-      <path
-        d="M92 38 L 98 12 L 74 28"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinejoin="round"
-        fill="#f5e6cf"
-      />
-      <path d="M30 30 L 28 18 L 38 26" stroke={accent} strokeWidth="1.5" fill="none" />
-      <path d="M90 30 L 92 18 L 82 26" stroke={accent} strokeWidth="1.5" fill="none" />
-      <ellipse cx="60" cy="56" rx="36" ry="32" stroke={color} strokeWidth="2" fill="#f5e6cf" />
-      <path
-        d="M40 32 Q 44 36 42 42"
-        stroke={accent}
-        strokeWidth="1.5"
-        fill="none"
-        opacity="0.55"
-      />
-      <path
-        d="M80 32 Q 76 36 78 42"
-        stroke={accent}
-        strokeWidth="1.5"
-        fill="none"
-        opacity="0.55"
-      />
-      <path d="M60 30 L 60 38" stroke={accent} strokeWidth="1.5" opacity="0.55" />
-      {mood === 'happy' ? (
-        <>
-          <path
-            d="M44 52 Q 48 46 52 52"
-            stroke={color}
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-          />
-          <path
-            d="M68 52 Q 72 46 76 52"
-            stroke={color}
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-          />
-        </>
-      ) : mood === 'wink' ? (
-        <>
-          <circle cx="48" cy="54" r="2.5" fill={color} />
-          <path
-            d="M68 54 Q 72 50 76 54"
-            stroke={color}
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-          />
-        </>
-      ) : (
-        <>
-          <circle cx="48" cy="54" r="3" fill={color} />
-          <circle cx="72" cy="54" r="3" fill={color} />
-        </>
-      )}
-      <path d="M58 64 L 62 64 L 60 68 Z" fill={accent} stroke={color} strokeWidth="1.5" />
-      <path
-        d="M60 68 Q 54 74 50 70"
-        stroke={color}
-        strokeWidth="2"
-        fill="none"
-        strokeLinecap="round"
-      />
-      <path
-        d="M60 68 Q 66 74 70 70"
-        stroke={color}
-        strokeWidth="2"
-        fill="none"
-        strokeLinecap="round"
-      />
-      <path d="M30 60 L 44 62" stroke={color} strokeWidth="1.5" />
-      <path d="M30 66 L 44 66" stroke={color} strokeWidth="1.5" />
-      <path d="M90 60 L 76 62" stroke={color} strokeWidth="1.5" />
-      <path d="M90 66 L 76 66" stroke={color} strokeWidth="1.5" />
-      <path
-        d="M32 86 Q 36 102 60 102 Q 84 102 88 86"
-        stroke={color}
-        strokeWidth="2"
-        fill="#f5e6cf"
-      />
-      {accessory === 'bowtie' && (
-        <g>
-          <path
-            d="M52 90 L 46 86 L 46 96 L 52 92 Z"
-            fill={accent}
-            stroke={color}
-            strokeWidth="1.5"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M68 90 L 74 86 L 74 96 L 68 92 Z"
-            fill={accent}
-            stroke={color}
-            strokeWidth="1.5"
-            strokeLinejoin="round"
-          />
-          <circle cx="60" cy="91" r="3" fill={accent} stroke={color} strokeWidth="1.5" />
-        </g>
-      )}
-      {accessory === 'apron' && (
-        <path
-          d="M44 92 Q 60 96 76 92 L 78 108 L 42 108 Z"
-          fill="#f5e6cf"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-      )}
-    </svg>
-  );
+// Tamaya 고양이 집사 캐릭터 — Figma "Tamaya v3" 정본 아트워크(3D 렌더 PNG).
+// 2026-06-14: 손그림 SVG → Figma export 에셋으로 교체. props(size·mood·sleeping)는
+// 호환 위해 유지하되, 이미지 아트라 color/accent/accessory 는 무시한다.
+const CHAR_BASE = '/character/base.png';      // 기본 전신(안경+조끼+나비넥타이)
+const CHAR_SLEEPY = '/character/sleepy.png';  // 졸린 표정(머리)
+
+export const CatSketch = ({ size = 110, sleeping = false }: CatProps) => (
+  <img
+    src={sleeping ? CHAR_SLEEPY : CHAR_BASE}
+    alt="이음이"
+    width={size}
+    height={size}
+    style={{
+      width: size,
+      height: size,
+      objectFit: 'contain',
+      display: 'inline-block',
+      userSelect: 'none',
+      pointerEvents: 'none',
+    }}
+    draggable={false}
+  />
+);
+
+// 감정 표정 아이콘 — Mood(이모지 키) → Figma 표정 에셋. 기존 emoji span 대체.
+const MOOD_SRC: Record<string, string> = {
+  '\u{1F60C}': '/character/calm.png',   // 😌 평온
+  '\u{1F60A}': '/character/happy.png',  // 😊 기쁨
+  '\u{1F623}': '/character/sleepy.png', // 😣 힘듦/지침
+  '\u{1F622}': '/character/sad.png',    // 😢 슬픔
+  '\u{1F621}': '/character/angry.png',  // 😡 화남
 };
+export const MoodFace = ({ mood, size = 28 }: { mood: string; size?: number }) => (
+  <img
+    src={MOOD_SRC[mood] ?? MOOD_SRC['\u{1F60C}']}
+    alt={mood}
+    width={size}
+    height={size}
+    style={{
+      width: size,
+      height: size,
+      objectFit: 'contain',
+      display: 'inline-block',
+      verticalAlign: 'middle',
+      userSelect: 'none',
+      pointerEvents: 'none',
+    }}
+    draggable={false}
+  />
+);
 
 export const HandArrow = ({
   rotate = 0,
@@ -320,7 +191,7 @@ export const ImgPh = ({
   >
     <span
       style={{
-        fontFamily: 'Patrick Hand',
+        fontFamily: 'Pretendard',
         fontSize: 11,
         color: '#7a5634',
         background: '#f5e6cf',

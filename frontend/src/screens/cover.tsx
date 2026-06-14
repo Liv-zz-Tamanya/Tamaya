@@ -94,7 +94,7 @@ export const C01_System = () => (
                 className="ph-square"
                 style={{ width: 26, height: 26, background: c, borderColor: '#3a2414' }}
               />
-              <span style={{ fontFamily: 'Patrick Hand', fontSize: 13, width: 96 }}>{n}</span>
+              <span style={{ fontFamily: 'Pretendard', fontSize: 13, width: 96 }}>{n}</span>
               <span className="tiny" style={{ width: 70 }}>
                 {c}
               </span>
@@ -112,13 +112,13 @@ export const C01_System = () => (
         </div>
         <div className="hbox" style={{ padding: 12 }}>
           <div className="h-display" style={{ fontSize: 28 }}>
-            Caveat — 헤드라인
+            Pretendard — 헤드라인
           </div>
           <div className="handwriting">손글씨 톤 (캐릭터 대사)</div>
-          <div style={{ fontFamily: 'Patrick Hand', fontSize: 14, marginTop: 4 }}>
-            Patrick Hand — UI 라벨
+          <div style={{ fontFamily: 'Pretendard', fontSize: 14, marginTop: 4 }}>
+            Pretendard — UI 라벨
           </div>
-          <div style={{ fontFamily: 'Gaegu', fontSize: 14 }}>개구 — 한글 본문 (Gaegu)</div>
+          <div style={{ fontFamily: 'Pretendard', fontSize: 14 }}>개구 — 한글 본문 (Pretendard)</div>
           <div className="tiny" style={{ marginTop: 4 }}>
             Tiny — 부가 정보 / 11px
           </div>
@@ -252,7 +252,7 @@ export const C02_Flow = () => (
               width: 44,
               height: 44,
               flex: 'none',
-              fontFamily: 'Caveat',
+              fontFamily: 'Pretendard',
               fontSize: 22,
               fontWeight: 700,
               background: c,
@@ -268,7 +268,7 @@ export const C02_Flow = () => (
               {d}
             </div>
           </div>
-          <span style={{ fontFamily: 'Caveat', fontSize: 30, color: '#8c4a1f' }}>
+          <span style={{ fontFamily: 'Pretendard', fontSize: 30, color: '#8c4a1f' }}>
             {i < 4 ? '↓' : '✓'}
           </span>
         </div>

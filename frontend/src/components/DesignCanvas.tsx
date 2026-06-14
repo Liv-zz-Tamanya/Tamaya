@@ -261,7 +261,7 @@ const ArtboardFrame = ({
           style={{
             width,
             marginTop: 14,
-            fontFamily: '"Patrick Hand", "Gaegu", sans-serif',
+            fontFamily: '"Pretendard", "Pretendard", sans-serif',
             fontSize: 14,
             lineHeight: 1.45,
             color: '#3a342c',

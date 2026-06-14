@@ -189,12 +189,12 @@ export const S03_Privacy = () => {
           >
             <div
               className="ph-circle"
-              style={{ width: 36, height: 36, flex: 'none', fontFamily: 'Patrick Hand' }}
+              style={{ width: 36, height: 36, flex: 'none', fontFamily: 'Pretendard' }}
             >
               {ic}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>{t}</div>
+              <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>{t}</div>
               <div
                 className="tiny"
                 style={{
@@ -285,7 +285,7 @@ export const S04_CreateCat = () => {
             borderRadius: 8,
             padding: '6px 14px',
             background: 'transparent',
-            fontFamily: 'Caveat',
+            fontFamily: 'Pretendard',
             fontSize: 22,
             color: '#3a2414',
             textAlign: 'center',

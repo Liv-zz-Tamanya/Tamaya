@@ -57,19 +57,23 @@
   --radius-2xl: 32px;
   --radius-pill: 999px;
 
-  /* ===== TYPE — 손글씨 3종 + 스케일 ====================================== */
-  --font-display: 'Caveat', cursive;          /* 큰 제목 */
-  --font-hand: 'Patrick Hand', sans-serif;     /* UI 라벨 */
-  --font-body: 'Gaegu', sans-serif;            /* 본문 */
-  --font-system: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  /* ===== TYPE — Pretendard 단일 (Figma Tamaya v3 Design System) ==========
+   * 2026-06-14: 손글씨 3종(Pretendard·Pretendard·Pretendard) → Pretendard 로 교체.
+   * Figma "Page 2" Design System 의 정본 폰트와 정합. 토큰 이름은 유지해
+   * 컴포넌트의 var(--font-*) 참조가 자동으로 Pretendard 로 해석되게 함. */
+  --font-display: 'Pretendard', sans-serif;    /* 큰 제목 */
+  --font-hand: 'Pretendard', sans-serif;        /* UI 라벨 */
+  --font-body: 'Pretendard', sans-serif;        /* 본문 */
+  --font-system: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
-  --text-display: 32px;
+  /* Figma Typography 스케일(28/24/20/18/16/14/12) 정합 */
+  --text-display: 28px;
   --text-title: 24px;
-  --text-handwriting: 18px;
-  --text-section: 15px;
-  --text-body: 14px;
-  --text-label: 13px;
-  --text-tiny: 11px;
+  --text-handwriting: 20px;
+  --text-section: 18px;
+  --text-body: 16px;
+  --text-label: 14px;
+  --text-tiny: 12px;
 
   /* ===== BREAKPOINTS — 풀 반응형 reflow 기준선 ============================
    * ⚠️ @media 는 var() 를 못 받는다. 미디어쿼리엔 아래 '리터럴 값'을 직접 쓰고,

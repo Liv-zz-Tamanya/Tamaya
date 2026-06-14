@@ -51,7 +51,7 @@ export const S10_RecapStart = () => {
     <div className="phone-scroll" style={{ padding: '60px 24px 100px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
-          style={{ fontFamily: 'Caveat', fontSize: 22, color: '#d8a777', cursor: 'pointer' }}
+          style={{ fontFamily: 'Pretendard', fontSize: 22, color: '#d8a777', cursor: 'pointer' }}
           onClick={() => nav.back()}
         >
           ‹
@@ -127,7 +127,7 @@ export const S10_RecapStart = () => {
           className="hbox accent"
           style={{ flex: 1, padding: 10, textAlign: 'center', color: '#3a2414' }}
         >
-          <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>✦ 대화</div>
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>✦ 대화</div>
           <div className="tiny">5턴 챗</div>
         </div>
         <div
@@ -140,7 +140,7 @@ export const S10_RecapStart = () => {
             background: '#f5e6cf',
           }}
         >
-          <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>✎ 짧게</div>
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>✎ 짧게</div>
           <div className="tiny">3줄 일기</div>
         </div>
         <div
@@ -153,7 +153,7 @@ export const S10_RecapStart = () => {
             background: '#f5e6cf',
           }}
         >
-          <div style={{ fontFamily: 'Patrick Hand', fontWeight: 700 }}>🎙 보이스</div>
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>🎙 보이스</div>
           <div className="tiny">곧 출시</div>
         </div>
       </div>
@@ -263,7 +263,7 @@ export const S11_ChatDiary = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span
-            style={{ fontFamily: 'Caveat', fontSize: 22, cursor: 'pointer' }}
+            style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
             onClick={() => {
               if (confirm('회고를 중단할까요? (대화는 보존됩니다)')) nav.back();
             }}
@@ -502,7 +502,7 @@ export const S12_MoodFinalize = () => {
                 justifyContent: 'center',
               }}
             >
-              <span style={{ fontFamily: 'Caveat', fontSize: 22 }}>😣</span>
+              <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>😣</span>
             </div>
           </div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -669,7 +669,7 @@ export const S13_Reward = () => {
             transform: 'rotate(-1.5deg)',
           }}
         >
-          <span style={{ fontFamily: 'Caveat', fontSize: 22 }}>+80 포인트</span>
+          <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>+80 포인트</span>
         </div>
       </div>
 
@@ -700,7 +700,7 @@ export const S13_Reward = () => {
           justifyContent: 'center',
         }}
       >
-        <span style={{ fontFamily: 'Caveat', fontSize: 28, color: '#8c4a1f' }}>
+        <span style={{ fontFamily: 'Pretendard', fontSize: 28, color: '#8c4a1f' }}>
           🔥 {state.streak - 1} → {state.streak}일
         </span>
       </div>
