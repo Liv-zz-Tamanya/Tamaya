@@ -73,7 +73,7 @@ export const S06_HomeDay = () => {
             ⚙
           </button>
           <span className="chip">Lv.{state.level}</span>
-          <span className="chip dashed">🔥 {state.streak}일</span>
+          <span className="chip">{state.streak}일</span>
         </div>
       </div>
 
@@ -237,7 +237,7 @@ export const S07_HomeNight = () => {
             ⚙
           </button>
           <span className="chip">Lv.{state.level}</span>
-          <span className="chip dashed">🔥 {state.streak}일</span>
+          <span className="chip">{state.streak}일</span>
         </div>
       </div>
 
@@ -295,7 +295,7 @@ export const S07_HomeNight = () => {
           gap: 12,
         }}
       >
-        <div style={{ fontFamily: 'Pretendard', fontSize: 42, color: '#8c4a1f' }}>🔥{state.streak}</div>
+        <div style={{ fontFamily: 'Pretendard', fontWeight: 800, fontSize: 34, color: 'var(--accent-soft)', lineHeight: 1 }}>{state.streak}<span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 2 }}>일</span></div>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
             {state.streak > 0 ? `${state.streak}일 연속!` : '오늘부터 시작해요'}
@@ -314,7 +314,7 @@ export const S07_HomeNight = () => {
               style={{
                 width: 14,
                 height: 14,
-                background: on ? '#8c4a1f' : '#fff',
+                background: on ? 'var(--accent-soft)' : '#fff',
                 borderColor: '#3a2414',
               }}
             />
@@ -378,7 +378,7 @@ export const S07_HomeNight = () => {
           >
             <div
               className="ph-square"
-              style={{ width: 36, height: 36, fontFamily: 'Pretendard', fontSize: 16 }}
+              style={{ width: 36, height: 36, fontFamily: 'Pretendard', fontSize: 16, borderRadius: 14 }}
             >
               {ic}
             </div>
@@ -709,13 +709,13 @@ export const S09_AIChat = () => {
             m.role === 'bot' ? (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
                 <div className="ph-circle" style={{ width: 28, height: 28, fontSize: 11, flex: 'none' }}>✦</div>
-                <div className="hbox" style={{ padding: '10px 12px', maxWidth: 280 }}>
+                <div className="bubble bubble-bot">
                   <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
                 </div>
               </div>
             ) : (
               <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <div className="hbox accent" style={{ padding: '10px 12px', maxWidth: 260 }}>
+                <div className="bubble bubble-user">
                   <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
                 </div>
               </div>
@@ -724,7 +724,7 @@ export const S09_AIChat = () => {
           {typing && (
             <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
               <div className="ph-circle" style={{ width: 28, height: 28, fontSize: 11, flex: 'none' }}>✦</div>
-              <div className="hbox" style={{ padding: '12px 16px' }}>
+              <div className="bubble bubble-bot" style={{ padding: '12px 16px' }}>
                 <span className="typing-dot" />
                 <span className="typing-dot" />
                 <span className="typing-dot" />

@@ -286,6 +286,11 @@ html, body { background: #f5f1e8; }
 .input-row input::placeholder { color: var(--muted, #b39570); }
 .input-row input:focus { border-color: var(--accent, #8c4a1f); box-shadow: 0 0 0 2px rgba(140,74,31,0.15); }
 
+/* Chat bubbles — Section 1 soft style (borderless, filled, asymmetric radius) */
+.bubble { padding: 10px 13px; max-width: 280px; box-shadow: 1px 2px 0 rgba(0,0,0,0.05); border: none; }
+.bubble-bot { background: var(--paper-2); color: var(--ink); border-radius: 4px 16px 16px 16px; }
+.bubble-user { background: var(--accent-soft); color: var(--ink); border-radius: 16px 4px 16px 16px; max-width: 260px; }
+
 /* Toast — bottom of phone */
 .toast {
   position: absolute; left: 24px; right: 24px; bottom: 84px;

@@ -29,10 +29,15 @@ import {
   S17_Insights,
 } from './screens/records';
 import { S18_CatRoom, S19_Inventory, S20_Report } from './screens/character';
+import { S23_Coach } from './screens/coach';
+import { S24_Wellbeing } from './screens/wellbeing';
+import { S25_Byok } from './screens/byok';
+import { S26_HealthChat } from './screens/health-chat';
 import { NavContext } from './lib/router';
 
-// Two modes — design canvas (all 23 artboards) and app preview (interactive
-// phone shell). Default is app preview; #design switches to the static canvas.
+// Two modes — design canvas (all 27 artboards: 24 phone screens + 3 concept)
+// and app preview (interactive phone shell). Default is app preview; #design
+// switches to the static canvas.
 
 // Stub NavContext provider used for the design-canvas thumbnails — screens
 // reference useNav() but the canvas is non-interactive, so clicks are no-ops.
@@ -140,6 +145,17 @@ const DesignMode = () => (
         {phone('18 · 이음이 방 (밤)', '18', '[키우기] 탭 → 친밀도/배부름/활력 + 먹이주기·옷장·놀이·방꾸미기 4액션.', '★ 키우기 = 회고 보상의 시각화 — 방·옷·먹이', <S18_CatRoom />)}
         {phone('19 · 인벤토리 · 옷장', '19', '모은 아이템·먹이·잠금 보상. 잠금 = 다음 회고 동기.', '★ 잠금 아이템 = 다음 회고 동기 / "입는중" = 현재 적용', <S19_Inventory />)}
         {phone('20 · 주간 리포트', '20', '매주 월요일 푸시 — 한 줄 요약 + 숫자 그리드 + 이번 주 이야기 + 카드 저장.', '★ 주간 리포트 = 시리얼 컨텐츠 · 매주 월요일 푸시로 재방문', <S20_Report />)}
+      </DCSection>
+
+      <DCSection
+        id="healthcat"
+        title="07 · 건강데이터 연동 (건강냥 Medlife)"
+        subtitle="밤 코칭·웰빙·BYOK·건강 Q&A — 고양이 일기 위에 건강 신호를 잇는 BE 연동 흐름"
+      >
+        {phone('23 · 밤 코칭', '23', '홈/탭 → 건강냥과 밤 코칭 대화. 남긴 정성신호가 웰빙 스코어의 재료가 된다.', '★ 진단·처방이 아닌 웰니스 코칭 — guardrail-first, PII는 전송 직전 마스킹(liv-I1)', <S23_Coach sample />)}
+        {phone('24 · 웰빙 인사이트', '24', '[인사이트] 탭 → 코칭 신호 기반 주간 웰빙 스코어 + 정서/행동 구성 + 일별 추이.', '★ 정성신호의 결정론 집계(순수함수) — 의료 지표 아님, 흐름을 비추는 거울', <S24_Wellbeing sample />)}
+        {phone('25 · CLOVA 키 (BYOK)', '25', '내 CLOVA 키를 요청별로 사용 — 없으면 mock으로 동작. 원문 키는 서버 비저장.', '★ BYOK — 마스킹 프리뷰(••••last4)만 device 기준 저장, 원문 키 비저장', <S25_Byok sample />)}
+        {phone('26 · 건강 기록 Q&A', '26', '내 건강기록을 검색해 답하는 헬스 Q&A — 수면·식사·운동·복약을 한 번에.', '★ 내 데이터 기반 RAG(top-5 임베딩 검색) · 참고용, 진단 아님', <S26_HealthChat sample />)}
       </DCSection>
     </DesignCanvas>
     <TweaksPanel />

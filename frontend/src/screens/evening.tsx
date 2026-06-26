@@ -289,7 +289,7 @@ export const S11_ChatDiary = () => {
             style={{
               flex: 1,
               height: 6,
-              background: i < turn ? '#8c4a1f' : '#f5e6cf',
+              background: i < turn ? 'var(--ink)' : '#f5e6cf',
               border: '1.5px solid #3a2414',
               borderRadius: 3,
             }}
@@ -307,7 +307,7 @@ export const S11_ChatDiary = () => {
               >
                 <CatSketch size={32} mood="wink" />
               </div>
-              <div className="hbox" style={{ padding: '10px 12px', maxWidth: 280 }}>
+              <div className="bubble bubble-bot">
                 <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
                 {m.hint && (
                   <div className="tiny" style={{ marginTop: 4, color: '#8c4a1f' }}>{m.hint}</div>
@@ -316,7 +316,7 @@ export const S11_ChatDiary = () => {
             </div>
           ) : (
             <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <div className="hbox accent" style={{ padding: '10px 12px', maxWidth: 260 }}>
+              <div className="bubble bubble-user">
                 <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
               </div>
             </div>
@@ -330,7 +330,7 @@ export const S11_ChatDiary = () => {
             >
               <CatSketch size={32} mood="wink" />
             </div>
-            <div className="hbox" style={{ padding: '12px 16px' }}>
+            <div className="bubble bubble-bot" style={{ padding: '12px 16px' }}>
               <span className="typing-dot" />
               <span className="typing-dot" />
               <span className="typing-dot" />
@@ -700,8 +700,8 @@ export const S13_Reward = () => {
           justifyContent: 'center',
         }}
       >
-        <span style={{ fontFamily: 'Pretendard', fontSize: 28, color: '#8c4a1f' }}>
-          🔥 {state.streak - 1} → {state.streak}일
+        <span style={{ fontFamily: 'Pretendard', fontWeight: 700, fontSize: 22, color: 'var(--accent-soft)' }}>
+          {state.streak - 1} → {state.streak}일 연속
         </span>
       </div>
       <div className="bar" style={{ marginTop: 10 }}>

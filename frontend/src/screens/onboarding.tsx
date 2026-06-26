@@ -60,7 +60,7 @@ export const S01_Splash = () => {
     >
       <div
         style={{
-          background: '#f5e6cf',
+          background: 'var(--paper-3)',
           borderRadius: '50%',
           padding: 18,
           border: '2px solid #3a2414',

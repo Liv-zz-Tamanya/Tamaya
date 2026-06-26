@@ -14,9 +14,19 @@ const INTRO: Msg = {
   text: '내 건강 기록을 바탕으로 답해줄게요. 수면·식사·운동·복약 중 궁금한 걸 물어봐요.',
 };
 
-export const S26_HealthChat = () => {
+// 와이어프레임 캔버스(#design)용 샘플 Q&A — 내 기록 기반 RAG 답변 예시(백엔드 불필요).
+const SAMPLE_MSGS: Msg[] = [
+  INTRO,
+  { role: 'user', text: '요즘 수면 어때?' },
+  {
+    role: 'bot',
+    text: '최근 7일 기록을 보면 평균 수면이 6시간 10분이에요. 화·수엔 5시간대로 짧았고 주말엔 7시간대로 회복했어요. 취침 시각이 들쭉날쭉한 편이라 같은 시각에 눕는 것부터 맞춰보면 좋겠어요. (내 기록 기반 참고용이에요.)',
+  },
+];
+
+export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) => {
   const nav = useNav();
-  const [msgs, setMsgs] = useState<Msg[]>([INTRO]);
+  const [msgs, setMsgs] = useState<Msg[]>(sample ? SAMPLE_MSGS : [INTRO]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const [err, setErr] = useState(false);
@@ -29,6 +39,12 @@ export const S26_HealthChat = () => {
   const send = (text?: string) => {
     const t = (text ?? input).trim();
     if (!t || typing) return;
+    if (sample) {
+      // 와이어프레임 캔버스 — 네트워크 호출 없이 예시 응답만.
+      setMsgs((m) => [...m, { role: 'user', text: t }, { role: 'bot', text: '(예시 모드) 실제 답변은 건강 기록 연동 후 제공돼요.' }]);
+      setInput('');
+      return;
+    }
     setMsgs((m) => [...m, { role: 'user', text: t }]);
     setInput('');
     setErr(false);
@@ -80,13 +96,13 @@ export const S26_HealthChat = () => {
             m.role === 'bot' ? (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
                 <div className="ph-circle" style={{ width: 28, height: 28, fontSize: 11, flex: 'none' }}>✚</div>
-                <div className="hbox" style={{ padding: '10px 12px', maxWidth: 280 }}>
+                <div className="bubble bubble-bot">
                   <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
                 </div>
               </div>
             ) : (
               <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <div className="hbox accent" style={{ padding: '10px 12px', maxWidth: 260 }}>
+                <div className="bubble bubble-user">
                   <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
                 </div>
               </div>
@@ -95,7 +111,7 @@ export const S26_HealthChat = () => {
           {typing && (
             <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
               <div className="ph-circle" style={{ width: 28, height: 28, fontSize: 11, flex: 'none' }}>✚</div>
-              <div className="hbox" style={{ padding: '12px 16px' }}>
+              <div className="bubble bubble-bot" style={{ padding: '12px 16px' }}>
                 <span className="typing-dot" />
                 <span className="typing-dot" />
                 <span className="typing-dot" />

@@ -213,7 +213,7 @@ export const S14_Calendar = () => {
 
       {state.diaries.length > 0 && (
         <div className="tiny" style={{ marginTop: 4, textAlign: 'center', color: '#8c4a1f' }}>
-          기록된 일기 {state.diaries.length}건 (Lv.{state.level} · 🔥 {state.streak}일)
+          기록된 일기 {state.diaries.length}건 (Lv.{state.level} · {state.streak}일)
         </div>
       )}
     </div>

@@ -14,9 +14,19 @@ const INTRO: Msg = {
   text: '오늘 하루도 고생 많았어요. 잠들기 전에, 몸이나 마음 중 뭐가 제일 신경 쓰여요?',
 };
 
-export const S23_Coach = () => {
+// 와이어프레임 캔버스(#design)용 샘플 대화 — 백엔드 없이 채워진 상태를 보여준다.
+const SAMPLE_MSGS: Msg[] = [
+  INTRO,
+  { role: 'user', text: '요즘 잠들기가 너무 어려워요.' },
+  {
+    role: 'bot',
+    text: '잠들기 어려운 밤이 이어지면 참 지치죠. 잠들기 한 시간 전엔 화면을 멀리하고, 매일 비슷한 시각에 눕는 작은 리듬부터 만들어볼까요? (진단이 아니라 함께 찾는 습관이에요.)',
+  },
+];
+
+export const S23_Coach = ({ sample = false }: { sample?: boolean } = {}) => {
   const nav = useNav();
-  const [msgs, setMsgs] = useState<Msg[]>([INTRO]);
+  const [msgs, setMsgs] = useState<Msg[]>(sample ? SAMPLE_MSGS : [INTRO]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const [err, setErr] = useState(false);
@@ -29,6 +39,12 @@ export const S23_Coach = () => {
   const send = (text?: string) => {
     const t = (text ?? input).trim();
     if (!t || typing) return;
+    if (sample) {
+      // 와이어프레임 캔버스 — 네트워크 호출 없이 예시 응답만.
+      setMsgs((m) => [...m, { role: 'user', text: t }, { role: 'bot', text: '(예시 모드) 실제 코칭은 건강냥 백엔드 연결 후 동작해요.' }]);
+      setInput('');
+      return;
+    }
     // 직전까지의 대화를 history로(BE는 세션 미보관 → 클라가 전달)
     const history: CoachTurn[] = msgs.map((m) => ({
       role: m.role === 'bot' ? 'assistant' : 'user',
@@ -85,13 +101,13 @@ export const S23_Coach = () => {
             m.role === 'bot' ? (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
                 <div className="ph-circle" style={{ width: 28, height: 28, flex: 'none', overflow: 'hidden' }}><img src="/character/head-glasses.png" alt="건강냥" style={{ width: '100%', height: '100%', objectFit: 'contain' }} draggable={false} /></div>
-                <div className="hbox" style={{ padding: '10px 12px', maxWidth: 280 }}>
+                <div className="bubble bubble-bot">
                   <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
                 </div>
               </div>
             ) : (
               <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <div className="hbox accent" style={{ padding: '10px 12px', maxWidth: 260 }}>
+                <div className="bubble bubble-user">
                   <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
                 </div>
               </div>
@@ -100,7 +116,7 @@ export const S23_Coach = () => {
           {typing && (
             <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
               <div className="ph-circle" style={{ width: 28, height: 28, flex: 'none', overflow: 'hidden' }}><img src="/character/head-glasses.png" alt="건강냥" style={{ width: '100%', height: '100%', objectFit: 'contain' }} draggable={false} /></div>
-              <div className="hbox" style={{ padding: '12px 16px' }}>
+              <div className="bubble bubble-bot" style={{ padding: '12px 16px' }}>
                 <span className="typing-dot" />
                 <span className="typing-dot" />
                 <span className="typing-dot" />

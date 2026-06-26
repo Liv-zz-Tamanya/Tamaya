@@ -96,7 +96,7 @@ export const S22_Settings = () => {
           <div className="h-label" style={{ marginBottom: 8 }}>현재 상태</div>
           <div className="hbox r-l" style={{ padding: 12 }}>
             <div className="tiny" style={{ marginBottom: 4 }}>
-              포인트 · {state.points} ◉ / 스트릭 🔥 {state.streak}일 / Lv.{state.level}
+              포인트 · {state.points} ◉ / 스트릭 {state.streak}일 / Lv.{state.level}
             </div>
             <div className="tiny">아이템 {state.unlockedItems.length}개 · 입는중 {state.equippedItem ?? '없음'}</div>
           </div>

@@ -21,10 +21,27 @@ const Bar = ({ label, value, max = 100 }: { label: string; value: number; max?: 
   </div>
 );
 
-export const S24_Wellbeing = () => {
+// 와이어프레임 캔버스(#design)용 샘플 인사이트 — 백엔드 없이 채워진 'ready' 상태.
+const SAMPLE_INSIGHT: InsightResponse = {
+  period: 'weekly',
+  start_date: '2026-06-08',
+  end_date: '2026-06-14',
+  report: { score: 72, emotion_score: 68, behavior_score: 76, signal_count: 14 },
+  trend: [
+    { label: '월', score: 60, signal_count: 2 },
+    { label: '화', score: 74, signal_count: 3 },
+    { label: '수', score: 55, signal_count: 1 },
+    { label: '목', score: 80, signal_count: 3 },
+    { label: '금', score: 70, signal_count: 2 },
+    { label: '토', score: 88, signal_count: 2 },
+    { label: '일', score: 76, signal_count: 1 },
+  ],
+};
+
+export const S24_Wellbeing = ({ sample = false }: { sample?: boolean } = {}) => {
   const nav = useNav();
-  const [phase, setPhase] = useState<Phase>('loading');
-  const [data, setData] = useState<InsightResponse | null>(null);
+  const [phase, setPhase] = useState<Phase>(sample ? 'ready' : 'loading');
+  const [data, setData] = useState<InsightResponse | null>(sample ? SAMPLE_INSIGHT : null);
   const week = isoWeekOf();
 
   const load = useCallback(() => {
@@ -41,8 +58,9 @@ export const S24_Wellbeing = () => {
   }, [week]);
 
   useEffect(() => {
+    if (sample) return;
     load();
-  }, [load]);
+  }, [load, sample]);
 
   const empty = phase === 'ready' && (data?.report.signal_count ?? 0) === 0;
   const maxTrend = Math.max(1, ...(data?.trend ?? []).map((t) => t.score));
