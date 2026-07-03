@@ -70,7 +70,8 @@ class SendMessageUseCase:
         session.finalize()
 
         emotion = Emotion(diary_data.get("emotion", "calm"))
-        satisfaction = max(1, min(5, int(diary_data.get("satisfaction", 3))))
+        # BUG-07: satisfaction 0~100 통일 (DEC-020)
+        satisfaction = max(0, min(100, int(diary_data.get("satisfaction", 50))))
         diary = Diary(
             diary_date=session.session_date,
             title=diary_data.get("title", "오늘의 일기"),

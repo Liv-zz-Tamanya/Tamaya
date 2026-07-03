@@ -3,6 +3,7 @@ from datetime import date, datetime
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
+    Boolean,
     Date,
     DateTime,
     Float,
@@ -11,7 +12,6 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    Boolean,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
@@ -24,14 +24,21 @@ class Base(DeclarativeBase):
 
 class ChatSessionModel(Base):
     __tablename__ = "chat_sessions"
+    # B-005: device_id + session_date 복합 UNIQUE (alembic c3d4e5f6a7b8)
+    __table_args__ = (
+        UniqueConstraint("device_id", "session_date", name="uq_chat_sessions_device_session_date"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_date: Mapped[date] = mapped_column(Date, unique=True, nullable=False)
+    device_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    session_date: Mapped[date] = mapped_column(Date, nullable=False)
     is_finalized: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     messages: Mapped[list["ChatMessageModel"]] = relationship(
-        back_populates="session", cascade="all, delete-orphan", order_by="ChatMessageModel.created_at"
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="ChatMessageModel.created_at",
     )
 
 
@@ -39,7 +46,9 @@ class ChatMessageModel(Base):
     __tablename__ = "chat_messages"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("chat_sessions.id"), nullable=False)
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("chat_sessions.id"), nullable=False
+    )
     role: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
@@ -49,12 +58,18 @@ class ChatMessageModel(Base):
 
 class DiaryModel(Base):
     __tablename__ = "diaries"
+    # B-008: device_id + diary_date 복합 UNIQUE (alembic c3d4e5f6a7b8)
+    __table_args__ = (
+        UniqueConstraint("device_id", "diary_date", name="uq_diaries_device_diary_date"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    diary_date: Mapped[date] = mapped_column(Date, unique=True, nullable=False)
+    device_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    diary_date: Mapped[date] = mapped_column(Date, nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     emotion: Mapped[str] = mapped_column(String(20), nullable=False)
+    # BUG-07: satisfaction 0-100 (DEC-020)
     satisfaction: Mapped[int] = mapped_column(Integer, nullable=False)
     chat_session_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("chat_sessions.id"), nullable=True
@@ -114,6 +129,29 @@ class HealthChunkModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
+class UserSessionModel(Base):
+    """
+    DEC-023: 동시접속 strict 1세션 — JWT jti 블랙리스트 + 세션 상태.
+    신규 로그인 시 기존 레코드 revoked_at = now(), 새 레코드 insert.
+    보호 라우트 요청마다 jti 조회 → revoked_at IS NOT NULL → 401.
+    """
+
+    __tablename__ = "user_sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # device_id (익명) 또는 kakao_id (OAuth 사용자) 중 하나
+    device_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    kakao_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    jti: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    issued_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    @property
+    def is_active(self) -> bool:
+        return self.revoked_at is None
+
+
 class HealthSessionModel(Base):
     __tablename__ = "health_sessions"
 
@@ -121,7 +159,9 @@ class HealthSessionModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     messages: Mapped[list["HealthMessageModel"]] = relationship(
-        back_populates="session", cascade="all, delete-orphan", order_by="HealthMessageModel.created_at"
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="HealthMessageModel.created_at",
     )
 
 
@@ -129,7 +169,9 @@ class HealthMessageModel(Base):
     __tablename__ = "health_messages"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("health_sessions.id"), nullable=False)
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("health_sessions.id"), nullable=False
+    )
     role: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
@@ -137,109 +179,82 @@ class HealthMessageModel(Base):
     session: Mapped["HealthSessionModel"] = relationship(back_populates="messages")
 
 
-# ============================================================
-# F1·F4·F5 (P0) — 인증·온보딩·캐릭터 / 데일리체크 / 일기
-# ============================================================
+# ─── 정성신호 도메인 (G002 Backend-Insight) ────────────────────────────────────
 
 
-class UserModel(Base):
-    __tablename__ = "users"
+class QualitativeSignalModel(Base):
+    """코칭 대화에서 추출한 정성신호 — device_id 키잉(User 테이블 없음).
+
+    session_id는 coaching_sessions 테이블 부재로 FK 없이 단순 UUID로 둔다.
+    behavior_mentions는 [{"behavior": str, "polarity": int}] 형태의 JSONB.
+    (device_id, recorded_date) 복합 인덱스로 주/월 기간 집계를 가속한다.
+    """
+
+    __tablename__ = "qualitative_signals"
+    __table_args__ = (Index("ix_qualitative_signals_device_date", "device_id", "recorded_date"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    kind: Mapped[str] = mapped_column(String(20), nullable=False, default="anonymous")
-    name: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    needs_onboarding: Mapped[bool] = mapped_column(Boolean, default=True)
-    kakao_id: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
+    device_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    session_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    emotion: Mapped[str] = mapped_column(String(20), nullable=False)
+    behavior_mentions: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, default=list)
+    recorded_date: Mapped[date] = mapped_column(Date, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
-class CharacterModel(Base):
-    __tablename__ = "characters"
+class ClovaSettingModel(Base):
+    """BYOK CLOVA 설정 — device_id별 마스킹 키 프리뷰. 원문 키는 저장하지 않는다."""
+
+    __tablename__ = "clova_settings"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False
-    )
-    name: Mapped[str] = mapped_column(String(10), nullable=False)
-    color: Mapped[str] = mapped_column(String(20), nullable=False)
-    personalities: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
-    level: Mapped[int] = mapped_column(Integer, default=1)
-    intimacy: Mapped[int] = mapped_column(Integer, default=0)
-    satiety: Mapped[int] = mapped_column(Integer, default=50)
-    vitality: Mapped[int] = mapped_column(Integer, default=50)
-    equipped_item: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-
-
-class ConsentModel(Base):
-    __tablename__ = "consents"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    version: Mapped[str] = mapped_column(String(20), nullable=False)
-    agreed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-
-
-class DailyCheckModel(Base):
-    __tablename__ = "daily_checks"
-    __table_args__ = (UniqueConstraint("user_id", "check_date", name="uq_daily_check_user_date"),)
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    check_date: Mapped[date] = mapped_column(Date, nullable=False)
-    food: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
-    water: Mapped[int] = mapped_column(Integer, default=0)
-    sleep: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
-    movement: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
-    sun: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
-
-
-class DiarySessionModel(Base):
-    __tablename__ = "diary_sessions"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    session_date: Mapped[date] = mapped_column(Date, nullable=False)
-    mode: Mapped[str] = mapped_column(String(20), default="chat")
-    status: Mapped[str] = mapped_column(String(20), default="active")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-
-    turns: Mapped[list["DiaryTurnModel"]] = relationship(
-        back_populates="session", cascade="all, delete-orphan", order_by="DiaryTurnModel.created_at"
+    # unique=True가 암묵적 인덱스를 만들므로 index=True는 중복(autogenerate drift 방지).
+    device_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    masked_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    has_key: Mapped[bool] = mapped_column(Boolean, default=False)
+    # onupdate로 키 재저장 시 갱신 시각을 반영한다(upsert 업데이트 경로 정합).
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now, onupdate=datetime.now
     )
 
 
-class DiaryTurnModel(Base):
-    __tablename__ = "diary_turns"
+# ─── 키우기 게임 도메인 (DEC-019, DEC-022.B) ───────────────────────────────────
+
+
+class GameProgressModel(Base):
+    """
+    device_id 1개당 1레코드.
+    level = (total_diaries // 10) + 1
+    affinity = 0~100 (일기 1건당 +2, DEC-020 BUG-07 정합)
+    """
+
+    __tablename__ = "game_progress"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("diary_sessions.id"), nullable=False
-    )
-    role: Mapped[str] = mapped_column(String(20), nullable=False)
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    turn: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-
-    session: Mapped["DiarySessionModel"] = relationship(back_populates="turns")
-
-
-class DiaryEntryModel(Base):
-    __tablename__ = "diary_entries"
-    __table_args__ = (UniqueConstraint("user_id", "entry_date", name="uq_diary_entry_user_date"),)
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    entry_date: Mapped[date] = mapped_column(Date, nullable=False)
-    body: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    moods: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
-    keywords: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
-    tomorrow: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    daily_check_snapshot: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    device_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    current_streak: Mapped[int] = mapped_column(Integer, default=0)
+    total_diaries: Mapped[int] = mapped_column(Integer, default=0)
     points: Mapped[int] = mapped_column(Integer, default=0)
-    session_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("diary_sessions.id"), nullable=True
-    )
+    level: Mapped[int] = mapped_column(Integer, default=1)
+    affinity: Mapped[int] = mapped_column(Integer, default=0)  # 0–100
+    last_diary_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+class RewardInventoryModel(Base):
+    """
+    reward_id: FE rewardSystem.ts REWARDS[].id ('churu_1', 'toy_ball', …)
+    device_id + reward_id 복합 UNIQUE — 보상 중복 지급 방지
+    """
+
+    __tablename__ = "reward_inventory"
+    __table_args__ = (UniqueConstraint("device_id", "reward_id", name="uq_device_reward"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    device_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    reward_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    reward_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    claimed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    is_used: Mapped[bool] = mapped_column(Boolean, default=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

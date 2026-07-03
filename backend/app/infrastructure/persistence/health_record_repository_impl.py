@@ -37,7 +37,9 @@ class HealthRecordRepositoryImpl(HealthRecordRepository):
         return record
 
     async def find_by_date(self, record_date: date) -> HealthDailySummary | None:
-        stmt = sa.select(HealthDailySummaryModel).where(HealthDailySummaryModel.record_date == record_date)
+        stmt = sa.select(HealthDailySummaryModel).where(
+            HealthDailySummaryModel.record_date == record_date
+        )
         result = await self._db.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None

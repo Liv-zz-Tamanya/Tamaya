@@ -10,9 +10,8 @@ import hashlib
 import json
 import sys
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
-from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -35,6 +34,7 @@ FLOORS_DIR = DUMMY_DATA_DIR / "com.samsung.shealth.tracker.floors_day_summary"
 # ---------------------------------------------------------------------------
 # 데이터 중간 집계 구조체 (도메인 모델 아님, 파서 내부용)
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ExerciseData:
@@ -73,6 +73,7 @@ class StepTrendData:
 # ---------------------------------------------------------------------------
 # 파서들
 # ---------------------------------------------------------------------------
+
 
 class ExerciseParser:
     """exercise/*/live_data.json 파싱. start_time ms → date 변환."""
@@ -294,6 +295,7 @@ class FloorsParser:
 # 데이터 로더 (파서 통합)
 # ---------------------------------------------------------------------------
 
+
 class HealthDataLoader:
     """파서들의 결과를 날짜별로 merge하여 HealthDailySummary 목록 반환."""
 
@@ -387,6 +389,7 @@ class HealthDataLoader:
 # 청크 빌더
 # ---------------------------------------------------------------------------
 
+
 class HealthChunkBuilder:
     """HealthDailySummary를 한국어 자연어 텍스트로 변환 후 임베딩 생성."""
 
@@ -458,8 +461,9 @@ class HealthChunkBuilder:
 # 유틸 함수
 # ---------------------------------------------------------------------------
 
+
 def _ms_to_date(ms: int) -> date:
-    return datetime.fromtimestamp(ms / 1000, tz=timezone.utc).date()
+    return datetime.fromtimestamp(ms / 1000, tz=UTC).date()
 
 
 def _file_mtime_to_date(path: Path) -> date:
@@ -475,6 +479,7 @@ def _compute_hash(files: list[Path]) -> str:
 # ---------------------------------------------------------------------------
 # 메인
 # ---------------------------------------------------------------------------
+
 
 async def main() -> None:
     print("삼성 헬스 데이터 수집 시작...")
@@ -497,7 +502,9 @@ async def main() -> None:
             else:
                 await record_repo.save(summary)
                 new_summaries.append(summary)
-                print(f"  Ingested: {summary.record_date} (걸음: {summary.step_count:,}, 심박수: {'있음' if summary.heart_rate_avg else '없음'})")
+                print(
+                    f"  Ingested: {summary.record_date} (걸음: {summary.step_count:,}, 심박수: {'있음' if summary.heart_rate_avg else '없음'})"
+                )
 
         if new_summaries:
             print(f"\n청크 생성 중 ({len(new_summaries)}개)...")

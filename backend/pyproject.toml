@@ -7,12 +7,45 @@ dependencies = [
     "alembic>=1.18.4",
     "asyncpg>=0.31.0",
     "fastapi>=0.131.0",
+    "httpx>=0.27.0",      # 카카오 OAuth HTTP 클라이언트 (DEC-022.4)
     "openai>=2.21.0",
     "pydantic-settings>=2.13.1",
+    "python-jose[cryptography]>=3.3.0",  # JWT 서명·검증 (DEC-023)
     "sqlalchemy[asyncio]>=2.0.46",
     "uvicorn[standard]>=0.41.0",
     "langgraph>=0.2",
     "sentence-transformers>=3.0",
     "pgvector>=0.3",
-    "pyjwt>=2.13.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.15.16",
+]
+
+[tool.ruff]
+# 클린 아키텍처 백엔드 린트 설정 (pre-commit / lint-staged에서 사용)
+line-length = 100
+target-version = "py313"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+# E/W(pycodestyle), F(pyflakes), I(isort), UP(pyupgrade), B(bugbear)
+select = ["E", "W", "F", "I", "UP", "B"]
+ignore = [
+    "E501",  # 라인 길이는 ruff format이 처리
+    "B008",  # FastAPI 표준 패턴(Depends를 기본 인자로) false positive
+    # 아래 두 룰은 의미 있으나 기존 코드 호환을 위해 도입 단계에서는 보류 (TODO: 점진 활성화)
+    "B904",  # except 내 raise ... from
+    "B905",  # zip(strict=) 명시
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"

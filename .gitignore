@@ -1,60 +1,57 @@
-# ===== OS =====
+# Python (BE)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node (FE)
+node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+.eslintcache
+
+# 2026-05-27 Tamaya v3 풀 재구현 — 이전 frontend는 git commit `30ce5e5`에 정본 보존
+frontend.legacy/
+
+# Env (모든 secrets — Tamanya invariant)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# OS
 .DS_Store
 Thumbs.db
 
-# ===== Editor / IDE =====
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# ===== Env / Secrets =====
-.env
-.env.local
-.env.*.local
-backend/.env.production
-!*.example
-
-# ===== Logs =====
+# Logs
 *.log
 logs/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
 
-# ===== Node / Frontend =====
-node_modules/
-.pnpm-store/
-dist/
-build/
-.vite/
-.cache/
-coverage/
-*.tsbuildinfo
-
-# ===== Python / Backend =====
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-.venv/
-venv/
-env/
-ENV/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-htmlcov/
-*.egg-info/
-
-# ===== Database / Local artifacts =====
+# Database
+*.db
 *.sqlite
 *.sqlite3
-*.db
+postgres_data/
 
-# ===== Misc =====
-*.md
-/docs/
+# Build artifacts
+*.tar.gz
+*.zip
+
+# Claude session local (project-only)
+.claude/settings.local.json

@@ -9,8 +9,6 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # 최초 부팅 시 pgvector 확장 자동 생성 (create_all/alembic 의 VECTOR 컬럼용)
-      - ./deploy/db-init:/docker-entrypoint-initdb.d:ro
 
 volumes:
   pgdata:

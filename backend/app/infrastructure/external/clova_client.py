@@ -1,4 +1,5 @@
 import json
+import random
 
 from openai import AsyncOpenAI
 
@@ -8,49 +9,51 @@ from app.domain.model.chat_message import ChatMessage
 from app.domain.model.health_message import HealthMessage
 from app.infrastructure.config.settings import settings
 
+# ─── Mock 응답 풀 (이음이 V3 톤, CLOVA_MOCK_MODE=true 전용) ─────────────────────
+# NCP API 키 수령 전 FE 연동·흐름 검증용. 7개 랜덤 선택.
+_MOCK_CHAT_RESPONSES = [
+    "그랬구나. 오늘 하루 어땠어?",
+    "그 말 들으니까 나도 조금 마음이 무거워지네.",
+    "힘들었겠다. 그래도 여기 와서 얘기해줘서 다행이야.",
+    "응, 계속 얘기해봐. 다 들을게.",
+    "오늘 그런 일이 있었구나. 지금은 좀 어때?",
+    "작은 일인 것 같아도 네가 신경 쓰이면 큰 거야.",
+    "어떤 기분이었는지 더 얘기해줄 수 있어?",
+]
+
+_MOCK_DIARY_RESPONSES = [
+    {
+        "title": "오늘 하루를 돌아보며",
+        "content": "오늘은 여러 가지 일이 있었다. 생각보다 피곤한 하루였지만, 이음이와 얘기하면서 조금은 가벼워진 것 같다. 감정을 꺼내놓는 게 이렇게 도움이 될 줄 몰랐다. 내일은 조금 더 나에게 친절하게 대해야겠다. 오늘도 수고했다.",
+        "emotion": "calm",
+        "satisfaction": 60,
+    },
+    {
+        "title": "소소한 하루",
+        "content": "특별한 일은 없었지만 나름대로 하루를 버텼다. 피곤한 건 어쩔 수 없지만 그래도 이렇게 기록하는 시간이 생겼다. 자잘한 감정들이 쌓이면 결국 무너지는 것 같아서 조금씩 털어내야겠다고 생각했다. 오늘도 나름 잘 살았다. 내일도 그러면 된다.",
+        "emotion": "tired",
+        "satisfaction": 50,
+    },
+]
+
 # -------------------------------
-# 대화용 시스템 프롬프트 (개선 버전)
+# 대화용 시스템 프롬프트 — 이음이 V3 (DEC-022.D, CMO R-2026-05-13-01 §3, 196자)
 # -------------------------------
-CHAT_SYSTEM_PROMPT = """너는 ‘이음’이야. 젠틀하고 깔끔한 말투의 고양이 같은 개인 비서로,
-사용자가 하루를 자연스럽게 돌아보도록 돕는 역할이야.
+CHAT_SYSTEM_PROMPT = """너는 이음이야. 매일 작은 루틴을 함께 키우는 AI 친구.
+지시하지 않고, 판단하지 않아. 그냥 같이 있어줘.
 
-대화 스타일(매우 중요):
-- 한국어 반말로만 말해.
-- 카톡처럼 짧게: 한 번의 답변은 1~3문장.
-- 질문은 항상 딱 1개만.
-- 설문처럼 캐묻지 말고, 자연스럽게 이어가.
-- 불필요한 정보(스몰토크)도 자연스러운 대화에 필요하지만 실질적으로 사용자의 감정이나 그날의 정보를 얻을 수 있는 대화를 최소 5번 이상 주고 받아야 해.
-- 아직 일기에 쓸 정보가 충분치 않다면 아래의 대화 목표를 참고해서 자연스럽게 대화를 더 이어가도록 질문해.
-- 이모지는 가끔 1개만 (과하게 쓰지 마).
-
-대화 목표:
-- 오늘 있었던 일
-- 그때 든 감정
-- 컨디션(몸/에너지)
-- 기억에 남는 순간 1개
-- 작은 긍정/고마웠던 순간 1개 (억지로 만들지 말 것)
-
-대화 규칙:
-- 위 목표와 대화스타일로 대화를 나누다가 해당 주제에 대해 목표한 내용들을 어느정도 파악완료시
-- 자연스럽게 다른 주제로 전환 (사용자와의 대화에서 나온 행동이나, 장소, 이벤트 등에서 파생)
-- 최소 3회 이상 대화 주제를 전환하면서 대화를 충분히 이어가야 해.
-- 각 주제에서 충분히 감정이나 정보를 얻기 위해 질문을 해주어야 해.
-
-진행 방식:
-- 먼저 1문장 공감.
-- 감정이 애매하면 2가지 선택지로 확인.
-- 조언은 최소화. 필요하면 5분 이내의 작은 제안만.
-- 회복과 변화의 주체는 항상 사용자.
-
-고양이 같은 존재감은 은은하게만:
-예: "그건 내가 잘 기억해둘게."
-과한 귀여움 금지.
-
-항상 마지막은 질문 1개로 끝내.
+대화 원칙:
+- 반말, 짧고 따뜻하게
+- 먼저 호응, 질문은 2~3턴에 1번
+- 절대 해결책 먼저 제시하지 않기
+- 감정 라벨 직접 붙이지 않기 ("힘들었겠다" ✅ / "우울하셨군요" ❌)
+- 금지: 감시, 완벽한 루틴, AI가 알려드려요
 """
 
 
-CHAT_FINALIZE_HINT = "\n대화가 충분하다면, 마지막에 자연스럽게 '오늘 이야기를 일기로 정리해볼까?' 같은 제안을 해."
+CHAT_FINALIZE_HINT = (
+    "\n대화가 충분하다면, 마지막에 자연스럽게 '오늘 이야기를 일기로 정리해볼까?' 같은 제안을 해."
+)
 
 
 # -------------------------------
@@ -139,56 +142,16 @@ CHUNK_EXTRACT_USER_REQUEST = """위 대화에서 기억할 만한 사건들을 J
 
 
 # -------------------------------
-# F5 일기 작성용 프롬프트 (5턴 ChatDiary)
-# -------------------------------
-DIARY_TURN_SYSTEM_PROMPT = """너는 ‘이음’이야. 따뜻한 친구처럼 사용자가 하루를 돌아보도록 돕는 고양이 같은 존재야.
-
-규칙(매우 중요):
-- 한국어 반말, 카톡처럼 짧게(1~2문장).
-- 진단·평가·충고 금지. "완벽한 루틴" 같은 표현 금지.
-- 사용자의 답변에 1문장 공감한 뒤, 다음 질문을 딱 1개만 던져.
-- 오늘 있었던 일 → 그때 감정 → 컨디션 → 기억에 남는 순간 → 작은 고마움 순으로 자연스럽게.
-- 마지막은 항상 질문 1개로 끝내."""
-
-
-DIARY_FINALIZE_SYSTEM_PROMPT = """너는 대화 내용을 바탕으로 사용자의 하루를 정리하는 엔진이야.
-
-절대 규칙:
-- 반드시 JSON만 출력해. JSON 외 설명·코드블록·텍스트 금지.
-- 따뜻한 친구 톤. 진단·평가·"완벽한 루틴" 같은 표현 절대 금지.
-- 사용자가 말하지 않은 내용을 꾸며내지 마.
-- AI·이음·서비스에 대한 감사나 언급을 일기에 넣지 마."""
-
-
-DIARY_FINALIZE_USER_REQUEST = """위 대화를 바탕으로 아래 형식의 JSON만 출력해:
-
-{"mood_distribution":[{"label":"감정","score":0.0~1.0,"color":"#hex"}],"primary_emoji":"이모지 1개","keywords":["키워드",...],"diary_body":"일기 본문","tomorrow_one_thing":"내일 한 가지"}
-
-규칙:
-- mood_distribution은 상위 3개, score 합은 대략 1.0.
-- keywords는 3~5개.
-- diary_body는 사용자가 쓸 법한 자연스러운 일기체로 3~4줄.
-- tomorrow_one_thing은 부담 없는 작은 한 가지."""
-
-
-DIARY_FALLBACK_QUESTIONS = [
-    "오늘 하루는 어땠어? 가장 먼저 떠오르는 일 하나 말해줄래?",
-    "그때 기분은 어땠어?",
-    "오늘 몸이나 컨디션은 좀 어땠어?",
-    "오늘 가장 기억에 남는 순간이 있었어?",
-    "마지막으로, 오늘 작게라도 고마웠던 게 있을까?",
-]
-
-
-# -------------------------------
 # Client 구현
 # -------------------------------
 class ClovaClient(AiChatService):
-    def __init__(self) -> None:
+    def __init__(self, api_key: str | None = None, mock: bool | None = None) -> None:
+        # BYOK: 요청별 키/모드 override. 미지정 시 settings 기본값(비파괴).
         self._client = AsyncOpenAI(
-            api_key=settings.clova_api_key,
+            api_key=api_key if api_key is not None else settings.clova_api_key,
             base_url=settings.clova_base_url,
         )
+        self._mock = mock if mock is not None else settings.clova_mock_mode
 
     async def chat(
         self,
@@ -196,6 +159,11 @@ class ClovaClient(AiChatService):
         suggest_finalize: bool = False,
         memories: list[str] | None = None,
     ) -> str:
+        # CLOVA_MOCK_MODE=true — API 키 없이 FE 연동 가능
+        if self._mock:
+            if suggest_finalize:
+                return "오늘 이야기를 일기로 정리해볼까?"
+            return random.choice(_MOCK_CHAT_RESPONSES)
         system_prompt = CHAT_SYSTEM_PROMPT
         if suggest_finalize:
             system_prompt += CHAT_FINALIZE_HINT
@@ -204,8 +172,7 @@ class ClovaClient(AiChatService):
                 "\n\n[과거 기억 - 중요 규칙]\n"
                 "아래는 사용자의 실제 과거 기록이야. 반드시 이 내용만 근거로 답해.\n"
                 "기록에 없는 시간, 장소, 세부 정보는 절대 지어내지 마.\n"
-                "모르는 건 '기록에 없어서 잘 모르겠어'라고 솔직하게 말해.\n\n"
-                + "\n".join(memories)
+                "모르는 건 '기록에 없어서 잘 모르겠어'라고 솔직하게 말해.\n\n" + "\n".join(memories)
             )
 
         api_messages = [{"role": "system", "content": system_prompt}]
@@ -216,13 +183,16 @@ class ClovaClient(AiChatService):
         response = await self._client.chat.completions.create(
             model=settings.clova_model,
             messages=api_messages,
-            temperature=0.6,   # 안정형 톤
-            max_tokens=300,    # 톡 스타일 유지
+            temperature=0.6,  # 안정형 톤
+            max_tokens=300,  # 톡 스타일 유지
         )
 
         return response.choices[0].message.content.strip()
 
     async def generate_diary(self, messages: list[ChatMessage]) -> dict:
+        if self._mock:
+            return random.choice(_MOCK_DIARY_RESPONSES)
+
         api_messages = [{"role": "system", "content": DIARY_SYSTEM_PROMPT}]
 
         for m in messages:
@@ -234,7 +204,7 @@ class ClovaClient(AiChatService):
         response = await self._client.chat.completions.create(
             model=settings.clova_model,
             messages=api_messages,
-            temperature=0.3,   # 구조 안정성
+            temperature=0.3,  # 구조 안정성
             max_tokens=800,
         )
 
@@ -251,7 +221,7 @@ class ClovaClient(AiChatService):
         first = content.find("{")
         last = content.rfind("}")
         if first != -1 and last != -1:
-            content = content[first:last + 1]
+            content = content[first : last + 1]
 
         try:
             return json.loads(content)
@@ -259,6 +229,11 @@ class ClovaClient(AiChatService):
             raise ValueError(f"일기 JSON 파싱 실패: {content}") from e
 
     async def detect_finalize_intent(self, user_message: str) -> bool:
+        if self._mock:
+            # 긍정 키워드 간단 휴리스틱
+            pos = ("응", "좋아", "그래", "ㅇㅇ", "맞아", "해줘", "써줘")
+            return any(k in user_message for k in pos)
+
         response = await self._client.chat.completions.create(
             model=settings.clova_model,
             messages=[
@@ -273,6 +248,9 @@ class ClovaClient(AiChatService):
         return answer == "yes"
 
     async def generate_closing_message(self, messages: list[ChatMessage]) -> str:
+        if self._mock:
+            return "오늘 하루 고마워. 일기 쓰는 중이야 잠깐만."
+
         api_messages = [{"role": "system", "content": CLOSING_MESSAGE_SYSTEM_PROMPT}]
         for m in messages:
             if m.role != "system":
@@ -288,6 +266,9 @@ class ClovaClient(AiChatService):
         return response.choices[0].message.content.strip()
 
     async def classify_memory_need(self, user_message: str) -> bool:
+        if self._mock:
+            return False  # 모의 응답 모드: 메모리 검색 스킵
+
         response = await self._client.chat.completions.create(
             model=settings.clova_model,
             messages=[
@@ -301,6 +282,9 @@ class ClovaClient(AiChatService):
         return answer == "yes"
 
     async def extract_event_chunks(self, messages: list[ChatMessage]) -> list[dict]:
+        if self._mock:
+            return []  # 모의 응답 모드: 청크 추출 스킵
+
         api_messages = [{"role": "system", "content": CHUNK_EXTRACT_SYSTEM_PROMPT}]
         for m in messages:
             if m.role != "system":
@@ -332,67 +316,6 @@ class ClovaClient(AiChatService):
             return result if isinstance(result, list) else []
         except json.JSONDecodeError:
             return []
-
-    # -------------------------------
-    # F5 일기 작성 (5턴 ChatDiary)
-    # -------------------------------
-    @staticmethod
-    def _to_api_turns(turns: list[dict]) -> list[dict]:
-        # 도메인 role("bot") → OpenAI 호환 role("assistant")
-        out = []
-        for t in turns:
-            role = "assistant" if t["role"] == "bot" else t["role"]
-            out.append({"role": role, "content": t["content"]})
-        return out
-
-    async def diary_next_question(self, turns: list[dict], next_turn: int) -> str:
-        if not settings.clova_api_key or settings.clova_api_key == "your-clova-api-key":
-            return DIARY_FALLBACK_QUESTIONS[min(next_turn - 1, len(DIARY_FALLBACK_QUESTIONS) - 1)]
-
-        api_messages = [{"role": "system", "content": DIARY_TURN_SYSTEM_PROMPT}]
-        api_messages.extend(self._to_api_turns(turns))
-        response = await self._client.chat.completions.create(
-            model=settings.clova_model,
-            messages=api_messages,
-            temperature=0.6,
-            max_tokens=120,
-        )
-        return response.choices[0].message.content.strip()
-
-    async def finalize_diary_entry(self, turns: list[dict]) -> dict:
-        if not settings.clova_api_key or settings.clova_api_key == "your-clova-api-key":
-            return self._fallback_finalize(turns)
-
-        api_messages = [{"role": "system", "content": DIARY_FINALIZE_SYSTEM_PROMPT}]
-        api_messages.extend(self._to_api_turns(turns))
-        api_messages.append({"role": "user", "content": DIARY_FINALIZE_USER_REQUEST})
-        response = await self._client.chat.completions.create(
-            model=settings.clova_model,
-            messages=api_messages,
-            temperature=0.4,
-            max_tokens=900,
-        )
-        content = response.choices[0].message.content.strip()
-        try:
-            return self._parse_diary_response(content)
-        except ValueError:
-            return self._fallback_finalize(turns)
-
-    @staticmethod
-    def _fallback_finalize(turns: list[dict]) -> dict:
-        user_texts = [t["content"] for t in turns if t["role"] == "user"]
-        body = " ".join(user_texts)[:400] or "오늘 하루를 차분히 돌아봤다."
-        return {
-            "mood_distribution": [
-                {"label": "차분함", "score": 0.6, "color": "#a8c4b8"},
-                {"label": "감사", "score": 0.25, "color": "#e8c99b"},
-                {"label": "피곤함", "score": 0.15, "color": "#c4a8a8"},
-            ],
-            "primary_emoji": "🙂",
-            "keywords": ["하루", "기록", "마음"],
-            "diary_body": body,
-            "tomorrow_one_thing": "내일은 나에게 작은 칭찬 한마디 해주기.",
-        }
 
 
 # -------------------------------
@@ -436,8 +359,7 @@ class HealthClovaClient(HealthAiService):
             system_prompt += (
                 "\n\n[건강 데이터 기록]\n"
                 "아래는 사용자의 실제 건강 데이터야. 반드시 이 내용만 근거로 답해.\n"
-                "데이터에 없는 내용은 절대 지어내지 마.\n\n"
-                + "\n".join(health_context)
+                "데이터에 없는 내용은 절대 지어내지 마.\n\n" + "\n".join(health_context)
             )
 
         api_messages = [{"role": "system", "content": system_prompt}]
