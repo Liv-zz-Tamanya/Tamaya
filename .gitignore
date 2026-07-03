@@ -24,8 +24,8 @@ frontend.legacy/
 
 # Env (모든 secrets — Tamanya invariant)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 *.pem
 *.key
 
