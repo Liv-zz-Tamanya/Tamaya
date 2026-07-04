@@ -71,10 +71,9 @@ export async function checkNickname(nickname: string): Promise<boolean> {
 
 type NicknameTokenResponse = TokenResponse & { device_id: string; is_new: boolean };
 
-/** 닉네임 회원가입/로그인 통합. 토큰 저장 + 데이터 네임스페이스(device_id)를 닉네임 계정으로 고정.
- *  반환: 이번에 신규 가입했는지 여부. */
-export async function loginWithNickname(nickname: string): Promise<{ isNew: boolean }> {
-  const res = await apiFetch<NicknameTokenResponse>('/auth/nickname', {
+/** 토큰 저장 + 데이터 네임스페이스(device_id)를 닉네임 계정으로 고정하는 공통 처리. */
+async function nicknameAuth(path: string, nickname: string): Promise<{ isNew: boolean }> {
+  const res = await apiFetch<NicknameTokenResponse>(path, {
     method: 'POST',
     body: { nickname },
     auth: false,
@@ -88,4 +87,14 @@ export async function loginWithNickname(nickname: string): Promise<{ isNew: bool
     // ignore quota/unavailable
   }
   return { isNew: res.is_new };
+}
+
+/** 닉네임 회원가입. 이미 있으면 ApiError(409). */
+export function signupWithNickname(nickname: string): Promise<{ isNew: boolean }> {
+  return nicknameAuth('/auth/nickname/signup', nickname);
+}
+
+/** 닉네임 로그인. 없는 닉네임이면 ApiError(404). */
+export function loginWithNickname(nickname: string): Promise<{ isNew: boolean }> {
+  return nicknameAuth('/auth/nickname/login', nickname);
 }

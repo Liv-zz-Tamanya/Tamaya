@@ -167,23 +167,10 @@ async def check_nickname(nickname: str, db: AsyncSession = Depends(get_db)):
     return NicknameCheckResponse(nickname=name, available=existing is None)
 
 
-@router.post(
-    "/nickname",
-    response_model=NicknameTokenResponse,
-    summary="닉네임 회원가입/로그인 (통합)",
-)
-async def login_nickname(body: NicknameLoginRequest, db: AsyncSession = Depends(get_db)):
-    """
-    닉네임 입력 → 없으면 가입, 있으면 로그인 (데모: 비밀번호 없음).
-    앱 데이터는 device_id = f"nick-{nickname}" 네임스페이스로 키잉되어 닉네임별로 분리된다.
-    """
-    name = _normalize_nickname(body.nickname)
-    existing = await db.scalar(select(UserModel).where(UserModel.nickname == name))
-    is_new = existing is None
-    if is_new:
-        db.add(UserModel(id=uuid.uuid4(), nickname=name))
-        await db.commit()
-
+async def _issue_nickname_token(
+    db: AsyncSession, name: str, *, is_new: bool
+) -> NicknameTokenResponse:
+    """닉네임 계정 세션 발급. 데이터는 device_id = f"nick-{nickname}" 네임스페이스로 분리."""
     device_id = f"nick-{name}"
     access_token, refresh_token, _, identity = await _create_session(db, device_id=device_id)
     return NicknameTokenResponse(
@@ -193,6 +180,41 @@ async def login_nickname(body: NicknameLoginRequest, db: AsyncSession = Depends(
         device_id=device_id,
         is_new=is_new,
     )
+
+
+@router.post(
+    "/nickname/signup",
+    response_model=NicknameTokenResponse,
+    summary="닉네임 회원가입",
+)
+async def signup_nickname(body: NicknameLoginRequest, db: AsyncSession = Depends(get_db)):
+    """닉네임 회원가입 (데모: 비밀번호 없음). 이미 있으면 409."""
+    name = _normalize_nickname(body.nickname)
+    existing = await db.scalar(select(UserModel).where(UserModel.nickname == name))
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="이미 사용 중인 닉네임입니다"
+        )
+    db.add(UserModel(id=uuid.uuid4(), nickname=name))
+    await db.commit()
+    return await _issue_nickname_token(db, name, is_new=True)
+
+
+@router.post(
+    "/nickname/login",
+    response_model=NicknameTokenResponse,
+    summary="닉네임 로그인",
+)
+async def login_nickname(body: NicknameLoginRequest, db: AsyncSession = Depends(get_db)):
+    """닉네임 로그인 (데모: 비밀번호 없음). 없는 닉네임이면 404."""
+    name = _normalize_nickname(body.nickname)
+    existing = await db.scalar(select(UserModel).where(UserModel.nickname == name))
+    if existing is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="존재하지 않는 닉네임입니다. 회원가입해 주세요",
+        )
+    return await _issue_nickname_token(db, name, is_new=False)
 
 
 @router.post("/kakao", response_model=TokenResponse, summary="카카오 OAuth2 인증")

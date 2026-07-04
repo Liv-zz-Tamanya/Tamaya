@@ -1,22 +1,34 @@
 import { useState } from 'react';
 import { CatSketch, StatusBar } from '../components/primitives';
 import { useNav } from '../lib/router';
-import { checkNickname, ensureDeviceToken, loginWithNickname } from '../lib/api';
+import { ApiError, checkNickname, loginWithNickname, signupWithNickname } from '../lib/api';
 
-// 21 · Login — 닉네임 회원가입/로그인 통합 (데모: 비밀번호 없음)
-// 닉네임 입력 → [중복확인]으로 신규/기존 안내 → [시작하기]로 가입 or 로그인.
-// 로그인 시 데이터 네임스페이스(device_id)가 닉네임 계정으로 고정 → 닉네임별 자기 데이터.
-// '익명으로 둘러보기'는 기존 device 익명 진입 폴백으로 유지.
+// 21 · 닉네임 입력 (데모: 비밀번호 없음)
+// 진입 모드(signup/login)는 welcome 화면에서 setInitialAuthMode로 전달받는다.
+//   - 회원가입 성공 → 온보딩(고양이 생성)으로
+//   - 로그인 성공   → 바로 홈으로
+// ⚠️ 비회원(익명) 진입 기능(ensureDeviceToken)은 유지하되 지금은 UI에서 노출하지 않음.
 
 const NICK_MAX = 16;
 
+type Mode = 'signup' | 'login';
+
+// welcome → login 사이 모드 전달 (in-memory 라우터라 파라미터가 없어 모듈 변수로 넘긴다).
+let initialMode: Mode = 'login';
+export const setInitialAuthMode = (m: Mode) => {
+  initialMode = m;
+};
+
 export const S21_Login = () => {
   const nav = useNav();
+  // 마운트 시 1회 캡처 (이후 initialMode 변경과 무관).
+  const [mode] = useState<Mode>(initialMode);
   const [nickname, setNickname] = useState('');
-  const [loading, setLoading] = useState<'check' | 'start' | 'anon' | null>(null);
+  const [loading, setLoading] = useState<'check' | 'submit' | null>(null);
   const [hint, setHint] = useState<{ ok: boolean; text: string } | null>(null);
 
   const busy = loading !== null;
+  const isSignup = mode === 'signup';
 
   const doCheck = () => {
     const name = nickname.trim();
@@ -30,8 +42,8 @@ export const S21_Login = () => {
         const available = await checkNickname(name);
         setHint(
           available
-            ? { ok: true, text: '사용 가능한 새 닉네임이에요 · 시작하면 가입돼요' }
-            : { ok: true, text: '이미 있는 닉네임이에요 · 시작하면 이어서 로그인돼요' },
+            ? { ok: true, text: '사용 가능한 닉네임이에요' }
+            : { ok: false, text: '이미 사용 중인 닉네임이에요' },
         );
       } catch {
         setHint({ ok: false, text: '확인 실패 · 서버 연결을 확인해 주세요' });
@@ -41,34 +53,32 @@ export const S21_Login = () => {
     })();
   };
 
-  const start = () => {
+  const submit = () => {
     const name = nickname.trim();
     if (!name) {
       setHint({ ok: false, text: '닉네임을 입력해 주세요' });
       return;
     }
-    setLoading('start');
+    setLoading('submit');
     void (async () => {
       try {
-        await loginWithNickname(name);
-        nav.reset('welcome');
-      } catch {
-        setHint({ ok: false, text: '시작 실패 · 서버 연결을 확인해 주세요' });
+        if (isSignup) {
+          await signupWithNickname(name);
+          nav.reset('privacy'); // 신규 → 온보딩(고양이 생성)으로
+        } else {
+          await loginWithNickname(name);
+          nav.reset('home-night'); // 기존 → 바로 홈으로
+        }
+      } catch (e) {
+        const status = e instanceof ApiError ? e.status : 0;
+        if (isSignup && status === 409) {
+          setHint({ ok: false, text: '이미 사용 중인 닉네임이에요' });
+        } else if (!isSignup && status === 404) {
+          setHint({ ok: false, text: '없는 닉네임이에요 · 회원가입해 주세요' });
+        } else {
+          setHint({ ok: false, text: '실패 · 서버 연결을 확인해 주세요' });
+        }
         setLoading(null);
-      }
-    })();
-  };
-
-  const enterAnon = () => {
-    setLoading('anon');
-    void (async () => {
-      try {
-        await ensureDeviceToken();
-      } catch {
-        // BE 미기동/오프라인 — 진입은 막지 않음(토큰은 첫 API 호출 때 재시도)
-      } finally {
-        setLoading(null);
-        nav.reset('welcome');
       }
     })();
   };
@@ -80,7 +90,7 @@ export const S21_Login = () => {
         background: 'linear-gradient(180deg, #f5e6cf 0%, #ead0a6 70%, #d8a777 100%)',
       }}
     >
-      <StatusBar mode="day" time="9:00 AM" />
+      <StatusBar mode="day" time="9:24 AM" />
       <div
         style={{
           padding: '60px 24px 24px',
@@ -97,26 +107,22 @@ export const S21_Login = () => {
             borderRadius: '50%',
             padding: 16,
             border: '2px solid #3a2414',
-            marginTop: 24,
+            marginTop: 32,
           }}
         >
-          <CatSketch size={96} mood="happy" />
+          <CatSketch size={100} mood="happy" />
         </div>
         <div className="h-display" style={{ fontSize: 40, marginTop: 14 }}>
           Tamaya
         </div>
         <div className="handwriting" style={{ fontSize: 19, marginTop: 4, color: '#5a3a22' }}>
-          매일 작은 루틴을 함께 키우는 AI 친구
+          {isSignup ? '반가워요! 닉네임을 만들어 주세요' : '다시 왔군요! 닉네임을 알려주세요'}
         </div>
 
         <div style={{ marginTop: 'auto', width: '100%' }}>
-          <label
-            className="tiny"
-            htmlFor="nickname"
-            style={{ display: 'block', textAlign: 'left', color: '#5a3a22', marginBottom: 6 }}
-          >
-            닉네임으로 시작하기
-          </label>
+          <div className="tiny" style={{ textAlign: 'left', color: '#5a3a22', marginBottom: 6 }}>
+            {isSignup ? '회원가입 · 사용할 닉네임' : '로그인 · 닉네임'}
+          </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
               id="nickname"
@@ -124,13 +130,14 @@ export const S21_Login = () => {
               value={nickname}
               maxLength={NICK_MAX}
               disabled={busy}
+              autoFocus
               placeholder={`닉네임 (최대 ${NICK_MAX}자)`}
               onChange={(e) => {
                 setNickname(e.target.value);
                 setHint(null);
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') start();
+                if (e.key === 'Enter') submit();
               }}
               style={{
                 flex: 1,
@@ -144,23 +151,25 @@ export const S21_Login = () => {
                 fontSize: 16,
               }}
             />
-            <button
-              type="button"
-              disabled={busy}
-              onClick={doCheck}
-              className="btn"
-              style={{
-                flexShrink: 0,
-                background: '#fff9ef',
-                color: '#3a2414',
-                border: '1.5px solid #3a2414',
-                cursor: busy ? 'wait' : 'pointer',
-                fontFamily: 'inherit',
-                padding: '0 14px',
-              }}
-            >
-              {loading === 'check' ? '…' : '중복확인'}
-            </button>
+            {isSignup && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={doCheck}
+                className="btn"
+                style={{
+                  flexShrink: 0,
+                  background: '#fff9ef',
+                  color: '#3a2414',
+                  border: '1.5px solid #3a2414',
+                  cursor: busy ? 'wait' : 'pointer',
+                  fontFamily: 'inherit',
+                  padding: '0 14px',
+                }}
+              >
+                {loading === 'check' ? '…' : '중복확인'}
+              </button>
+            )}
           </div>
 
           {hint && (
@@ -179,21 +188,16 @@ export const S21_Login = () => {
           <button
             type="button"
             disabled={busy}
-            onClick={start}
+            onClick={submit}
             className="btn primary block"
-            style={{
-              marginTop: 14,
-              cursor: busy ? 'wait' : 'pointer',
-              fontFamily: 'inherit',
-            }}
+            style={{ marginTop: 14, cursor: busy ? 'wait' : 'pointer', fontFamily: 'inherit' }}
           >
-            {loading === 'start' ? '잠시만요…' : '시작하기'}
+            {loading === 'submit' ? '잠시만요…' : isSignup ? '회원가입' : '로그인'}
           </button>
-
           <button
             type="button"
             disabled={busy}
-            onClick={enterAnon}
+            onClick={() => nav.back()}
             style={{
               marginTop: 12,
               background: 'none',
@@ -205,11 +209,8 @@ export const S21_Login = () => {
               fontSize: 13,
             }}
           >
-            {loading === 'anon' ? '잠시만요…' : '익명으로 둘러보기'}
+            ← 뒤로
           </button>
-          <div className="tiny" style={{ marginTop: 8, color: '#5a3a22' }}>
-            * 데모용 · 닉네임만으로 가입/로그인 (비밀번호 없음)
-          </div>
         </div>
       </div>
     </div>

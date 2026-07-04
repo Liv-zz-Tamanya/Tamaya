@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { CatSketch, StatusBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { CatColor, Personality, useStore } from '../lib/store';
+import { setInitialAuthMode } from './login';
 
 // 01-05 · Onboarding sequence (5 screens, 375×812)
 
@@ -124,33 +125,34 @@ export const S02_Welcome = () => {
         </div>
       </div>
     </div>
-    <div style={{ position: 'absolute', bottom: 28, left: 24, right: 24 }}>
+    <div style={{ position: 'absolute', bottom: 24, left: 24, right: 24 }}>
       <button
         type="button"
-        onClick={() => nav.go('privacy')}
+        onClick={() => {
+          setInitialAuthMode('signup');
+          nav.go('login');
+        }}
         className="btn primary block"
-        style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+        style={{ cursor: 'pointer', fontFamily: 'inherit', marginBottom: 10 }}
       >
-        시작하기
+        회원가입
       </button>
-    </div>
-    <div
-      style={{ position: 'absolute', bottom: 8, left: 24, right: 24, textAlign: 'center' }}
-    >
       <button
         type="button"
-        onClick={() => nav.go('login')}
-        className="tiny"
+        onClick={() => {
+          setInitialAuthMode('login');
+          nav.go('login');
+        }}
+        className="btn block"
         style={{
-          background: 'transparent',
-          border: 'none',
+          background: '#fff9ef',
+          color: '#3a2414',
+          border: '1.5px solid #3a2414',
           cursor: 'pointer',
           fontFamily: 'inherit',
-          color: '#7a5634',
-          textDecoration: 'underline',
         }}
       >
-        이미 계정이 있어요  →  로그인
+        로그인
       </button>
     </div>
   </div>

@@ -7,6 +7,7 @@ export {
   ensureDeviceToken,
   getDeviceId,
   checkNickname,
+  signupWithNickname,
   loginWithNickname,
   getNickname,
 } from './auth';
