@@ -152,6 +152,17 @@ class UserSessionModel(Base):
         return self.revoked_at is None
 
 
+class UserModel(Base):
+    """닉네임 기반 데모 계정 — 닉네임 UNIQUE로 회원가입/로그인을 식별한다.
+    비밀번호 없는 데모용. 앱 데이터는 여전히 device_id(= f"nick-{nickname}")로 키잉된다."""
+
+    __tablename__ = "users"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    nickname: Mapped[str] = mapped_column(String(32), unique=True, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
 class HealthSessionModel(Base):
     __tablename__ = "health_sessions"
 

@@ -1,22 +1,69 @@
 import { useState } from 'react';
 import { CatSketch, StatusBar } from '../components/primitives';
 import { useNav } from '../lib/router';
-import { ensureDeviceToken } from '../lib/api';
+import { checkNickname, ensureDeviceToken, loginWithNickname } from '../lib/api';
 
-// 21 · Login — kakao + anonymous device_id (DEC-022.4 정합)
-// 건강냥이 BE 연동: 익명/카카오 모두 POST /auth/device 로 device 토큰 확보.
-// (실 카카오 OAuth code 플로우는 Phase 2. PoC는 device 신원으로 진입.)
-// BE 미기동/오프라인이어도 온보딩은 진행(graceful) — 토큰은 다음 호출 때 lazy 확보.
+// 21 · Login — 닉네임 회원가입/로그인 통합 (데모: 비밀번호 없음)
+// 닉네임 입력 → [중복확인]으로 신규/기존 안내 → [시작하기]로 가입 or 로그인.
+// 로그인 시 데이터 네임스페이스(device_id)가 닉네임 계정으로 고정 → 닉네임별 자기 데이터.
+// '익명으로 둘러보기'는 기존 device 익명 진입 폴백으로 유지.
+
+const NICK_MAX = 16;
 
 export const S21_Login = () => {
   const nav = useNav();
-  const [loading, setLoading] = useState<'kakao' | 'anon' | null>(null);
+  const [nickname, setNickname] = useState('');
+  const [loading, setLoading] = useState<'check' | 'start' | 'anon' | null>(null);
+  const [hint, setHint] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const enter = (kind: 'kakao' | 'anon') => {
-    setLoading(kind);
+  const busy = loading !== null;
+
+  const doCheck = () => {
+    const name = nickname.trim();
+    if (!name) {
+      setHint({ ok: false, text: '닉네임을 입력해 주세요' });
+      return;
+    }
+    setLoading('check');
     void (async () => {
       try {
-        await ensureDeviceToken(); // 실제 /auth/device 토큰 확보 (liv-I1: device_id 익명)
+        const available = await checkNickname(name);
+        setHint(
+          available
+            ? { ok: true, text: '사용 가능한 새 닉네임이에요 · 시작하면 가입돼요' }
+            : { ok: true, text: '이미 있는 닉네임이에요 · 시작하면 이어서 로그인돼요' },
+        );
+      } catch {
+        setHint({ ok: false, text: '확인 실패 · 서버 연결을 확인해 주세요' });
+      } finally {
+        setLoading(null);
+      }
+    })();
+  };
+
+  const start = () => {
+    const name = nickname.trim();
+    if (!name) {
+      setHint({ ok: false, text: '닉네임을 입력해 주세요' });
+      return;
+    }
+    setLoading('start');
+    void (async () => {
+      try {
+        await loginWithNickname(name);
+        nav.reset('welcome');
+      } catch {
+        setHint({ ok: false, text: '시작 실패 · 서버 연결을 확인해 주세요' });
+        setLoading(null);
+      }
+    })();
+  };
+
+  const enterAnon = () => {
+    setLoading('anon');
+    void (async () => {
+      try {
+        await ensureDeviceToken();
       } catch {
         // BE 미기동/오프라인 — 진입은 막지 않음(토큰은 첫 API 호출 때 재시도)
       } finally {
@@ -50,49 +97,118 @@ export const S21_Login = () => {
             borderRadius: '50%',
             padding: 16,
             border: '2px solid #3a2414',
-            marginTop: 40,
+            marginTop: 24,
           }}
         >
-          <CatSketch size={110} mood="happy" />
+          <CatSketch size={96} mood="happy" />
         </div>
-        <div className="h-display" style={{ fontSize: 42, marginTop: 16 }}>
+        <div className="h-display" style={{ fontSize: 40, marginTop: 14 }}>
           Tamaya
         </div>
-        <div className="handwriting" style={{ fontSize: 20, marginTop: 4, color: '#5a3a22' }}>
+        <div className="handwriting" style={{ fontSize: 19, marginTop: 4, color: '#5a3a22' }}>
           매일 작은 루틴을 함께 키우는 AI 친구
         </div>
 
         <div style={{ marginTop: 'auto', width: '100%' }}>
-          <button
-            type="button"
-            disabled={loading !== null}
-            onClick={() => enter('kakao')}
-            className="btn block"
-            style={{
-              background: '#FEE500',
-              color: '#3a2414',
-              border: '1.5px solid #3a2414',
-              cursor: loading ? 'wait' : 'pointer',
-              fontFamily: 'inherit',
-              marginBottom: 10,
-            }}
+          <label
+            className="tiny"
+            htmlFor="nickname"
+            style={{ display: 'block', textAlign: 'left', color: '#5a3a22', marginBottom: 6 }}
           >
-            {loading === 'kakao' ? '잠시만요…' : '💬 카카오로 시작'}
-          </button>
+            닉네임으로 시작하기
+          </label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              id="nickname"
+              type="text"
+              value={nickname}
+              maxLength={NICK_MAX}
+              disabled={busy}
+              placeholder={`닉네임 (최대 ${NICK_MAX}자)`}
+              onChange={(e) => {
+                setNickname(e.target.value);
+                setHint(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') start();
+              }}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                padding: '12px 14px',
+                borderRadius: 12,
+                border: '1.5px solid #3a2414',
+                background: '#fff9ef',
+                color: '#3a2414',
+                fontFamily: 'inherit',
+                fontSize: 16,
+              }}
+            />
+            <button
+              type="button"
+              disabled={busy}
+              onClick={doCheck}
+              className="btn"
+              style={{
+                flexShrink: 0,
+                background: '#fff9ef',
+                color: '#3a2414',
+                border: '1.5px solid #3a2414',
+                cursor: busy ? 'wait' : 'pointer',
+                fontFamily: 'inherit',
+                padding: '0 14px',
+              }}
+            >
+              {loading === 'check' ? '…' : '중복확인'}
+            </button>
+          </div>
+
+          {hint && (
+            <div
+              className="tiny"
+              style={{
+                marginTop: 8,
+                textAlign: 'left',
+                color: hint.ok ? '#2e7d32' : '#b3261e',
+              }}
+            >
+              {hint.text}
+            </div>
+          )}
+
           <button
             type="button"
-            disabled={loading !== null}
-            onClick={() => enter('anon')}
+            disabled={busy}
+            onClick={start}
             className="btn primary block"
             style={{
-              cursor: loading ? 'wait' : 'pointer',
+              marginTop: 14,
+              cursor: busy ? 'wait' : 'pointer',
               fontFamily: 'inherit',
+            }}
+          >
+            {loading === 'start' ? '잠시만요…' : '시작하기'}
+          </button>
+
+          <button
+            type="button"
+            disabled={busy}
+            onClick={enterAnon}
+            style={{
+              marginTop: 12,
+              background: 'none',
+              border: 'none',
+              color: '#5a3a22',
+              textDecoration: 'underline',
+              cursor: busy ? 'wait' : 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 13,
             }}
           >
             {loading === 'anon' ? '잠시만요…' : '익명으로 둘러보기'}
           </button>
-          <div className="tiny" style={{ marginTop: 10, color: '#5a3a22' }}>
-            * 익명도 모든 기능 사용 가능 · 데이터는 이 기기에만
+          <div className="tiny" style={{ marginTop: 8, color: '#5a3a22' }}>
+            * 데모용 · 닉네임만으로 가입/로그인 (비밀번호 없음)
           </div>
         </div>
       </div>

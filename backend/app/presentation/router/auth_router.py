@@ -18,7 +18,7 @@ from datetime import UTC, datetime, timedelta
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.auth.jwt_handler import (
@@ -28,7 +28,7 @@ from app.infrastructure.auth.jwt_handler import (
 )
 from app.infrastructure.config.database import get_db
 from app.infrastructure.config.settings import settings
-from app.infrastructure.persistence.models import UserSessionModel
+from app.infrastructure.persistence.models import UserModel, UserSessionModel
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -48,11 +48,40 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class NicknameLoginRequest(BaseModel):
+    nickname: str
+
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
     identity: str  # device_id 또는 kakao_id
+
+
+class NicknameCheckResponse(BaseModel):
+    nickname: str
+    available: bool  # True = 미사용(가입 가능) / False = 이미 사용 중(로그인됨)
+
+
+class NicknameTokenResponse(TokenResponse):
+    device_id: str  # 데이터 네임스페이스 (= f"nick-{nickname}")
+    is_new: bool  # True = 이번에 신규 가입 / False = 기존 계정 로그인
+
+
+_NICKNAME_MIN = 1
+_NICKNAME_MAX = 16
+
+
+def _normalize_nickname(raw: str) -> str:
+    """앞뒤 공백 제거 후 길이 검증. 위반 시 400."""
+    nickname = raw.strip()
+    if not (_NICKNAME_MIN <= len(nickname) <= _NICKNAME_MAX):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"닉네임은 {_NICKNAME_MIN}~{_NICKNAME_MAX}자여야 합니다",
+        )
+    return nickname
 
 
 # ─── 동시접속 strict 1세션 헬퍼 ────────────────────────────────────────────────
@@ -124,6 +153,46 @@ async def login_device(body: DeviceLoginRequest, db: AsyncSession = Depends(get_
     """
     access_token, refresh_token, _, identity = await _create_session(db, device_id=body.device_id)
     return TokenResponse(access_token=access_token, refresh_token=refresh_token, identity=identity)
+
+
+@router.get(
+    "/nickname/check",
+    response_model=NicknameCheckResponse,
+    summary="닉네임 중복 확인",
+)
+async def check_nickname(nickname: str, db: AsyncSession = Depends(get_db)):
+    """닉네임 사용 가능 여부 조회. available=True면 신규 가입, False면 기존 계정 로그인 대상."""
+    name = _normalize_nickname(nickname)
+    existing = await db.scalar(select(UserModel).where(UserModel.nickname == name))
+    return NicknameCheckResponse(nickname=name, available=existing is None)
+
+
+@router.post(
+    "/nickname",
+    response_model=NicknameTokenResponse,
+    summary="닉네임 회원가입/로그인 (통합)",
+)
+async def login_nickname(body: NicknameLoginRequest, db: AsyncSession = Depends(get_db)):
+    """
+    닉네임 입력 → 없으면 가입, 있으면 로그인 (데모: 비밀번호 없음).
+    앱 데이터는 device_id = f"nick-{nickname}" 네임스페이스로 키잉되어 닉네임별로 분리된다.
+    """
+    name = _normalize_nickname(body.nickname)
+    existing = await db.scalar(select(UserModel).where(UserModel.nickname == name))
+    is_new = existing is None
+    if is_new:
+        db.add(UserModel(id=uuid.uuid4(), nickname=name))
+        await db.commit()
+
+    device_id = f"nick-{name}"
+    access_token, refresh_token, _, identity = await _create_session(db, device_id=device_id)
+    return NicknameTokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        identity=identity,
+        device_id=device_id,
+        is_new=is_new,
+    )
 
 
 @router.post("/kakao", response_model=TokenResponse, summary="카카오 OAuth2 인증")
