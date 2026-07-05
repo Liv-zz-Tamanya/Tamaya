@@ -12,6 +12,7 @@ class ChatSession:
     MAX_TURNS: ClassVar[int] = 5
 
     id: UUID = field(default_factory=uuid4)
+    device_id: str | None = None  # 세션 소유자 (익명 device 인증 identity)
     session_date: date = field(default_factory=date.today)
     messages: list[ChatMessage] = field(default_factory=list)
     is_finalized: bool = False

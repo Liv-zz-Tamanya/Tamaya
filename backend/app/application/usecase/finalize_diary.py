@@ -31,7 +31,9 @@ class FinalizeDiaryUseCase:
         if not session:
             raise ValueError("세션을 찾을 수 없습니다.")
 
-        existing = await self._diary_repo.find_by_date(session.session_date)
+        existing = await self._diary_repo.find_by_device_and_date(
+            session.device_id, session.session_date
+        )
         if existing:
             raise ValueError("오늘의 일기가 이미 작성되었습니다.")
 
@@ -44,6 +46,7 @@ class FinalizeDiaryUseCase:
         satisfaction = max(0, min(100, int(diary_data.get("satisfaction", 50))))
 
         diary = Diary(
+            device_id=session.device_id,
             diary_date=session.session_date,
             title=diary_data.get("title", "오늘의 일기"),
             content=diary_data.get("content", ""),
