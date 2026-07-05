@@ -8,6 +8,7 @@ from app.domain.model.emotion import Emotion
 @dataclass
 class Diary:
     id: UUID = field(default_factory=uuid4)
+    device_id: str | None = None  # 일기 소유자 (익명 device 인증 identity)
     diary_date: date = field(default_factory=date.today)
     title: str = ""
     content: str = ""

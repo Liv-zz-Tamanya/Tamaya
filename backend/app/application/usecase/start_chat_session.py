@@ -10,13 +10,13 @@ class StartChatSessionUseCase:
         self._repo = repo
         self._ai = ai
 
-    async def execute(self) -> ChatSession:
+    async def execute(self, device_id: str) -> ChatSession:
         today = date.today()
-        existing = await self._repo.find_by_date(today)
+        existing = await self._repo.find_by_device_and_date(device_id, today)
         if existing:
             return existing
 
-        session = ChatSession(session_date=today)
+        session = ChatSession(device_id=device_id, session_date=today)
 
         # AI 첫 인사 메시지 생성
         greeting = await self._ai.chat([], suggest_finalize=False)

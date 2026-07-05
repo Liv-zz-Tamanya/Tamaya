@@ -17,6 +17,7 @@ class DiaryRepositoryImpl(DiaryRepository):
     async def save(self, diary: Diary) -> Diary:
         model = DiaryModel(
             id=diary.id,
+            device_id=diary.device_id,
             diary_date=diary.diary_date,
             title=diary.title,
             content=diary.content,
@@ -33,19 +34,32 @@ class DiaryRepositoryImpl(DiaryRepository):
         model = await self._db.get(DiaryModel, diary_id)
         return self._to_domain(model) if model else None
 
-    async def find_by_date(self, diary_date: date) -> Diary | None:
-        stmt = select(DiaryModel).where(DiaryModel.diary_date == diary_date)
+    async def find_by_device_and_date(self, device_id: str, diary_date: date) -> Diary | None:
+        stmt = select(DiaryModel).where(
+            DiaryModel.device_id == device_id,
+            DiaryModel.diary_date == diary_date,
+        )
         result = await self._db.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
 
-    async def find_all(self, offset: int = 0, limit: int = 20) -> list[Diary]:
-        stmt = select(DiaryModel).order_by(DiaryModel.diary_date.desc()).offset(offset).limit(limit)
+    async def find_all(self, device_id: str, offset: int = 0, limit: int = 20) -> list[Diary]:
+        stmt = (
+            select(DiaryModel)
+            .where(DiaryModel.device_id == device_id)
+            .order_by(DiaryModel.diary_date.desc())
+            .offset(offset)
+            .limit(limit)
+        )
         result = await self._db.execute(stmt)
         return [self._to_domain(m) for m in result.scalars().all()]
 
-    async def count(self) -> int:
-        stmt = select(func.count()).select_from(DiaryModel)
+    async def count(self, device_id: str) -> int:
+        stmt = (
+            select(func.count())
+            .select_from(DiaryModel)
+            .where(DiaryModel.device_id == device_id)
+        )
         result = await self._db.execute(stmt)
         return result.scalar_one()
 
@@ -53,6 +67,7 @@ class DiaryRepositoryImpl(DiaryRepository):
     def _to_domain(model: DiaryModel) -> Diary:
         return Diary(
             id=model.id,
+            device_id=model.device_id,
             diary_date=model.diary_date,
             title=model.title,
             content=model.content,

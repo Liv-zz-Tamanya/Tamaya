@@ -28,10 +28,11 @@ class SendMessageUseCase:
         self._extract_chunks = extract_chunks
 
     async def execute(
-        self, session_id: UUID, content: str
+        self, session_id: UUID, content: str, device_id: str
     ) -> tuple[ChatMessage, ChatMessage, bool, Diary | None]:
         session = await self._repo.find_by_id(session_id)
-        if not session:
+        if not session or session.device_id != device_id:
+            # 소유자가 아니면 존재 여부도 숨긴다.
             raise ValueError("세션을 찾을 수 없습니다.")
         if session.is_finalized:
             raise ValueError("이미 완료된 세션입니다.")
@@ -63,7 +64,9 @@ class SendMessageUseCase:
     async def _handle_auto_finalize(
         self, session: ChatSession, user_msg: ChatMessage
     ) -> tuple[ChatMessage, ChatMessage, Diary]:
-        existing = await self._diary_repo.find_by_date(session.session_date)
+        existing = await self._diary_repo.find_by_device_and_date(
+            session.device_id, session.session_date
+        )
         if existing:
             raise ValueError("오늘의 일기가 이미 작성되었습니다.")
 
@@ -79,6 +82,7 @@ class SendMessageUseCase:
         # BUG-07: satisfaction 0~100 통일 (DEC-020)
         satisfaction = max(0, min(100, int(diary_data.get("satisfaction", 50))))
         diary = Diary(
+            device_id=session.device_id,
             diary_date=session.session_date,
             title=diary_data.get("title", "오늘의 일기"),
             content=diary_data.get("content", ""),

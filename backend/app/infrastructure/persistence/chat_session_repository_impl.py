@@ -35,6 +35,7 @@ class ChatSessionRepositoryImpl(ChatSessionRepository):
         else:
             model = ChatSessionModel(
                 id=session.id,
+                device_id=session.device_id,
                 session_date=session.session_date,
                 is_finalized=session.is_finalized,
                 created_at=session.created_at,
@@ -58,11 +59,16 @@ class ChatSessionRepositoryImpl(ChatSessionRepository):
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
 
-    async def find_by_date(self, session_date: date) -> ChatSession | None:
+    async def find_by_device_and_date(
+        self, device_id: str, session_date: date
+    ) -> ChatSession | None:
         stmt = (
             select(ChatSessionModel)
             .options(selectinload(ChatSessionModel.messages))
-            .where(ChatSessionModel.session_date == session_date)
+            .where(
+                ChatSessionModel.device_id == device_id,
+                ChatSessionModel.session_date == session_date,
+            )
         )
         result = await self._db.execute(stmt)
         model = result.scalar_one_or_none()
@@ -76,6 +82,7 @@ class ChatSessionRepositoryImpl(ChatSessionRepository):
         ]
         return ChatSession(
             id=model.id,
+            device_id=model.device_id,
             session_date=model.session_date,
             messages=messages,
             is_finalized=model.is_finalized,

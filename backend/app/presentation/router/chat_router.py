@@ -17,6 +17,7 @@ from app.infrastructure.config.dependencies import (
     get_diary_repo,
     get_extract_chunks_usecase,
 )
+from app.presentation.auth_deps import get_current_device_id
 from app.presentation.router.schemas import (
     ChatMessageResponse,
     ChatSessionResponse,
@@ -35,11 +36,12 @@ router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
     description="오늘의 채팅 세션을 시작하거나, 이미 존재하면 기존 세션을 반환합니다. 새 세션 시작 시 AI가 첫 인사 메시지를 자동 생성합니다.",
 )
 async def start_session(
+    device_id: str = Depends(get_current_device_id),
     repo: ChatSessionRepository = Depends(get_chat_session_repo),
     ai: AiChatService = Depends(get_ai_chat_service),
 ):
     usecase = StartChatSessionUseCase(repo, ai)
-    session = await usecase.execute()
+    session = await usecase.execute(device_id)
     return ChatSessionResponse.from_domain(session)
 
 
@@ -51,11 +53,12 @@ async def start_session(
 )
 async def get_session(
     session_id: UUID,
+    device_id: str = Depends(get_current_device_id),
     repo: ChatSessionRepository = Depends(get_chat_session_repo),
 ):
     usecase = GetChatSessionUseCase(repo)
     try:
-        session = await usecase.execute(session_id)
+        session = await usecase.execute(session_id, device_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return ChatSessionResponse.from_domain(session)
@@ -70,6 +73,7 @@ async def get_session(
 async def send_message(
     session_id: UUID,
     body: SendMessageRequest,
+    device_id: str = Depends(get_current_device_id),
     repo: ChatSessionRepository = Depends(get_chat_session_repo),
     ai: AiChatService = Depends(get_ai_chat_service),
     diary_repo: DiaryRepository = Depends(get_diary_repo),
@@ -78,7 +82,9 @@ async def send_message(
 ):
     usecase = SendMessageUseCase(repo, ai, diary_repo, chat_agent, extract_chunks)
     try:
-        user_msg, ai_msg, suggest, diary = await usecase.execute(session_id, body.content)
+        user_msg, ai_msg, suggest, diary = await usecase.execute(
+            session_id, body.content, device_id
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return SendMessageResponse(
