@@ -3,20 +3,6 @@ import { Route, useNav } from '../lib/router';
 
 // ── Sketch UI primitives — bartender/barista coffee tone ─────────────────────
 
-export const StatusBar = ({ time = '11:42 PM', mode = 'night' }: { time?: string; mode?: 'day' | 'night' }) => (
-  <div
-    className="statusbar"
-    style={{ background: mode === 'night' ? 'rgba(61,74,120,0.08)' : 'rgba(214,154,58,0.08)' }}
-  >
-    <span style={{ fontFamily: 'Pretendard' }}>{time}</span>
-    <div className="notch" />
-    <span style={{ fontFamily: 'Pretendard', display: 'flex', gap: 4, alignItems: 'center' }}>
-      <span>{mode === 'night' ? '🌙' : '☀︎'}</span>
-      <span>100%</span>
-    </span>
-  </div>
-);
-
 type TabKey = 'cal' | 'stat' | 'home' | 'cat' | 'ins';
 
 // Tab → route mapping. Center 'home' resolves at click time so day/night

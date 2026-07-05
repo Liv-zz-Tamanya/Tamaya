@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CatSketch, StatusBar } from '../components/primitives';
+import { CatSketch } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { ApiError, checkNickname, loginWithNickname, signupWithNickname } from '../lib/api';
 
@@ -90,7 +90,6 @@ export const S21_Login = () => {
         background: 'linear-gradient(180deg, #f5e6cf 0%, #ead0a6 70%, #d8a777 100%)',
       }}
     >
-      <StatusBar mode="day" time="9:24 AM" />
       <div
         style={{
           padding: '60px 24px 24px',

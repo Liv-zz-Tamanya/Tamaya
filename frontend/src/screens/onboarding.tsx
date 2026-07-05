@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CatSketch, StatusBar } from '../components/primitives';
+import { CatSketch } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { CatColor, Personality, useStore } from '../lib/store';
 import { setInitialAuthMode } from './login';
@@ -89,7 +89,6 @@ export const S02_Welcome = () => {
   const nav = useNav();
   return (
   <div className="phone-inner">
-    <StatusBar mode="day" time="9:24 AM" />
     <div className="phone-scroll" style={{ padding: '60px 24px 100px' }}>
       <div className="h-section">01 / 04 — Welcome</div>
       <div className="h-display" style={{ marginTop: 14, fontSize: 38 }}>
@@ -163,7 +162,6 @@ export const S03_Privacy = () => {
   const nav = useNav();
   return (
   <div className="phone-inner">
-    <StatusBar mode="day" time="9:24 AM" />
     <div className="phone-scroll" style={{ padding: '52px 24px 100px' }}>
       <div className="h-section">02 / 04 — 약속</div>
       <div className="h-display" style={{ marginTop: 12, fontSize: 30 }}>
@@ -251,7 +249,6 @@ export const S04_CreateCat = () => {
 
   return (
   <div className="phone-inner">
-    <StatusBar mode="day" time="9:25 AM" />
     <div className="phone-scroll" style={{ padding: '52px 24px 100px' }}>
       <div className="h-section">03 / 04 — 캐릭터 만들기</div>
       <div className="h-display" style={{ marginTop: 12, fontSize: 30 }}>
@@ -370,7 +367,6 @@ export const S05_FirstMeet = () => {
       color: '#f5e6cf',
     }}
   >
-    <StatusBar mode="night" time="10:18 PM" />
     <svg width="100%" height="180" style={{ position: 'absolute', top: 40, opacity: 0.4 }}>
       {[
         [60, 40],

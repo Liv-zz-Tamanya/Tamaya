@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoodFace, StatusBar, TabBar } from '../components/primitives';
+import { MoodFace, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import {
   Period,
@@ -40,7 +40,6 @@ export const S14_Calendar = () => {
   const recent = latestEntry(state.diaries);
   return (
   <div className="phone-inner">
-    <StatusBar mode="day" time="11:08 AM" />
     <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
       <div className="h-title">달력</div>
       <div className="tiny">감정의 흐름을 한 눈에</div>
@@ -301,7 +300,6 @@ export const S15_DiaryDetail = () => {
   if (!entry) {
     return (
       <div className="phone-inner">
-        <StatusBar mode="day" time="11:12 AM" />
         <div className="phone-scroll" style={{ padding: '46px 18px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span
@@ -335,7 +333,6 @@ export const S15_DiaryDetail = () => {
 
   return (
   <div className="phone-inner">
-    <StatusBar mode="day" time="11:12 AM" />
     <div className="phone-scroll" style={{ padding: '46px 18px 24px' }}>
       <div
         style={{
@@ -475,7 +472,6 @@ export const S16_Stats = () => {
   ];
   return (
   <div className="phone-inner">
-    <StatusBar mode="day" time="11:18 AM" />
     <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
       <div className="h-title">통계</div>
       <div className="tiny">기록의 모양을 봐요</div>
@@ -631,7 +627,6 @@ export const S17_Insights = () => {
   const enough = state.diaries.length >= 5;
   return (
   <div className="phone-inner">
-    <StatusBar mode="day" time="11:22 AM" />
     <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
       <div className="h-title">인사이트</div>
       <div className="tiny">이음이가 정리해준 이번 주</div>

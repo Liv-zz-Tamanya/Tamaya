@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StatusBar, TabBar } from '../components/primitives';
+import { TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { useStore } from '../lib/store';
 import { purgeMyData } from '../lib/api';
@@ -55,7 +55,6 @@ export const S22_Settings = () => {
 
   return (
     <div className="phone-inner">
-      <StatusBar mode="day" time="11:42 AM" />
       <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span

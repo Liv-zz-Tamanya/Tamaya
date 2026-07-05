@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { StatusBar, TabBar } from '../components/primitives';
+import { TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { sendHealthChat } from '../lib/api';
 
@@ -76,7 +76,6 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
 
   return (
     <div className="phone-inner">
-      <StatusBar mode="day" time="3:05 PM" />
       <div ref={scrollRef} className="phone-scroll" style={{ padding: '46px 14px 140px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span
