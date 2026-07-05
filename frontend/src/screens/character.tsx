@@ -269,7 +269,7 @@ export const S19_Inventory = () => {
   };
   return (
   <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px 140px' }}>
+    <div className="phone-scroll" style={{ padding: '46px 18px calc(140px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
           style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
@@ -384,7 +384,7 @@ export const S19_Inventory = () => {
         ))}
       </div>
     </div>
-    <div style={{ position: 'absolute', bottom: 78, left: 18, right: 18 }}>
+    <div style={{ position: 'absolute', bottom: 'calc(var(--tabbar-h, 64px) + 14px)', left: 18, right: 18 }}>
       <button
         type="button"
         onClick={() => {
@@ -421,7 +421,7 @@ export const S20_Report = () => {
   const moodLabel = recent ? MOOD_LABEL[recent.moods[0]] : '기록 전';
   return (
   <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
+    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
           style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}

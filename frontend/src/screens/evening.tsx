@@ -48,7 +48,7 @@ export const S10_RecapStart = () => {
         <circle key={i} cx={x} cy={y} r="1.4" fill="#f5e6cf" />
       ))}
     </svg>
-    <div className="phone-scroll" style={{ padding: '60px 24px 100px' }}>
+    <div className="phone-scroll" style={{ padding: '60px 24px calc(100px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
           style={{ fontFamily: 'Pretendard', fontSize: 22, color: '#d8a777', cursor: 'pointer' }}
@@ -158,7 +158,7 @@ export const S10_RecapStart = () => {
         </div>
       </div>
     </div>
-    <div style={{ position: 'absolute', bottom: 28, left: 24, right: 24 }}>
+    <div style={{ position: 'absolute', bottom: 'calc(28px + var(--safe-b, 0px))', left: 24, right: 24 }}>
       <button
         type="button"
         onClick={() => nav.go('chat-diary')}
@@ -283,7 +283,7 @@ export const S11_ChatDiary = () => {
     <div
       ref={scrollRef}
       className="phone-scroll"
-      style={{ padding: '46px 14px 96px', position: 'relative' }}
+      style={{ padding: '46px 14px calc(96px + var(--safe-b, 0px))' }}
     >
       <div
         style={{
@@ -377,7 +377,6 @@ export const S11_ChatDiary = () => {
         send();
       }}
       className="input-row"
-      style={{ bottom: 0 }}
     >
       <input
         value={input}
@@ -477,7 +476,7 @@ export const S12_MoodFinalize = () => {
 
   return (
   <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px 80px' }}>
+    <div className="phone-scroll" style={{ padding: '46px 18px calc(80px + var(--safe-b, 0px))' }}>
       <div className="h-section">5턴 완료 — 일기로 마무리</div>
       <div className="h-display" style={{ marginTop: 8 }}>
         오늘은 이런
@@ -625,7 +624,7 @@ export const S12_MoodFinalize = () => {
     <div
       style={{
         position: 'absolute',
-        bottom: 16,
+        bottom: 'calc(16px + var(--safe-b, 0px))',
         left: 18,
         right: 18,
         display: 'flex',

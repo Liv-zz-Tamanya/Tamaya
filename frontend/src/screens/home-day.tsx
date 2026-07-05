@@ -42,7 +42,7 @@ export const S06_HomeDay = () => {
   ];
   return (
   <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
+    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div
         style={{
           display: 'flex',
@@ -205,7 +205,7 @@ export const S07_HomeNight = () => {
     className="phone-inner"
     style={{ background: 'linear-gradient(180deg, #f5e6cf 0%, #ead0a6 70%, #d8a777 100%)' }}
   >
-    <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
+    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div
         style={{
           display: 'flex',
@@ -451,7 +451,7 @@ export const S08_DailyCheck = () => {
 
   return (
   <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
+    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <span
           style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
@@ -685,7 +685,7 @@ export const S09_AIChat = () => {
       <div
         ref={scrollRef}
         className="phone-scroll"
-        style={{ padding: '46px 14px 140px' }}
+        style={{ padding: '46px 14px calc(140px + var(--safe-b, 0px))' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span
@@ -750,8 +750,7 @@ export const S09_AIChat = () => {
           e.preventDefault();
           send();
         }}
-        className="input-row"
-        style={{ bottom: 64 }}
+        className="input-row above-tabbar"
       >
         <input
           value={input}

@@ -76,7 +76,7 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
 
   return (
     <div className="phone-inner">
-      <div ref={scrollRef} className="phone-scroll" style={{ padding: '46px 14px 140px' }}>
+      <div ref={scrollRef} className="phone-scroll" style={{ padding: '46px 14px calc(140px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span
             style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
@@ -146,8 +146,7 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
           e.preventDefault();
           send();
         }}
-        className="input-row"
-        style={{ bottom: 64 }}
+        className="input-row above-tabbar"
       >
         <input
           value={input}
