@@ -38,6 +38,12 @@ class SendMessageUseCase:
 
         user_msg = session.add_message("user", content)
 
+        # 5턴 도달 → 사용자 의도와 무관하게 무조건 마무리 (턴 상한 강제)
+        if session.must_finalize:
+            user_msg, ai_msg, diary = await self._handle_auto_finalize(session, user_msg)
+            return user_msg, ai_msg, False, diary
+
+        # 4턴째 → 마무리 의사가 있으면 조기 종료
         if session.should_suggest_finalize:
             intent = await self._ai.detect_finalize_intent(content)
             if intent:

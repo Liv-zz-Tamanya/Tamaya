@@ -1,6 +1,7 @@
 import { KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { CatSketch, ImgPh, MoodFace, StatusBar } from '../components/primitives';
 import { useNav } from '../lib/router';
+import { AI_ENABLED, sendAiChat } from '../lib/api';
 import {
   CHAT_DIARY_INTRO,
   CHAT_DIARY_TURNS,
@@ -217,6 +218,24 @@ export const S11_ChatDiary = () => {
   const turn = Math.min(userTurns, 5);
   const done = turn >= 5;
 
+  // 5턴째: 마무리 멘트 후 일기 정리 화면으로 이동.
+  const finishTurn5 = (closing?: string) => {
+    dispatch({
+      type: 'chat-diary/append',
+      msg: {
+        role: 'bot',
+        text: closing || '잘 들었어. 이걸로 오늘 일기를 정리해줄게.\n잠깐만 기다려줘 ✎',
+      },
+    });
+    setTimeout(() => nav.go('mood-finalize'), 1200);
+  };
+
+  // Clova 미연동/실패 시 폴백: 기존 하드코딩 질문.
+  const fallbackQuestion = (nextTurn: number) => {
+    const q = CHAT_DIARY_TURNS[Math.min(nextTurn, CHAT_DIARY_TURNS.length - 1)];
+    dispatch({ type: 'chat-diary/append', msg: { role: 'bot', text: q.question, hint: q.hint } });
+  };
+
   const send = () => {
     const t = input.trim();
     if (!t) return;
@@ -224,25 +243,40 @@ export const S11_ChatDiary = () => {
     setInput('');
     const nextTurn = userTurns + 1;
     setTyping(true);
-    setTimeout(() => {
-      setTyping(false);
-      if (nextTurn < 5) {
-        const q = CHAT_DIARY_TURNS[nextTurn];
-        dispatch({
-          type: 'chat-diary/append',
-          msg: { role: 'bot', text: q.question, hint: q.hint },
-        });
-      } else {
-        dispatch({
-          type: 'chat-diary/append',
-          msg: {
-            role: 'bot',
-            text: '잘 들었어. 이걸로 오늘 일기를 정리해줄게.\n잠깐만 기다려줘 ✎',
-          },
-        });
-        setTimeout(() => nav.go('mood-finalize'), 1200);
+
+    // 로컬 시뮬레이션 모드 (VITE_AI_ENABLED=false): 기존 하드코딩 질문 흐름 유지.
+    if (!AI_ENABLED) {
+      setTimeout(() => {
+        setTyping(false);
+        if (nextTurn < 5) fallbackQuestion(nextTurn);
+        else finishTurn5();
+      }, 800 + Math.random() * 400);
+      return;
+    }
+
+    // backend 결선: 회고 발화를 Clova(mock/실)로 보내 실제 응답을 받는다.
+    // 백엔드도 5턴에서 무조건 마무리(diary 생성)하므로 5턴째 응답은 마무리 멘트다.
+    void (async () => {
+      try {
+        const { text: aiText } = await sendAiChat(t);
+        setTyping(false);
+        if (nextTurn < 5) {
+          dispatch({
+            type: 'chat-diary/append',
+            msg: {
+              role: 'bot',
+              text: aiText || CHAT_DIARY_TURNS[Math.min(nextTurn, CHAT_DIARY_TURNS.length - 1)].question,
+            },
+          });
+        } else {
+          finishTurn5(aiText);
+        }
+      } catch {
+        setTyping(false);
+        if (nextTurn < 5) fallbackQuestion(nextTurn);
+        else finishTurn5();
       }
-    }, 800 + Math.random() * 400);
+    })();
   };
 
   return (

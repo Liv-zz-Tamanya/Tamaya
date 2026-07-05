@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from typing import ClassVar
 from uuid import UUID, uuid4
 
 from app.domain.model.chat_message import ChatMessage
@@ -7,6 +8,9 @@ from app.domain.model.chat_message import ChatMessage
 
 @dataclass
 class ChatSession:
+    # 대화·회고 공통 정책: 대화는 최대 5턴 안에 무조건 마무리한다.
+    MAX_TURNS: ClassVar[int] = 5
+
     id: UUID = field(default_factory=uuid4)
     session_date: date = field(default_factory=date.today)
     messages: list[ChatMessage] = field(default_factory=list)
@@ -35,4 +39,10 @@ class ChatSession:
 
     @property
     def should_suggest_finalize(self) -> bool:
-        return self.user_message_count >= 5 and not self.is_finalized
+        # 마지막 턴 직전(4턴째)부터 마무리를 향해 대화를 좁혀간다.
+        return self.user_message_count >= self.MAX_TURNS - 1 and not self.is_finalized
+
+    @property
+    def must_finalize(self) -> bool:
+        # 5턴에 도달하면 사용자 의도와 무관하게 무조건 일기로 마무리한다.
+        return self.user_message_count >= self.MAX_TURNS and not self.is_finalized
