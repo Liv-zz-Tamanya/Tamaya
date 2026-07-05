@@ -36,6 +36,11 @@
   --cream: #fff5e1;          /* 휘핑크림 — 메모 */
   --canvas: #f5f1e8;         /* 페이지(앱 바깥) 배경 — 아트워크 팔레트와 독립 */
 
+  /* ===== SAFE AREA — iOS 노치/홈 인디케이터 (viewport-fit=cover 대응) ======
+     하단 고정 요소(.input-row/.tabbar/CTA)는 반드시 --safe-b 만큼 띄운다. */
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --tabbar-h: calc(64px + var(--safe-b));
+
   /* ===== SPACE — 4pt 기반 스케일 ========================================== */
   --space-0: 0;
   --space-1: 4px;

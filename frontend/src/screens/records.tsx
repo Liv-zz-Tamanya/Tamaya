@@ -40,7 +40,7 @@ export const S14_Calendar = () => {
   const recent = latestEntry(state.diaries);
   return (
   <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
+    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div className="h-title">달력</div>
       <div className="tiny">감정의 흐름을 한 눈에</div>
 
@@ -472,7 +472,7 @@ export const S16_Stats = () => {
   ];
   return (
   <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
+    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div className="h-title">통계</div>
       <div className="tiny">기록의 모양을 봐요</div>
 
@@ -627,7 +627,7 @@ export const S17_Insights = () => {
   const enough = state.diaries.length >= 5;
   return (
   <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
+    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div className="h-title">인사이트</div>
       <div className="tiny">이음이가 정리해준 이번 주</div>
 
