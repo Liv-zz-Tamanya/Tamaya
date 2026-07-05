@@ -68,8 +68,10 @@ export async function sendAiChat(rawText: string): Promise<AiReply> {
   try {
     return await run();
   } catch (e) {
-    // 토큰/세션 staleness → 1회 리셋 후 재시도
-    if (e instanceof ApiError && (e.status === 401 || e.status === 404)) {
+    // 토큰/세션 무효(만료·완료·소유권 불일치) → 캐시 리셋 후 1회 재시도.
+    // 400: 캐시된 세션이 완료됐거나 남의 세션(백엔드 device 스코핑). resetSession 후
+    //      새 세션을 발급받으면 정상화된다.
+    if (e instanceof ApiError && (e.status === 400 || e.status === 401 || e.status === 404)) {
       clearToken();
       resetSession();
       await ensureDeviceToken();

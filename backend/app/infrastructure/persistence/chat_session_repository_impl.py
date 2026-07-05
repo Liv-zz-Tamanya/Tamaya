@@ -25,12 +25,23 @@ class ChatSessionRepositoryImpl(ChatSessionRepository):
         existing = result.scalar_one_or_none()
         if existing:
             existing.is_finalized = session.is_finalized
-            # 새 메시지만 추가
-            existing_count = len(existing.messages)
-            for msg in session.messages[existing_count:]:
-                existing.messages.append(
-                    ChatMessageModel(role=msg.role, content=msg.content, created_at=msg.created_at)
-                )
+            if len(session.messages) < len(existing.messages):
+                # 재회고 리셋: 메시지가 줄었으면 전체 교체 (cascade delete-orphan)
+                existing.messages.clear()
+                for msg in session.messages:
+                    existing.messages.append(
+                        ChatMessageModel(
+                            role=msg.role, content=msg.content, created_at=msg.created_at
+                        )
+                    )
+            else:
+                # 증분: 새 메시지만 추가
+                for msg in session.messages[len(existing.messages):]:
+                    existing.messages.append(
+                        ChatMessageModel(
+                            role=msg.role, content=msg.content, created_at=msg.created_at
+                        )
+                    )
             await self._db.flush()
         else:
             model = ChatSessionModel(

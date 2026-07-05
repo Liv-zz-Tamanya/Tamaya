@@ -15,18 +15,35 @@ class DiaryRepositoryImpl(DiaryRepository):
         self._db = db
 
     async def save(self, diary: Diary) -> Diary:
-        model = DiaryModel(
-            id=diary.id,
-            device_id=diary.device_id,
-            diary_date=diary.diary_date,
-            title=diary.title,
-            content=diary.content,
-            emotion=diary.emotion.value,
-            satisfaction=diary.satisfaction,
-            chat_session_id=diary.chat_session_id,
-            created_at=diary.created_at,
-        )
-        self._db.add(model)
+        # 하루 1개(UNIQUE device_id+diary_date) — 이미 있으면 갱신(재회고 시 오늘 일기 업데이트).
+        existing = None
+        if diary.device_id is not None:
+            stmt = select(DiaryModel).where(
+                DiaryModel.device_id == diary.device_id,
+                DiaryModel.diary_date == diary.diary_date,
+            )
+            existing = (await self._db.execute(stmt)).scalar_one_or_none()
+
+        if existing:
+            existing.title = diary.title
+            existing.content = diary.content
+            existing.emotion = diary.emotion.value
+            existing.satisfaction = diary.satisfaction
+            existing.chat_session_id = diary.chat_session_id
+        else:
+            self._db.add(
+                DiaryModel(
+                    id=diary.id,
+                    device_id=diary.device_id,
+                    diary_date=diary.diary_date,
+                    title=diary.title,
+                    content=diary.content,
+                    emotion=diary.emotion.value,
+                    satisfaction=diary.satisfaction,
+                    chat_session_id=diary.chat_session_id,
+                    created_at=diary.created_at,
+                )
+            )
         await self._db.commit()
         return diary
 

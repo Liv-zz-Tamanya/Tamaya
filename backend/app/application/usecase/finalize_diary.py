@@ -31,12 +31,7 @@ class FinalizeDiaryUseCase:
         if not session:
             raise ValueError("세션을 찾을 수 없습니다.")
 
-        existing = await self._diary_repo.find_by_device_and_date(
-            session.device_id, session.session_date
-        )
-        if existing:
-            raise ValueError("오늘의 일기가 이미 작성되었습니다.")
-
+        # 하루 1개 정책은 diary_repo.save 의 upsert로 보장(재회고 시 오늘 일기 갱신).
         session.finalize()
 
         diary_data = await self._ai.generate_diary(session.messages)

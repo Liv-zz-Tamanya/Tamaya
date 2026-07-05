@@ -64,12 +64,7 @@ class SendMessageUseCase:
     async def _handle_auto_finalize(
         self, session: ChatSession, user_msg: ChatMessage
     ) -> tuple[ChatMessage, ChatMessage, Diary]:
-        existing = await self._diary_repo.find_by_device_and_date(
-            session.device_id, session.session_date
-        )
-        if existing:
-            raise ValueError("오늘의 일기가 이미 작성되었습니다.")
-
+        # 하루 1개 정책은 diary_repo.save 의 upsert로 보장(재회고 시 오늘 일기 갱신).
         closing_text, diary_data = await asyncio.gather(
             self._ai.generate_closing_message(session.messages),
             self._ai.generate_diary(session.messages),
