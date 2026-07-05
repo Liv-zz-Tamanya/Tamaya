@@ -1,0 +1,46 @@
+name: Deploy to NCP
+
+# main 또는 feat/nickname-auth 에 push되면 자동 배포. 수동 실행(workflow_dispatch)도 가능.
+on:
+  push:
+    branches: [main, feat/nickname-auth]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-ncp
+  cancel-in-progress: false   # 배포 도중 취소하지 않음
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.NCP_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.NCP_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      # 코드를 VM ~/tamanya 로 동기화.
+      # --delete 로 삭제된 파일 반영하되, VM에만 있는 .env.production 은 보존.
+      - name: Sync code to VM
+        run: |
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude '.venv' \
+            --exclude '.env.production' \
+            -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
+            ./ "${{ secrets.NCP_USER }}@${{ secrets.NCP_HOST }}:~/tamanya/"
+
+      # VM에서 빌드 + 재기동
+      # 큰 이미지(torch) export 중 SSH가 조용해져 끊기는 걸 막기 위해 keepalive 설정.
+      - name: Build & restart on VM
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=1000 -o TCPKeepAlive=yes \
+            "${{ secrets.NCP_USER }}@${{ secrets.NCP_HOST }}" \
+            'set -e; cd ~/tamanya && docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build && docker image prune -f'
