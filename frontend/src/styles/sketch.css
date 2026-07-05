@@ -25,7 +25,9 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
 
 /* Tab bar */
 .tabbar {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 64px;
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: var(--tabbar-h, 64px);
+  padding-bottom: var(--safe-b, 0px); /* 홈 인디케이터 위로 아이콘을 올린다 */
   border-top: 2px solid var(--ink);
   background: var(--paper-2);
   display: grid; grid-template-columns: repeat(5, 1fr);
@@ -216,12 +218,14 @@ html, body { background: #f5f1e8; }
 
 /* ── Inputs (typing) ──────────────────────────────────────────────────── */
 .input-row {
-  position: absolute; left: 0; right: 0;
-  padding: 10px 14px 16px;
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 10px 14px calc(16px + var(--safe-b, 0px));
   background: rgba(251,248,243,0.95);
   border-top: 1.5px dashed var(--line, #c9a877);
   display: flex; gap: 8px; align-items: center;
 }
+/* 탭바 위에 얹히는 입력바 — safe-area 는 탭바가 이미 소화하므로 중복 패딩 금지 */
+.input-row.above-tabbar { bottom: var(--tabbar-h, 64px); padding-bottom: 16px; }
 .input-row input {
   flex: 1;
   background: #fff;
@@ -244,7 +248,7 @@ html, body { background: #f5f1e8; }
 
 /* Toast — bottom of phone */
 .toast {
-  position: absolute; left: 24px; right: 24px; bottom: 84px;
+  position: absolute; left: 24px; right: 24px; bottom: calc(84px + var(--safe-b, 0px));
   background: var(--ink, #3a2414); color: var(--paper, #f5e6cf);
   border-radius: 12px; padding: 10px 14px;
   font-family: 'Pretendard'; font-size: 13px;
