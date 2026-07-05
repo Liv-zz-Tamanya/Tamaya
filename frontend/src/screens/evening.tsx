@@ -283,7 +283,7 @@ export const S11_ChatDiary = () => {
     <div
       ref={scrollRef}
       className="phone-scroll"
-      style={{ padding: '46px 14px calc(96px + var(--safe-b, 0px))', position: 'relative' }}
+      style={{ padding: '46px 14px calc(96px + var(--safe-b, 0px))' }}
     >
       <div
         style={{
