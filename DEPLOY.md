@@ -131,49 +131,37 @@ docker compose -f docker-compose.prod.yml exec db pg_dump -U aidiary aidiary > b
 
 ---
 
-## F. GitHub Actions 자동 배포 (CI/CD) — 최초 1회 세팅
+## F. GitHub Actions 자동 배포 (CI/CD)
 
-한 번만 세팅해두면 **`git push`할 때마다 GitHub Actions가 VM에 자동 배포**합니다 (당신은 더 이상 SSH 안 함). 워크플로: [.github/workflows/deploy.yml](.github/workflows/deploy.yml).
+**방식**: GitHub Actions가 코드를 VM으로 `rsync` 밀어넣고 → VM에서 `docker compose up --build`.
+VM은 GitHub에서 코드를 당겨오지 않으므로 **VM에 GitHub 자격증명(deploy key/PAT)이 필요 없음**. 워크플로: [.github/workflows/deploy.yml](.github/workflows/deploy.yml).
 
-> 전제: 위 **A~D를 이미 1회 완료**해서 VM에 Docker + `~/tamanya` clone + `.env.production` 이 있어야 함. CI/CD는 "그 다음부터의 재배포"를 자동화하는 것.
+> 전제: VM에 Docker 설치 + `~/tamanya/.env.production` 작성 + CI 공개키가 `~/.ssh/authorized_keys` 에 등록되어 있어야 함.
 
-### F-1. GitHub Actions 전용 SSH 키 만들기 (VM에서)
+### F-1. GitHub Actions → VM 접속용 키
 
-개인 키와 분리된 배포 전용 키를 만듭니다:
+- CI 키쌍을 하나 만들어 **공개키는 VM `~/.ssh/authorized_keys`** 에, **개인키는 GitHub Secret `NCP_SSH_KEY`** 에 넣는다.
+- 이 저장소는 조직 정책상 **Deploy key 비활성화**라 VM-쪽 git pull 대신 rsync push 방식을 씀.
 
-```bash
-# VM에 SSH 접속한 상태에서
-ssh-keygen -t ed25519 -f ~/.ssh/gh_deploy -N ""    # 암호 없이
-cat ~/.ssh/gh_deploy.pub >> ~/.ssh/authorized_keys # 이 서버가 이 키를 신뢰하도록
-chmod 600 ~/.ssh/authorized_keys
-echo "===== 아래 개인키 전체를 복사 (GitHub Secret에 넣을 것) ====="
-cat ~/.ssh/gh_deploy
-```
+### F-2. GitHub Secrets 3개
 
-`-----BEGIN OPENSSH PRIVATE KEY-----` 부터 `-----END ...-----` 까지 **통째로** 복사.
+저장소 → **Settings → Secrets and variables → Actions**:
 
-### F-2. GitHub 저장소에 Secrets 3개 등록
-
-저장소 → **Settings → Secrets and variables → Actions → New repository secret**:
-
-| Secret 이름 | 값 |
+| Secret | 값 |
 |---|---|
-| `NCP_HOST` | VM 공인 IP (예: `223.130.x.x`) |
+| `NCP_HOST` | VM 공인 IP (`101.79.22.108`) |
 | `NCP_USER` | `root` |
-| `NCP_SSH_KEY` | F-1에서 복사한 **개인키 전체** |
+| `NCP_SSH_KEY` | CI 개인키 전체 |
 
-> gh CLI로도 가능: `gh secret set NCP_HOST -b "223.130.x.x"` 등.
+### F-3. 배포
 
-### F-3. 끝 — 이제 push하면 자동 배포
+`main` / `feat/nickname-auth` 에 push하면 자동 실행. 수동은 Actions 탭 → **Deploy to NCP → Run workflow**, 또는:
 
 ```bash
-git add . && git commit -m "..." && git push origin feat/nickname-auth
+gh workflow run "Deploy to NCP" --ref feat/nickname-auth
 ```
 
-→ GitHub 저장소 **Actions 탭**에서 배포 진행 상황 확인. 완료되면 `http://<공인IP>/` 에 반영.
-수동 배포는 Actions 탭 → **Deploy to NCP → Run workflow**.
-
-> 워크플로는 `main` / `feat/nickname-auth` push에 반응합니다. 다른 브랜치로 배포하려면 [deploy.yml](.github/workflows/deploy.yml)의 `branches` 목록만 수정.
+→ **Actions 탭**에서 진행 확인. 완료되면 `http://<공인IP>/` 반영. `.env.production` 은 rsync `--exclude` 로 보존됨.
 
 ---
 
