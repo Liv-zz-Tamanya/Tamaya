@@ -1,9 +1,10 @@
 name: Deploy to NCP
 
-# main 또는 feat/nickname-auth 에 push되면 자동 배포. 수동 실행(workflow_dispatch)도 가능.
+# main(=배포 브랜치)에 push되면 자동 배포. 수동 실행(workflow_dispatch)도 가능.
+# 개발은 develop에서, 배포는 develop→main 머지로 트리거.
 on:
   push:
-    branches: [main, feat/nickname-auth]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:

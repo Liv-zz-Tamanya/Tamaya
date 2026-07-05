@@ -1,5 +1,5 @@
 import { KeyboardEvent, useEffect, useRef, useState } from 'react';
-import { CatSketch, ImgPh, MoodFace, StatusBar } from '../components/primitives';
+import { CatSketch, ImgPh, MoodFace } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { AI_ENABLED, sendAiChat } from '../lib/api';
 import {
@@ -34,7 +34,6 @@ export const S10_RecapStart = () => {
       color: '#f5e6cf',
     }}
   >
-    <StatusBar mode="night" time="10:18 PM" />
     <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0, opacity: 0.35 }}>
       {[
         [40, 90],
@@ -281,7 +280,6 @@ export const S11_ChatDiary = () => {
 
   return (
   <div className="phone-inner">
-    <StatusBar mode="night" time="10:24 PM" />
     <div
       ref={scrollRef}
       className="phone-scroll"
@@ -479,7 +477,6 @@ export const S12_MoodFinalize = () => {
 
   return (
   <div className="phone-inner">
-    <StatusBar mode="night" time="10:31 PM" />
     <div className="phone-scroll" style={{ padding: '46px 18px 80px' }}>
       <div className="h-section">5턴 완료 — 일기로 마무리</div>
       <div className="h-display" style={{ marginTop: 8 }}>

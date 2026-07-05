@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StatusBar, TabBar } from '../components/primitives';
+import { TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { getClovaSetting, testClovaKey, saveClovaKey, type ClovaSetting } from '../lib/api';
 
@@ -70,7 +70,6 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
 
   return (
     <div className="phone-inner">
-      <StatusBar mode="day" time="10:05 AM" />
       <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }} onClick={() => nav.back()}>‹</span>
