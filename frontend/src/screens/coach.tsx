@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { StatusBar, TabBar } from '../components/primitives';
+import { TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { sendCoachingMessage, type CoachTurn } from '../lib/api';
 
@@ -81,7 +81,6 @@ export const S23_Coach = ({ sample = false }: { sample?: boolean } = {}) => {
 
   return (
     <div className="phone-inner">
-      <StatusBar mode="night" time="11:18 PM" />
       <div ref={scrollRef} className="phone-scroll" style={{ padding: '46px 14px 140px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span

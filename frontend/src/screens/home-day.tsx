@@ -1,5 +1,5 @@
 import { KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { CatSketch, MoodFace, StatusBar, TabBar } from '../components/primitives';
+import { CatSketch, MoodFace, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import {
   DailyKey,
@@ -42,7 +42,6 @@ export const S06_HomeDay = () => {
   ];
   return (
   <div className="phone-inner">
-    <StatusBar mode="day" time="10:42 AM" />
     <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
       <div
         style={{
@@ -206,7 +205,6 @@ export const S07_HomeNight = () => {
     className="phone-inner"
     style={{ background: 'linear-gradient(180deg, #f5e6cf 0%, #ead0a6 70%, #d8a777 100%)' }}
   >
-    <StatusBar mode="night" time="10:14 PM" />
     <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
       <div
         style={{
@@ -453,7 +451,6 @@ export const S08_DailyCheck = () => {
 
   return (
   <div className="phone-inner">
-    <StatusBar mode="day" time="12:08 PM" />
     <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <span
@@ -685,7 +682,6 @@ export const S09_AIChat = () => {
 
   return (
     <div className="phone-inner">
-      <StatusBar mode="day" time="2:42 PM" />
       <div
         ref={scrollRef}
         className="phone-scroll"

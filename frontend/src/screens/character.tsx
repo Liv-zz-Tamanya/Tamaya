@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CatSketch, ImgPh, StatusBar, TabBar } from '../components/primitives';
+import { CatSketch, ImgPh, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { MOOD_LABEL, TODAY_DAY, latestEntry, useStore } from '../lib/store';
 
@@ -25,7 +25,6 @@ export const S18_CatRoom = () => {
       color: '#f5e6cf',
     }}
   >
-    <StatusBar mode="night" time="10:42 PM" />
     <div
       style={{
         position: 'absolute',
@@ -270,7 +269,6 @@ export const S19_Inventory = () => {
   };
   return (
   <div className="phone-inner">
-    <StatusBar mode="day" time="11:30 AM" />
     <div className="phone-scroll" style={{ padding: '46px 18px 140px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
@@ -423,7 +421,6 @@ export const S20_Report = () => {
   const moodLabel = recent ? MOOD_LABEL[recent.moods[0]] : '기록 전';
   return (
   <div className="phone-inner">
-    <StatusBar mode="day" time="9:08 AM" />
     <div className="phone-scroll" style={{ padding: '46px 18px 88px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
