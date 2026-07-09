@@ -14,6 +14,7 @@ from app.infrastructure.persistence.models import (
     ClovaSettingModel,
     DiaryModel,
     EventChunkModel,
+    GameDiaryCompletionModel,
     GameProgressModel,
     QualitativeSignalModel,
     RewardInventoryModel,
@@ -66,6 +67,7 @@ class PurgeDeviceDataUseCase:
 
         # 4) 기타 device-keyed 독립 테이블
         for label, model in (
+            ("game_diary_completions", GameDiaryCompletionModel),
             ("qualitative_signals", QualitativeSignalModel),
             ("clova_settings", ClovaSettingModel),
             ("game_progress", GameProgressModel),

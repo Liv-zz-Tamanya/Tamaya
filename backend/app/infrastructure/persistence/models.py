@@ -269,3 +269,20 @@ class RewardInventoryModel(Base):
     claimed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     is_used: Mapped[bool] = mapped_column(Boolean, default=False)
     used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class GameDiaryCompletionModel(Base):
+    """
+    device_id + diary_date 단위 처리 이력.
+    같은 날짜의 일기 완료 요청이 재시도되더라도 게임 진행도는 한 번만 반영한다.
+    """
+
+    __tablename__ = "game_diary_completions"
+    __table_args__ = (
+        UniqueConstraint("device_id", "diary_date", name="uq_game_diary_completion"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    device_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    diary_date: Mapped[date] = mapped_column(Date, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
