@@ -122,3 +122,35 @@ def test_protected_route_returns_200_for_active_token():
 
     assert resp.status_code == 200
     assert resp.json() == {"items": [], "total": 0}
+
+
+def test_logout_revokes_current_session_from_authorization_header():
+    db = _FakeDb(_make_session())
+    token = issue_access_token("dev-1", "jti-1")
+    app.dependency_overrides[get_db] = lambda: db
+
+    client = TestClient(app)
+    resp = client.post("/auth/logout", headers={"Authorization": f"Bearer {token}"})
+
+    assert resp.status_code == 204
+    assert db.session is not None
+    assert db.session.revoked_at is not None
+    assert db.commit_count == 1
+
+
+def test_logout_then_same_token_is_rejected_by_protected_route():
+    db = _FakeDb(_make_session())
+    token = issue_access_token("dev-1", "jti-1")
+    app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[get_diary_repo] = _FakeDiaryRepo
+
+    client = TestClient(app)
+    logout_resp = client.post("/auth/logout", headers={"Authorization": f"Bearer {token}"})
+    diary_resp = client.get(
+        "/api/v1/diaries",
+        params={"offset": 0, "limit": 1},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert logout_resp.status_code == 204
+    assert diary_resp.status_code == 401

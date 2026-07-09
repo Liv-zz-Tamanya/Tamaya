@@ -29,6 +29,7 @@ from app.infrastructure.auth.jwt_handler import (
 from app.infrastructure.config.database import get_db
 from app.infrastructure.config.settings import settings
 from app.infrastructure.persistence.models import UserModel, UserSessionModel
+from app.presentation.auth_deps import get_current_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -297,20 +298,9 @@ async def refresh_token(body: RefreshRequest, db: AsyncSession = Depends(get_db)
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, summary="현 세션 revoke")
 async def logout(
-    # 실제로는 Bearer 토큰을 Authorization 헤더에서 추출해야 함
-    # MVP 단계에서는 jti를 body로 받아 처리 (헤더 추출 미들웨어는 Week 2에 추가)
-    jti: str,
+    current_session: UserSessionModel = Depends(get_current_session),
     db: AsyncSession = Depends(get_db),
 ):
-    """jti로 세션 revoke — 클라이언트 로그아웃"""
-    now = datetime.now(UTC).replace(tzinfo=None)
-    result = await db.execute(
-        update(UserSessionModel)
-        .where(UserSessionModel.jti == jti, UserSessionModel.revoked_at.is_(None))
-        .values(revoked_at=now)
-    )
+    """Authorization 헤더의 access token에 해당하는 현 세션 revoke."""
+    current_session.revoked_at = datetime.now(UTC).replace(tzinfo=None)
     await db.commit()
-    if result.rowcount == 0:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="세션을 찾을 수 없거나 이미 로그아웃됨"
-        )
