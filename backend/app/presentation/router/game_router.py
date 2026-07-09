@@ -95,7 +95,7 @@ async def diary_complete(
 ):
     """
     DEC-022.B: FinalizeDiaryUseCase 내부에서도 호출하지만,
-    FE가 명시적으로 호출해도 멱등 처리 (best-effort, 중복 보상 방지는 UNIQUE 제약으로 보장).
+    FE가 명시적으로 재호출해도 device_id + diary_date 처리 이력으로 멱등 처리한다.
     """
     usecase = GameProgressUseCase(db)
     new_rewards_raw = await usecase.on_diary_complete(device_id, body.diary_date)

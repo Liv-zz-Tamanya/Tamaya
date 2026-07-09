@@ -8,13 +8,19 @@ best-effort 원칙: 게임 로직 실패 시 로그만 남기고 finalize 성공
 from __future__ import annotations
 
 import logging
+import uuid
 from datetime import date, datetime
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.model.game_progress import GameProgress, RewardInventory, apply_diary_completion
-from app.infrastructure.persistence.models import GameProgressModel, RewardInventoryModel
+from app.infrastructure.persistence.models import (
+    GameDiaryCompletionModel,
+    GameProgressModel,
+    RewardInventoryModel,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -49,13 +55,11 @@ class GameProgressUseCase:
         반환: 신규 보상 [(reward_id, reward_type), …] (FE 팝업용)
         """
         try:
-            row = await self._db.scalar(
-                select(GameProgressModel).where(GameProgressModel.device_id == device_id)
-            )
-            if row is None:
-                row = GameProgressModel(device_id=device_id)
-                self._db.add(row)
-                await self._db.flush()
+            recorded = await self._record_completion_once(device_id, diary_date)
+            if not recorded:
+                return []
+
+            row = await self._get_or_create_progress_for_update(device_id)
 
             progress = _to_domain(row)
             updated, new_rewards = apply_diary_completion(progress, diary_date)
@@ -69,22 +73,7 @@ class GameProgressUseCase:
             row.last_diary_date = updated.last_diary_date
             row.updated_at = datetime.now()
 
-            # 신규 보상 인벤토리에 저장 (UNIQUE 제약: 중복 지급 방지)
-            for reward_id, reward_type in new_rewards:
-                existing = await self._db.scalar(
-                    select(RewardInventoryModel).where(
-                        RewardInventoryModel.device_id == device_id,
-                        RewardInventoryModel.reward_id == reward_id,
-                    )
-                )
-                if existing is None:
-                    self._db.add(
-                        RewardInventoryModel(
-                            device_id=device_id,
-                            reward_id=reward_id,
-                            reward_type=reward_type,
-                        )
-                    )
+            await self._save_new_rewards(device_id, new_rewards)
 
             await self._db.commit()
             return new_rewards
@@ -92,6 +81,60 @@ class GameProgressUseCase:
             logger.warning("game on_diary_complete failed (best-effort): %s", exc)
             await self._db.rollback()
             return []
+
+    async def _record_completion_once(self, device_id: str, diary_date: date) -> bool:
+        stmt = (
+            pg_insert(GameDiaryCompletionModel)
+            .values(
+                id=uuid.uuid4(),
+                device_id=device_id,
+                diary_date=diary_date,
+            )
+            .on_conflict_do_nothing(
+                index_elements=[
+                    GameDiaryCompletionModel.device_id,
+                    GameDiaryCompletionModel.diary_date,
+                ]
+            )
+            .returning(GameDiaryCompletionModel.id)
+        )
+        result = await self._db.execute(stmt)
+        return result.scalar_one_or_none() is not None
+
+    async def _get_or_create_progress_for_update(self, device_id: str) -> GameProgressModel:
+        await self._db.execute(
+            pg_insert(GameProgressModel)
+            .values(id=uuid.uuid4(), device_id=device_id)
+            .on_conflict_do_nothing(index_elements=[GameProgressModel.device_id])
+        )
+        row = await self._db.scalar(
+            select(GameProgressModel)
+            .where(GameProgressModel.device_id == device_id)
+            .with_for_update()
+        )
+        if row is None:
+            raise RuntimeError("game_progress row missing after upsert")
+        return row
+
+    async def _save_new_rewards(
+        self, device_id: str, new_rewards: list[tuple[str, str]]
+    ) -> None:
+        for reward_id, reward_type in new_rewards:
+            await self._db.execute(
+                pg_insert(RewardInventoryModel)
+                .values(
+                    id=uuid.uuid4(),
+                    device_id=device_id,
+                    reward_id=reward_id,
+                    reward_type=reward_type,
+                )
+                .on_conflict_do_nothing(
+                    index_elements=[
+                        RewardInventoryModel.device_id,
+                        RewardInventoryModel.reward_id,
+                    ]
+                )
+            )
 
     async def claim_reward(self, device_id: str, reward_id: str) -> RewardInventory | None:
         """POST /game/claim-reward/{reward_id} — is_used=False 확인"""
