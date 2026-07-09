@@ -14,6 +14,7 @@ from app.infrastructure.config.dependencies import get_diary_repo
 from app.infrastructure.persistence.models import UserSessionModel
 from app.main import app
 from app.presentation.auth_deps import get_current_session
+from app.presentation.router.auth_router import _create_session, _revoke_existing_sessions
 
 
 class _FakeDiaryRepo(DiaryRepository):
@@ -34,15 +35,31 @@ class _FakeDiaryRepo(DiaryRepository):
 
 
 class _FakeDb:
-    def __init__(self, session: UserSessionModel | None = None) -> None:
+    def __init__(self, session: UserSessionModel | None = None, *, fail_on_execute: bool = False) -> None:
         self.session = session
         self.commit_count = 0
+        self.rollback_count = 0
+        self.fail_on_execute = fail_on_execute
+        self.executed: list[str] = []
+        self.added: list[UserSessionModel] = []
 
     async def scalar(self, stmt):
         return self.session
 
+    async def execute(self, stmt):
+        if self.fail_on_execute:
+            raise RuntimeError("db execute failed")
+        self.executed.append(str(stmt))
+        return None
+
+    def add(self, model) -> None:
+        self.added.append(model)
+
     async def commit(self) -> None:
         self.commit_count += 1
+
+    async def rollback(self) -> None:
+        self.rollback_count += 1
 
 
 def _make_session(
@@ -122,6 +139,50 @@ def test_protected_route_returns_200_for_active_token():
 
     assert resp.status_code == 200
     assert resp.json() == {"items": [], "total": 0}
+
+
+@pytest.mark.asyncio
+async def test_revoke_existing_sessions_does_not_commit_midway():
+    db = _FakeDb()
+
+    await _revoke_existing_sessions(db, device_id="dev-1", revoked_at=datetime.now(UTC).replace(tzinfo=None))
+
+    assert db.commit_count == 0
+    assert db.rollback_count == 0
+    assert len(db.executed) == 1
+
+
+@pytest.mark.asyncio
+async def test_create_session_uses_single_commit_for_revoke_and_insert():
+    db = _FakeDb()
+
+    access_token, refresh_token, access_jti, identity = await _create_session(
+        db, device_id="dev-1"
+    )
+
+    assert access_token != ""
+    assert refresh_token != ""
+    assert access_jti != ""
+    assert identity == "dev-1"
+    assert db.commit_count == 1
+    assert db.rollback_count == 0
+    assert len(db.executed) == 2
+    assert "pg_advisory_xact_lock" in db.executed[0]
+    assert "UPDATE user_sessions" in db.executed[1]
+    assert len(db.added) == 1
+    assert db.added[0].device_id == "dev-1"
+    assert db.added[0].jti == access_jti
+
+
+@pytest.mark.asyncio
+async def test_create_session_rolls_back_when_revoke_or_lock_fails():
+    db = _FakeDb(fail_on_execute=True)
+
+    with pytest.raises(RuntimeError):
+        await _create_session(db, device_id="dev-1")
+
+    assert db.commit_count == 0
+    assert db.rollback_count == 1
 
 
 def test_logout_revokes_current_session_from_authorization_header():
