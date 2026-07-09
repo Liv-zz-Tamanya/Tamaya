@@ -14,6 +14,26 @@ from app.presentation.router.insight_router import router as insight_router
 from app.presentation.router.me_router import router as me_router
 from app.presentation.router.settings_router import router as settings_router
 
+LOCAL_DEV_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:19006",  # Expo Web
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+]
+
+# Vite --host, .local 호스트명, 사설망 IP로 여는 로컬 개발 브라우저를 허용한다.
+LOCAL_DEV_ORIGIN_REGEX = (
+    r"^https?://("
+    r"localhost"
+    r"|127\.0\.0\.1"
+    r"|[A-Za-z0-9-]+\.local"
+    r"|10(?:\.\d{1,3}){3}"
+    r"|192\.168(?:\.\d{1,3}){2}"
+    r"|172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}"
+    r")(?::\d+)?$"
+)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,14 +47,8 @@ app = FastAPI(title="AI Diary", version="0.1.0", lifespan=lifespan)
 # B-001: CORS — FE(localhost:3000, 5173) + Expo Web 허용
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:19006",  # Expo Web
-        # 127.0.0.1 동등 허용 — Playwright e2e/일부 로컬 환경은 localhost 대신 127.0.0.1 사용
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=LOCAL_DEV_ORIGINS,
+    allow_origin_regex=LOCAL_DEV_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
