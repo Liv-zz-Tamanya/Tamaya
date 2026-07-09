@@ -25,6 +25,14 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.execute(
         """
+        DELETE FROM user_sessions
+        WHERE (device_id IS NULL AND kakao_id IS NULL)
+           OR (device_id IS NOT NULL AND kakao_id IS NOT NULL)
+        """
+    )
+
+    op.execute(
+        """
         WITH ranked AS (
             SELECT id,
                    row_number() OVER (
