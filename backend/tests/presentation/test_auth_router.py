@@ -1,0 +1,156 @@
+from __future__ import annotations
+
+import uuid
+from datetime import UTC, datetime, timedelta
+
+import pytest
+from fastapi import HTTPException
+from fastapi.testclient import TestClient
+
+from app.domain.repository.diary_repository import DiaryRepository
+from app.infrastructure.auth.jwt_handler import issue_access_token, issue_refresh_token
+from app.infrastructure.config.database import get_db
+from app.infrastructure.config.dependencies import get_diary_repo
+from app.infrastructure.persistence.models import UserSessionModel
+from app.main import app
+from app.presentation.auth_deps import get_current_session
+
+
+class _FakeDiaryRepo(DiaryRepository):
+    async def save(self, diary):  # pragma: no cover
+        raise NotImplementedError
+
+    async def find_by_id(self, diary_id):  # pragma: no cover
+        raise NotImplementedError
+
+    async def find_by_device_and_date(self, device_id, diary_date):  # pragma: no cover
+        raise NotImplementedError
+
+    async def find_all(self, device_id: str, offset: int = 0, limit: int = 20):
+        return []
+
+    async def count(self, device_id: str) -> int:
+        return 0
+
+
+class _FakeDb:
+    def __init__(self, session: UserSessionModel | None = None) -> None:
+        self.session = session
+        self.commit_count = 0
+
+    async def scalar(self, stmt):
+        return self.session
+
+    async def commit(self) -> None:
+        self.commit_count += 1
+
+
+def _make_session(
+    *,
+    identity: str = "dev-1",
+    revoked: bool = False,
+    expires_delta: timedelta = timedelta(minutes=15),
+) -> UserSessionModel:
+    now = datetime.now(UTC).replace(tzinfo=None)
+    return UserSessionModel(
+        id=uuid.uuid4(),
+        device_id=identity,
+        jti="jti-1",
+        issued_at=now,
+        expires_at=now + expires_delta,
+        revoked_at=now if revoked else None,
+    )
+
+
+@pytest.fixture(autouse=True)
+def _clear_overrides():
+    yield
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_get_current_session_rejects_revoked_access_token():
+    db = _FakeDb(_make_session(revoked=True))
+    token = issue_access_token("dev-1", "jti-1")
+
+    with pytest.raises(HTTPException) as exc_info:
+        await get_current_session(authorization=f"Bearer {token}", db=db)
+
+    assert exc_info.value.status_code == 401
+    assert "로그아웃" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_get_current_session_rejects_refresh_token():
+    db = _FakeDb(_make_session())
+    refresh_token, _ = issue_refresh_token("dev-1")
+
+    with pytest.raises(HTTPException) as exc_info:
+        await get_current_session(authorization=f"Bearer {refresh_token}", db=db)
+
+    assert exc_info.value.status_code == 401
+
+
+def test_protected_route_returns_401_for_revoked_token():
+    db = _FakeDb(_make_session(revoked=True))
+    token = issue_access_token("dev-1", "jti-1")
+    app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[get_diary_repo] = _FakeDiaryRepo
+
+    client = TestClient(app)
+    resp = client.get(
+        "/api/v1/diaries",
+        params={"offset": 0, "limit": 1},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 401
+
+
+def test_protected_route_returns_200_for_active_token():
+    db = _FakeDb(_make_session())
+    token = issue_access_token("dev-1", "jti-1")
+    app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[get_diary_repo] = _FakeDiaryRepo
+
+    client = TestClient(app)
+    resp = client.get(
+        "/api/v1/diaries",
+        params={"offset": 0, "limit": 1},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json() == {"items": [], "total": 0}
+
+
+def test_logout_revokes_current_session_from_authorization_header():
+    db = _FakeDb(_make_session())
+    token = issue_access_token("dev-1", "jti-1")
+    app.dependency_overrides[get_db] = lambda: db
+
+    client = TestClient(app)
+    resp = client.post("/auth/logout", headers={"Authorization": f"Bearer {token}"})
+
+    assert resp.status_code == 204
+    assert db.session is not None
+    assert db.session.revoked_at is not None
+    assert db.commit_count == 1
+
+
+def test_logout_then_same_token_is_rejected_by_protected_route():
+    db = _FakeDb(_make_session())
+    token = issue_access_token("dev-1", "jti-1")
+    app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[get_diary_repo] = _FakeDiaryRepo
+
+    client = TestClient(app)
+    logout_resp = client.post("/auth/logout", headers={"Authorization": f"Bearer {token}"})
+    diary_resp = client.get(
+        "/api/v1/diaries",
+        params={"offset": 0, "limit": 1},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert logout_resp.status_code == 204
+    assert diary_resp.status_code == 401
