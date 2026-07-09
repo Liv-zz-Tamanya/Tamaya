@@ -1,0 +1,43 @@
+name: Debug Production VM
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.NCP_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.NCP_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Inspect VM state
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=1000 -o TCPKeepAlive=yes \
+            "${{ secrets.NCP_USER }}@${{ secrets.NCP_HOST }}" <<'EOF'
+          set -eu
+          cd ~/tamanya
+
+          echo "== pwd =="
+          pwd
+
+          echo "== docker compose ps =="
+          docker compose --env-file .env.production -f docker-compose.prod.yml ps
+
+          echo "== docker ps -a =="
+          docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'
+
+          echo "== backend logs =="
+          docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail=200 backend
+
+          echo "== web logs =="
+          docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail=200 web
+
+          echo "== localhost probe =="
+          curl -i -s http://127.0.0.1/auth/device || true
+          curl -i -s http://127.0.0.1/openapi.json || true
+          EOF
