@@ -18,7 +18,7 @@ from datetime import UTC, datetime, timedelta
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.auth.jwt_handler import (
@@ -89,23 +89,48 @@ def _normalize_nickname(raw: str) -> str:
 
 
 async def _revoke_existing_sessions(
-    db: AsyncSession, *, device_id: str | None = None, kakao_id: str | None = None
+    db: AsyncSession,
+    *,
+    device_id: str | None = None,
+    kakao_id: str | None = None,
+    revoked_at: datetime,
 ) -> None:
     """동일 identity의 모든 active 세션 revoke (DEC-023)"""
-    now = datetime.now(UTC).replace(tzinfo=None)
     if device_id:
         await db.execute(
             update(UserSessionModel)
             .where(UserSessionModel.device_id == device_id, UserSessionModel.revoked_at.is_(None))
-            .values(revoked_at=now)
+            .values(revoked_at=revoked_at)
         )
     if kakao_id:
         await db.execute(
             update(UserSessionModel)
             .where(UserSessionModel.kakao_id == kakao_id, UserSessionModel.revoked_at.is_(None))
-            .values(revoked_at=now)
+            .values(revoked_at=revoked_at)
         )
-    await db.commit()
+
+
+def _session_identity_key(*, device_id: str | None = None, kakao_id: str | None = None) -> str:
+    if device_id:
+        return f"device:{device_id}"
+    if kakao_id:
+        return f"kakao:{kakao_id}"
+    raise ValueError("identity가 비어 있습니다")
+
+
+async def _lock_identity(
+    db: AsyncSession, *, device_id: str | None = None, kakao_id: str | None = None
+) -> None:
+    """동일 identity의 세션 발급을 트랜잭션 단위로 직렬화한다."""
+    identity_key = _session_identity_key(device_id=device_id, kakao_id=kakao_id)
+    await db.execute(
+        select(
+            func.pg_advisory_xact_lock(
+                func.hashtext("user_sessions"),
+                func.hashtext(identity_key),
+            )
+        )
+    )
 
 
 async def _create_session(
@@ -122,21 +147,30 @@ async def _create_session(
     반환: (access_token, refresh_token, access_jti, identity)
     """
     identity = device_id or kakao_id or ""
-    await _revoke_existing_sessions(db, device_id=device_id, kakao_id=kakao_id)
-
     access_jti = str(uuid.uuid4())
     now = datetime.now(UTC).replace(tzinfo=None)
+    try:
+        await _lock_identity(db, device_id=device_id, kakao_id=kakao_id)
+        await _revoke_existing_sessions(
+            db,
+            device_id=device_id,
+            kakao_id=kakao_id,
+            revoked_at=now,
+        )
 
-    session = UserSessionModel(
-        id=uuid.uuid4(),
-        device_id=device_id,
-        kakao_id=kakao_id,
-        jti=access_jti,
-        issued_at=now,
-        expires_at=now + timedelta(minutes=15),
-    )
-    db.add(session)
-    await db.commit()
+        session = UserSessionModel(
+            id=uuid.uuid4(),
+            device_id=device_id,
+            kakao_id=kakao_id,
+            jti=access_jti,
+            issued_at=now,
+            expires_at=now + timedelta(minutes=15),
+        )
+        db.add(session)
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
     access_token = issue_access_token(identity, access_jti)
     refresh_token, _ = issue_refresh_token(identity)
