@@ -4,6 +4,7 @@ from datetime import date, datetime
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Date,
     DateTime,
     Float,
@@ -13,6 +14,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -137,6 +139,24 @@ class UserSessionModel(Base):
     """
 
     __tablename__ = "user_sessions"
+    __table_args__ = (
+        Index(
+            "uq_user_sessions_active_device",
+            "device_id",
+            unique=True,
+            postgresql_where=text("revoked_at IS NULL AND device_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_user_sessions_active_kakao",
+            "kakao_id",
+            unique=True,
+            postgresql_where=text("revoked_at IS NULL AND kakao_id IS NOT NULL"),
+        ),
+        CheckConstraint(
+            "(device_id IS NOT NULL) <> (kakao_id IS NOT NULL)",
+            name="ck_user_sessions_single_identity",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     # device_id (익명) 또는 kakao_id (OAuth 사용자) 중 하나
