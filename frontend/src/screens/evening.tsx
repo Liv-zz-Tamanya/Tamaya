@@ -92,6 +92,18 @@ const emotionSummary = (emotion?: string): [string, string, string][] => {
   }
 };
 
+const fallbackKeywordsFromAnswers = (answers: string[]): string[] =>
+  answers.length > 0
+    ? Array.from(
+        new Set(
+          answers
+            .slice(0, 3)
+            .map((a) => a.trim().split(/[\s,.!?·]+/).filter(Boolean)[0])
+            .filter((w): w is string => Boolean(w)),
+        ),
+      ).slice(0, 3)
+    : ['오늘', '기록'];
+
 export const S10_RecapStart = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
@@ -416,6 +428,7 @@ export const S11_ChatDiary = () => {
               content: diary.content,
               emotion: diary.emotion,
               satisfaction: diary.satisfaction,
+              keywords: diary.keywords,
             },
           });
           clearChatSessionCache(maxTurns);
@@ -601,18 +614,11 @@ export const S12_MoodFinalize = () => {
       ? '내일도 짧게라도 하루를 돌아보기'
       : '회의 종료 후 · 3분 호흡 알람');
 
-  // 실제 답변에서 키워드 추출(로컬 휴리스틱) — 없으면 기본값.
+  // 서버 AI 키워드가 없을 때만 로컬 휴리스틱으로 fallback한다.
   const keywords =
-    userAnswers.length > 0
-      ? Array.from(
-          new Set(
-            userAnswers
-              .slice(0, 3)
-              .map((a) => a.trim().split(/[\s,.!?·]+/).filter(Boolean)[0])
-              .filter((w): w is string => Boolean(w)),
-          ),
-        ).slice(0, 3)
-      : ['오늘', '기록'];
+    generatedDiary?.keywords && generatedDiary.keywords.length > 0
+      ? generatedDiary.keywords.slice(0, 3)
+      : fallbackKeywordsFromAnswers(userAnswers);
 
   // 분석 로딩 → 결과(성공) 전환 (온디바이스 시뮬, 서버 미전송 — (C)경계).
   const [analyzing, setAnalyzing] = useState(true);

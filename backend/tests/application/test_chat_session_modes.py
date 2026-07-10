@@ -6,6 +6,7 @@ from uuid import UUID
 import pytest
 
 from app.application.service.ai_chat_service import AiChatService
+from app.application.usecase.diary_keywords import normalize_diary_keywords
 from app.application.usecase.send_message import SendMessageUseCase
 from app.application.usecase.start_chat_session import StartChatSessionUseCase
 from app.domain.model.chat_message import ChatMessage
@@ -78,6 +79,7 @@ class _FakeAi(AiChatService):
             "content": "오늘은 조금 지쳤지만 차분히 하루를 돌아봤다. 짧게라도 정리하니 마음이 가벼워졌다. 내일은 조금 더 천천히 숨을 고르고 싶다. 오늘도 잘 버텼다.",
             "emotion": "calm",
             "satisfaction": 55,
+            "keywords": ["방학", "운동", "자격증"],
         }
 
     async def detect_finalize_intent(self, user_message: str) -> bool:
@@ -203,7 +205,16 @@ async def test_send_message_auto_finalizes_on_third_turn_for_short_mode():
     assert suggest is False
     assert diary is not None
     assert diary.title == "짧은 회고"
+    assert diary.keywords == ["방학", "운동", "자격증"]
     assert session.is_finalized is True
     assert len(diary_repo.saved) == 1
     assert chat_agent.calls == []
     assert extract_chunks.calls == 1
+
+
+def test_normalize_diary_keywords_keeps_short_unique_strings():
+    keywords = normalize_diary_keywords(
+        [" 방학 ", "", "운동", "방학", 123, "자격증", "추가"],
+    )
+
+    assert keywords == ["방학", "운동", "자격증"]

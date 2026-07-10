@@ -66,6 +66,7 @@ class DiaryResponse(BaseModel):
     content: str
     emotion: str
     satisfaction: int
+    keywords: list[str]
     chat_session_id: UUID | None
     created_at: datetime
 
@@ -78,6 +79,7 @@ class DiaryResponse(BaseModel):
             content=diary.content,
             emotion=diary.emotion.value,
             satisfaction=diary.satisfaction,
+            keywords=diary.keywords,
             chat_session_id=diary.chat_session_id,
             created_at=diary.created_at,
         )
