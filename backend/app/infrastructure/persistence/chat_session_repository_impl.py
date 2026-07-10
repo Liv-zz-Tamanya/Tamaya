@@ -24,6 +24,7 @@ class ChatSessionRepositoryImpl(ChatSessionRepository):
         result = await self._db.execute(stmt)
         existing = result.scalar_one_or_none()
         if existing:
+            existing.max_turns = session.max_turns
             existing.is_finalized = session.is_finalized
             if len(session.messages) < len(existing.messages):
                 # 재회고 리셋: 메시지가 줄었으면 전체 교체 (cascade delete-orphan)
@@ -48,6 +49,7 @@ class ChatSessionRepositoryImpl(ChatSessionRepository):
                 id=session.id,
                 device_id=session.device_id,
                 session_date=session.session_date,
+                max_turns=session.max_turns,
                 is_finalized=session.is_finalized,
                 created_at=session.created_at,
             )
@@ -96,6 +98,7 @@ class ChatSessionRepositoryImpl(ChatSessionRepository):
             device_id=model.device_id,
             session_date=model.session_date,
             messages=messages,
+            max_turns=model.max_turns,
             is_finalized=model.is_finalized,
             created_at=model.created_at,
         )

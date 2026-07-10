@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 
 from app.application.service.ai_chat_service import AiChatService
 from app.application.usecase.chat_agent import ChatAgent
@@ -24,6 +24,7 @@ from app.presentation.router.schemas import (
     DiaryResponse,
     SendMessageRequest,
     SendMessageResponse,
+    StartChatSessionRequest,
 )
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
@@ -36,12 +37,17 @@ router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
     description="오늘의 채팅 세션을 시작하거나, 이미 존재하면 기존 세션을 반환합니다. 새 세션 시작 시 AI가 첫 인사 메시지를 자동 생성합니다.",
 )
 async def start_session(
+    body: StartChatSessionRequest = Body(default_factory=StartChatSessionRequest),
     device_id: str = Depends(get_current_device_id),
     repo: ChatSessionRepository = Depends(get_chat_session_repo),
     ai: AiChatService = Depends(get_ai_chat_service),
 ):
     usecase = StartChatSessionUseCase(repo, ai)
-    session = await usecase.execute(device_id)
+    session = await usecase.execute(
+        device_id,
+        max_turns=body.max_turns,
+        reset=body.reset,
+    )
     return ChatSessionResponse.from_domain(session)
 
 
