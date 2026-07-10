@@ -14,6 +14,7 @@ export type GeneratedDiaryResponse = {
   content: string;
   emotion: string;
   satisfaction: number;
+  keywords?: string[];
   chat_session_id?: string | null;
   created_at?: string;
 };

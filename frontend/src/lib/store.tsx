@@ -26,6 +26,7 @@ export type GeneratedDiary = {
   content: string;
   emotion: string;
   satisfaction: number;
+  keywords?: string[];
 };
 
 export type DiaryEntry = {
