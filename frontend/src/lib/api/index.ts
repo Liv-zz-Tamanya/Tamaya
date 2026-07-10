@@ -11,7 +11,14 @@ export {
   loginWithNickname,
   getNickname,
 } from './auth';
-export { sendAiChat, type AiReply } from './chat';
+export {
+  clearChatSessionCache,
+  sendAiChat,
+  startAiChatSession,
+  type AiReply,
+  type ChatSessionMaxTurns,
+  type GeneratedDiaryResponse,
+} from './chat';
 
 // 건강냥(Medlife) 통합 — BE-only 기능 클라이언트 (feat/healthcat-backend)
 export { sendCoachingMessage, type CoachTurn } from './coaching';

@@ -34,6 +34,7 @@ class ChatSessionModel(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     device_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     session_date: Mapped[date] = mapped_column(Date, nullable=False)
+    max_turns: Mapped[int] = mapped_column(Integer, nullable=False, default=5, server_default="5")
     is_finalized: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 

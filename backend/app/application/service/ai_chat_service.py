@@ -10,6 +10,7 @@ class AiChatService(ABC):
         messages: list[ChatMessage],
         suggest_finalize: bool = False,
         memories: list[str] | None = None,
+        max_turns: int = 5,
     ) -> str: ...
 
     @abstractmethod

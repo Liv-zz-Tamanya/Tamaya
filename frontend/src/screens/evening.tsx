@@ -1,19 +1,104 @@
-import { KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CatSketch, ImgPh, MoodFace } from '../components/primitives';
 import { useNav } from '../lib/router';
-import { AI_ENABLED, sendAiChat } from '../lib/api';
 import {
+  AI_ENABLED,
+  clearChatSessionCache,
+  sendAiChat,
+  startAiChatSession,
+  type ChatSessionMaxTurns,
+} from '../lib/api';
+import {
+  CHAT_DIARY_FULL_TURNS,
   CHAT_DIARY_INTRO,
+  CHAT_DIARY_SHORT_TURNS,
   CHAT_DIARY_TURNS,
   TODAY_DAY,
   useStore,
 } from '../lib/store';
+import type { ChatDiaryMode, Mood } from '../lib/store';
 
 // 10-13 · Evening recap entry / Chat Diary / Mood finalize / Reward modal
 
+const modeToTurns = (mode: ChatDiaryMode): ChatSessionMaxTurns =>
+  mode === 'short' ? CHAT_DIARY_SHORT_TURNS : CHAT_DIARY_FULL_TURNS;
+
+const moodsFromEmotion = (emotion?: string): Mood[] => {
+  switch (emotion) {
+    case 'happy':
+    case 'excited':
+      return ['😊', '😌'];
+    case 'sad':
+      return ['😢', '😣'];
+    case 'angry':
+      return ['😡', '😣'];
+    case 'anxious':
+      return ['😣', '😢'];
+    case 'grateful':
+      return ['😊', '😌'];
+    case 'tired':
+      return ['😣', '😌'];
+    case 'calm':
+    default:
+      return ['😌', '😊'];
+  }
+};
+
+const emotionSummary = (emotion?: string): [string, string, string][] => {
+  switch (emotion) {
+    case 'happy':
+      return [
+        ['기쁨', '#ead0a6', '45%'],
+        ['차분', '#d8a777', '30%'],
+        ['뿌듯', '#fff', '25%'],
+      ];
+    case 'sad':
+      return [
+        ['슬픔', '#ead0a6', '45%'],
+        ['피곤', '#d8a777', '30%'],
+        ['차분', '#fff', '25%'],
+      ];
+    case 'angry':
+      return [
+        ['답답', '#ead0a6', '40%'],
+        ['피곤', '#d8a777', '35%'],
+        ['차분', '#fff', '25%'],
+      ];
+    case 'anxious':
+      return [
+        ['불안', '#ead0a6', '45%'],
+        ['피곤', '#d8a777', '30%'],
+        ['안도', '#fff', '25%'],
+      ];
+    case 'grateful':
+      return [
+        ['고마움', '#ead0a6', '45%'],
+        ['차분', '#d8a777', '30%'],
+        ['기쁨', '#fff', '25%'],
+      ];
+    case 'tired':
+      return [
+        ['피곤', '#ead0a6', '45%'],
+        ['차분', '#d8a777', '30%'],
+        ['안도', '#fff', '25%'],
+      ];
+    case 'calm':
+    default:
+      return [
+        ['차분', '#ead0a6', '45%'],
+        ['안도', '#d8a777', '30%'],
+        ['뿌듯', '#fff', '25%'],
+      ];
+  }
+};
+
 export const S10_RecapStart = () => {
   const nav = useNav();
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
+  const selectedMode = state.chatDiaryMode;
+  const selectedMaxTurns = state.chatDiaryMaxTurns;
+  const isShortMode = selectedMode === 'short';
   // 낮 동안의 기록(AI 채팅·데일리체크)을 회고 입력으로 인계 — 없으면 빈상태. (C)경계: 로컬 유지.
   const d = state.daily;
   const memos: string[] = [
@@ -26,6 +111,17 @@ export const S10_RecapStart = () => {
     ...(d.movement.done ? ['🚶 운동'] : []),
     ...(d.sun.done ? ['☼ 햇볕'] : []),
   ];
+
+  const selectMode = (mode: ChatDiaryMode) => {
+    const maxTurns = modeToTurns(mode);
+    const modeChanged =
+      state.chatDiaryMode !== mode || state.chatDiaryMaxTurns !== maxTurns;
+    dispatch({ type: 'chat-diary/configure', mode, maxTurns });
+    if (modeChanged && (state.chatDiary.length > 0 || state.chatDiaryGeneratedDiary)) {
+      dispatch({ type: 'chat-diary/reset' });
+    }
+  };
+
   return (
   <div
     className="phone-inner"
@@ -69,7 +165,7 @@ export const S10_RecapStart = () => {
         className="handwriting"
         style={{ color: '#d8a777', marginTop: 10, fontSize: 20 }}
       >
-        5분이면 충분해 · 5턴 대화
+        {isShortMode ? '3번만 나누는 짧은 회고' : '5분이면 충분해 · 5턴 대화'}
       </div>
 
       <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
@@ -124,21 +220,31 @@ export const S10_RecapStart = () => {
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
         <div
-          className="hbox accent"
-          style={{ flex: 1, padding: 10, textAlign: 'center', color: '#3a2414' }}
-        >
-          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>✦ 대화</div>
-          <div className="tiny">5턴 챗</div>
-        </div>
-        <div
-          className="hbox"
+          className={`hbox${selectedMode === 'full' ? ' accent' : ''}`}
           style={{
             flex: 1,
             padding: 10,
             textAlign: 'center',
             color: '#3a2414',
-            background: '#f5e6cf',
+            background: selectedMode === 'full' ? undefined : '#f5e6cf',
+            cursor: 'pointer',
           }}
+          onClick={() => selectMode('full')}
+        >
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>✦ 대화</div>
+          <div className="tiny">5턴 챗</div>
+        </div>
+        <div
+          className={`hbox${selectedMode === 'short' ? ' accent' : ''}`}
+          style={{
+            flex: 1,
+            padding: 10,
+            textAlign: 'center',
+            color: '#3a2414',
+            background: selectedMode === 'short' ? undefined : '#f5e6cf',
+            cursor: 'pointer',
+          }}
+          onClick={() => selectMode('short')}
         >
           <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>✎ 짧게</div>
           <div className="tiny">3줄 일기</div>
@@ -151,7 +257,9 @@ export const S10_RecapStart = () => {
             textAlign: 'center',
             color: '#3a2414',
             background: '#f5e6cf',
+            cursor: 'pointer',
           }}
+          onClick={() => setVoiceModalOpen(true)}
         >
           <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>🎙 보이스</div>
           <div className="tiny">곧 출시</div>
@@ -165,7 +273,7 @@ export const S10_RecapStart = () => {
         className="btn primary block"
         style={{ cursor: 'pointer', fontFamily: 'inherit' }}
       >
-        시작하기 →
+        {selectedMaxTurns}턴 회고 시작하기 →
       </button>
       <div
         className="tiny"
@@ -180,6 +288,47 @@ export const S10_RecapStart = () => {
         오늘 건너뛰기
       </div>
     </div>
+    {voiceModalOpen && (
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(20, 12, 8, 0.58)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+          zIndex: 100,
+        }}
+        onClick={() => setVoiceModalOpen(false)}
+      >
+        <div
+          className="hbox"
+          style={{
+            width: '100%',
+            maxWidth: 280,
+            padding: 18,
+            background: '#f5e6cf',
+            color: '#3a2414',
+            textAlign: 'center',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="h-section">보이스 회고</div>
+          <div className="body" style={{ marginTop: 8 }}>
+            곧 지원돼요
+          </div>
+          <button
+            type="button"
+            onClick={() => setVoiceModalOpen(false)}
+            className="btn primary block"
+            style={{ marginTop: 16, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            확인
+          </button>
+        </div>
+      </div>
+    )}
   </div>
   );
 };
@@ -190,35 +339,35 @@ export const S11_ChatDiary = () => {
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const seeded = useRef(false);
+  const maxTurns = state.chatDiaryMaxTurns as ChatSessionMaxTurns;
 
-  // Seed first bot message + first question on mount if empty.
-  // ref guard: StrictMode(dev)의 이중 effect 발화로 인한 인삿말·질문 중복 방지.
+  // 로컬 대화가 비어 있으면 서버 세션도 새로 맞춰서 같은 턴 정책으로 시작한다.
   useEffect(() => {
-    if (seeded.current) return;
-    seeded.current = true;
-    if (state.chatDiary.length === 0) {
-      dispatch({ type: 'chat-diary/append', msg: CHAT_DIARY_INTRO });
-      setTimeout(() => {
-        dispatch({
-          type: 'chat-diary/append',
-          msg: { role: 'bot', text: CHAT_DIARY_TURNS[0].question, hint: CHAT_DIARY_TURNS[0].hint },
-        });
-      }, 500);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (state.chatDiary.length > 0) return;
+    setTyping(false);
+    setInput('');
+    dispatch({ type: 'chat-diary/set-generated-diary', diary: null });
+    clearChatSessionCache(maxTurns);
+    void startAiChatSession({ maxTurns, reset: true }).catch(() => undefined);
+    dispatch({ type: 'chat-diary/append', msg: CHAT_DIARY_INTRO });
+    const timer = window.setTimeout(() => {
+      dispatch({
+        type: 'chat-diary/append',
+        msg: { role: 'bot', text: CHAT_DIARY_TURNS[0].question, hint: CHAT_DIARY_TURNS[0].hint },
+      });
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [dispatch, maxTurns, state.chatDiary.length]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [state.chatDiary, typing]);
 
   const userTurns = state.chatDiary.filter((m) => m.role === 'user').length;
-  const turn = Math.min(userTurns, 5);
-  const done = turn >= 5;
+  const turn = Math.min(userTurns, maxTurns);
+  const done = turn >= maxTurns;
 
-  // 5턴째: 마무리 멘트 후 일기 정리 화면으로 이동.
-  const finishTurn5 = (closing?: string) => {
+  const finishRecap = (closing?: string) => {
     dispatch({
       type: 'chat-diary/append',
       msg: {
@@ -247,19 +396,33 @@ export const S11_ChatDiary = () => {
     if (!AI_ENABLED) {
       setTimeout(() => {
         setTyping(false);
-        if (nextTurn < 5) fallbackQuestion(nextTurn);
-        else finishTurn5();
+        if (nextTurn < maxTurns) fallbackQuestion(nextTurn);
+        else finishRecap();
       }, 800 + Math.random() * 400);
       return;
     }
 
     // backend 결선: 회고 발화를 Clova(mock/실)로 보내 실제 응답을 받는다.
-    // 백엔드도 5턴에서 무조건 마무리(diary 생성)하므로 5턴째 응답은 마무리 멘트다.
+    // diary가 오면 서버가 해당 턴에서 일기 생성을 끝낸 상태다.
     void (async () => {
       try {
-        const { text: aiText } = await sendAiChat(t);
+        const { text: aiText, diary } = await sendAiChat(t, { maxTurns });
         setTyping(false);
-        if (nextTurn < 5) {
+        if (diary) {
+          dispatch({
+            type: 'chat-diary/set-generated-diary',
+            diary: {
+              title: diary.title,
+              content: diary.content,
+              emotion: diary.emotion,
+              satisfaction: diary.satisfaction,
+            },
+          });
+          clearChatSessionCache(maxTurns);
+          finishRecap(aiText);
+          return;
+        }
+        if (nextTurn < maxTurns) {
           dispatch({
             type: 'chat-diary/append',
             msg: {
@@ -268,12 +431,12 @@ export const S11_ChatDiary = () => {
             },
           });
         } else {
-          finishTurn5(aiText);
+          finishRecap(aiText);
         }
       } catch {
         setTyping(false);
-        if (nextTurn < 5) fallbackQuestion(nextTurn);
-        else finishTurn5();
+        if (nextTurn < maxTurns) fallbackQuestion(nextTurn);
+        else finishRecap();
       }
     })();
   };
@@ -311,11 +474,11 @@ export const S11_ChatDiary = () => {
           style={{ cursor: 'pointer', fontFamily: 'inherit' }}
           title="대화 다시 시작"
         >
-          {turn} / 5턴 ⟲
+          {turn} / {maxTurns}턴 ⟲
         </button>
       </div>
       <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-        {[0, 1, 2, 3, 4].map((i) => (
+        {Array.from({ length: maxTurns }, (_, i) => (
           <div
             key={i}
             style={{
@@ -411,6 +574,9 @@ export const S12_MoodFinalize = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
   const [toast, setToast] = useState<string | null>(null);
+  const generatedDiary = state.chatDiaryGeneratedDiary;
+  const diaryMoods = moodsFromEmotion(generatedDiary?.emotion);
+  const summaryRows = emotionSummary(generatedDiary?.emotion);
   const flash = (m: string) => {
     setToast(m);
     setTimeout(() => setToast(null), 1400);
@@ -420,14 +586,20 @@ export const S12_MoodFinalize = () => {
   const userAnswers = state.chatDiary.filter((m) => m.role === 'user').map((m) => m.text);
   const datePrefix = `5월 ${TODAY_DAY}일`;
   const bodyPreview =
-    userAnswers.length > 0
+    generatedDiary?.content
+      ? generatedDiary.content
+      : userAnswers.length > 0
       ? `${datePrefix}. ${userAnswers
           .slice(0, 4)
           .map((t) => t.trim().replace(/\n+/g, ' '))
           .join('\n')}`
       : `${datePrefix}. 점심으로 우동 한 그릇이 위로였다.\n긴 회의로 피곤했고, 끝난 뒤에 숨 돌릴 5분이\n없었던 게 가장 무거웠다. 내일은 일정 사이에\n3분의 틈을 만들어보기로 했다.`;
 
-  const tomorrowLine = userAnswers[4] ?? '회의 종료 후 · 3분 호흡 알람';
+  const tomorrowLine =
+    userAnswers[userAnswers.length - 1] ??
+    (state.chatDiaryMode === 'short'
+      ? '내일도 짧게라도 하루를 돌아보기'
+      : '회의 종료 후 · 3분 호흡 알람');
 
   // 실제 답변에서 키워드 추출(로컬 휴리스틱) — 없으면 기본값.
   const keywords =
@@ -454,7 +626,7 @@ export const S12_MoodFinalize = () => {
       type: 'diary/save',
       entry: {
         day: TODAY_DAY,
-        moods: ['😣', '😌', '😊'],
+        moods: diaryMoods,
         keywords,
         body: bodyPreview,
         check: {
@@ -470,6 +642,7 @@ export const S12_MoodFinalize = () => {
     });
     dispatch({ type: 'points/add', delta: 80 });
     dispatch({ type: 'streak/inc' });
+    clearChatSessionCache(state.chatDiaryMaxTurns as ChatSessionMaxTurns);
     dispatch({ type: 'chat-diary/reset' });
     nav.go('reward');
   };
@@ -477,7 +650,7 @@ export const S12_MoodFinalize = () => {
   return (
   <div className="phone-inner">
     <div className="phone-scroll" style={{ padding: '46px 18px calc(80px + var(--safe-b, 0px))' }}>
-      <div className="h-section">5턴 완료 — 일기로 마무리</div>
+      <div className="h-section">{state.chatDiaryMaxTurns}턴 완료 — 일기로 마무리</div>
       <div className="h-display" style={{ marginTop: 8 }}>
         오늘은 이런
         <br />
@@ -532,17 +705,11 @@ export const S12_MoodFinalize = () => {
                 justifyContent: 'center',
               }}
             >
-              <MoodFace mood="😣" size={24} />
+              <MoodFace mood={diaryMoods[0]} size={24} />
             </div>
           </div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {(
-              [
-                ['피곤', '#ead0a6', '45%'],
-                ['차분', '#d8a777', '30%'],
-                ['뿌듯', '#fff', '25%'],
-              ] as [string, string, string][]
-            ).map(([n, c, p], i) => (
+            {summaryRows.map(([n, c, p], i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div
                   className="ph-circle"
@@ -571,9 +738,9 @@ export const S12_MoodFinalize = () => {
       <div
         className="hbox r-r"
         style={{ padding: 14, marginTop: 12, background: '#fff5e1' }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <div className="h-section">생성된 일기</div>
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div className="h-section">생성된 일기</div>
           <button
             type="button"
             onClick={() => flash('✎ 일기 직접 수정은 곧 지원돼요')}
@@ -583,6 +750,11 @@ export const S12_MoodFinalize = () => {
             ✎ 수정
           </button>
         </div>
+        {generatedDiary?.title && (
+          <div className="h-title" style={{ marginTop: 8, fontSize: 18 }}>
+            {generatedDiary.title}
+          </div>
+        )}
         <div
           className="handwriting"
           style={{ marginTop: 8, fontSize: 17, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}
@@ -634,6 +806,7 @@ export const S12_MoodFinalize = () => {
       <button
         type="button"
         onClick={() => {
+          clearChatSessionCache(state.chatDiaryMaxTurns as ChatSessionMaxTurns);
           dispatch({ type: 'chat-diary/reset' });
           nav.go('chat-diary');
         }}

@@ -56,6 +56,7 @@ class SendMessageUseCase:
             messages=session.messages,
             current_user_message=content,
             suggest_finalize=session.should_suggest_finalize,
+            max_turns=session.max_turns,
         )
         ai_msg = session.add_message("assistant", ai_response)
         await self._repo.save(session)

@@ -14,6 +14,7 @@ class ChatAgentState(TypedDict):
     messages: list[ChatMessage]
     current_user_message: str
     suggest_finalize: bool
+    max_turns: int
     retrieved_memories: list[str]
     response: str
     should_retrieve: bool
@@ -82,6 +83,7 @@ class ChatAgent:
             messages=state["messages"],
             suggest_finalize=state["suggest_finalize"],
             memories=memories if memories else None,
+            max_turns=state["max_turns"],
         )
         return {"response": response}
 
@@ -91,12 +93,14 @@ class ChatAgent:
         messages: list[ChatMessage],
         current_user_message: str,
         suggest_finalize: bool = False,
+        max_turns: int = 5,
     ) -> str:
         initial_state: ChatAgentState = {
             "session_id": session_id,
             "messages": messages,
             "current_user_message": current_user_message,
             "suggest_finalize": suggest_finalize,
+            "max_turns": max_turns,
             "retrieved_memories": [],
             "response": "",
             "should_retrieve": False,

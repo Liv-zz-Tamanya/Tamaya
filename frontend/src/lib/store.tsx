@@ -20,6 +20,14 @@ export type ChatMsg = {
   chips?: string[];
 };
 
+export type ChatDiaryMode = 'full' | 'short';
+export type GeneratedDiary = {
+  title: string;
+  content: string;
+  emotion: string;
+  satisfaction: number;
+};
+
 export type DiaryEntry = {
   day: number;            // 1..31 of current month for the prototype
   moods: Mood[];           // primary + secondary feelings
@@ -43,6 +51,9 @@ export type State = {
   };
   aiChat: ChatMsg[];
   chatDiary: ChatMsg[];
+  chatDiaryMode: ChatDiaryMode;
+  chatDiaryMaxTurns: 3 | 5;
+  chatDiaryGeneratedDiary: GeneratedDiary | null;
   diaries: DiaryEntry[];
   selectedDay: number | null;       // 달력에서 선택한 날 → 일기 디테일이 읽음
   points: number;
@@ -116,6 +127,9 @@ const DEFAULT_STATE: State = {
     { role: 'bot', text: '안녕! 낮엔 내가 도와줄게.\n오늘 뭐 도와줄까?' },
   ],
   chatDiary: [],
+  chatDiaryMode: 'full',
+  chatDiaryMaxTurns: 5,
+  chatDiaryGeneratedDiary: null,
   diaries: SEED_DIARIES,
   selectedDay: 26,
   points: 240,
@@ -133,7 +147,9 @@ type Action =
   | { type: 'daily/movement'; bucket: string }
   | { type: 'daily/sun'; level: string }
   | { type: 'ai-chat/append'; msg: ChatMsg }
+  | { type: 'chat-diary/configure'; mode: ChatDiaryMode; maxTurns: 3 | 5 }
   | { type: 'chat-diary/append'; msg: ChatMsg }
+  | { type: 'chat-diary/set-generated-diary'; diary: GeneratedDiary | null }
   | { type: 'chat-diary/reset' }
   | { type: 'diary/save'; entry: DiaryEntry }
   | { type: 'ui/select-day'; day: number }
@@ -188,10 +204,18 @@ function reducer(state: State, action: Action): State {
       };
     case 'ai-chat/append':
       return { ...state, aiChat: [...state.aiChat, action.msg] };
+    case 'chat-diary/configure':
+      return {
+        ...state,
+        chatDiaryMode: action.mode,
+        chatDiaryMaxTurns: action.maxTurns,
+      };
     case 'chat-diary/append':
       return { ...state, chatDiary: [...state.chatDiary, action.msg] };
+    case 'chat-diary/set-generated-diary':
+      return { ...state, chatDiaryGeneratedDiary: action.diary };
     case 'chat-diary/reset':
-      return { ...state, chatDiary: [] };
+      return { ...state, chatDiary: [], chatDiaryGeneratedDiary: null };
     case 'diary/save':
       return {
         ...state,
@@ -308,7 +332,10 @@ export const simulateAiReply = (userText: string): ChatMsg => {
   return { role: 'bot', text };
 };
 
-// ── ChatDiary 5턴 시퀀스 ─────────────────────────────────────────────────
+// ── ChatDiary 회고 시퀀스 ────────────────────────────────────────────────
+
+export const CHAT_DIARY_FULL_TURNS = 5;
+export const CHAT_DIARY_SHORT_TURNS = 3;
 
 export const CHAT_DIARY_TURNS: { question: string; hint?: string }[] = [
   {
