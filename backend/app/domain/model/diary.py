@@ -14,5 +14,6 @@ class Diary:
     content: str = ""
     emotion: Emotion = Emotion.CALM
     satisfaction: int = 50  # BUG-07: 0-100 (DEC-020)
+    keywords: list[str] = field(default_factory=list)
     chat_session_id: UUID | None = None
     created_at: datetime = field(default_factory=datetime.now)

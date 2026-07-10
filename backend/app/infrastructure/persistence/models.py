@@ -74,6 +74,7 @@ class DiaryModel(Base):
     emotion: Mapped[str] = mapped_column(String(20), nullable=False)
     # BUG-07: satisfaction 0-100 (DEC-020)
     satisfaction: Mapped[int] = mapped_column(Integer, nullable=False)
+    keywords: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
     chat_session_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("chat_sessions.id"), nullable=True
     )

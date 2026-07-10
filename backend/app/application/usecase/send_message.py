@@ -3,6 +3,7 @@ from uuid import UUID
 
 from app.application.service.ai_chat_service import AiChatService
 from app.application.usecase.chat_agent import ChatAgent
+from app.application.usecase.diary_keywords import normalize_diary_keywords
 from app.application.usecase.extract_chunks import ExtractChunksUseCase
 from app.domain.model.chat_message import ChatMessage
 from app.domain.model.chat_session import ChatSession
@@ -84,6 +85,7 @@ class SendMessageUseCase:
             content=diary_data.get("content", ""),
             emotion=emotion,
             satisfaction=satisfaction,
+            keywords=normalize_diary_keywords(diary_data.get("keywords")),
             chat_session_id=session.id,
         )
 

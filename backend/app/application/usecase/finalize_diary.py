@@ -2,6 +2,7 @@ import logging
 from uuid import UUID
 
 from app.application.service.ai_chat_service import AiChatService
+from app.application.usecase.diary_keywords import normalize_diary_keywords
 from app.application.usecase.extract_chunks import ExtractChunksUseCase
 from app.domain.model.diary import Diary
 from app.domain.model.emotion import Emotion
@@ -47,6 +48,7 @@ class FinalizeDiaryUseCase:
             content=diary_data.get("content", ""),
             emotion=emotion,
             satisfaction=satisfaction,
+            keywords=normalize_diary_keywords(diary_data.get("keywords")),
             chat_session_id=session.id,
         )
 
