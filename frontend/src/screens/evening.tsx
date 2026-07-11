@@ -14,6 +14,7 @@ import {
   CHAT_DIARY_SHORT_TURNS,
   CHAT_DIARY_TURNS,
   TODAY_DAY,
+  dateParts,
   useStore,
 } from '../lib/store';
 import type { ChatDiaryMode, Mood } from '../lib/store';
@@ -424,6 +425,7 @@ export const S11_ChatDiary = () => {
           dispatch({
             type: 'chat-diary/set-generated-diary',
             diary: {
+              diary_date: diary.diary_date,
               title: diary.title,
               content: diary.content,
               emotion: diary.emotion,
@@ -628,10 +630,13 @@ export const S12_MoodFinalize = () => {
   }, []);
 
   const save = () => {
+    const diaryDate = generatedDiary?.diary_date;
+    const diaryDay = diaryDate ? dateParts(diaryDate).day : TODAY_DAY;
     dispatch({
       type: 'diary/save',
       entry: {
-        day: TODAY_DAY,
+        day: diaryDay,
+        date: diaryDate,
         moods: diaryMoods,
         keywords,
         body: bodyPreview,

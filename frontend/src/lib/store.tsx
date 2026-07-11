@@ -22,6 +22,7 @@ export type ChatMsg = {
 
 export type ChatDiaryMode = 'full' | 'short';
 export type GeneratedDiary = {
+  diary_date?: string;
   title: string;
   content: string;
   emotion: string;
@@ -30,7 +31,8 @@ export type GeneratedDiary = {
 };
 
 export type DiaryEntry = {
-  day: number;            // 1..31 of current month for the prototype
+  day: number;            // legacy day number used by the prototype screens
+  date?: string;           // YYYY-MM-DD. Older localStorage entries infer 2026-05-DD.
   moods: Mood[];           // primary + secondary feelings
   keywords: string[];
   body: string;            // generated diary
@@ -56,7 +58,8 @@ export type State = {
   chatDiaryMaxTurns: 3 | 5;
   chatDiaryGeneratedDiary: GeneratedDiary | null;
   diaries: DiaryEntry[];
-  selectedDay: number | null;       // 달력에서 선택한 날 → 일기 디테일이 읽음
+  selectedDay: number | null;       // legacy fallback for older screens
+  selectedDate: string | null;      // 달력에서 선택한 날짜 → 일기 디테일이 읽음
   points: number;
   streak: number;
   level: number;
@@ -91,6 +94,7 @@ const mk = (
   },
   tomorrow,
   createdAt: Date.UTC(2026, 4, day, 13, 0),
+  date: `2026-05-${String(day).padStart(2, '0')}`,
 });
 
 const SEED_DIARIES: DiaryEntry[] = [
@@ -133,6 +137,7 @@ const DEFAULT_STATE: State = {
   chatDiaryGeneratedDiary: null,
   diaries: SEED_DIARIES,
   selectedDay: 26,
+  selectedDate: '2026-05-26',
   points: 240,
   streak: 12,
   level: 3,
@@ -153,12 +158,25 @@ type Action =
   | { type: 'chat-diary/set-generated-diary'; diary: GeneratedDiary | null }
   | { type: 'chat-diary/reset' }
   | { type: 'diary/save'; entry: DiaryEntry }
+  | { type: 'diaries/merge'; entries: DiaryEntry[] }
   | { type: 'ui/select-day'; day: number }
+  | { type: 'ui/select-date'; date: string }
   | { type: 'points/add'; delta: number }
   | { type: 'streak/inc' }
   | { type: 'item/equip'; item: string }
   | { type: 'item/unlock'; item: string }
   | { type: 'state/replace'; state: State };
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+export function diaryDateOf(entry: Pick<DiaryEntry, 'day' | 'date'>): string {
+  return entry.date ?? `2026-05-${pad2(entry.day)}`;
+}
+
+export const dateParts = (date: string) => {
+  const [year, month, day] = date.split('-').map(Number);
+  return { year, month, day };
+};
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -218,13 +236,27 @@ function reducer(state: State, action: Action): State {
     case 'chat-diary/reset':
       return { ...state, chatDiary: [], chatDiaryGeneratedDiary: null };
     case 'diary/save':
+      const saveDate = diaryDateOf(action.entry);
       return {
         ...state,
-        diaries: [...state.diaries.filter((d) => d.day !== action.entry.day), action.entry],
+        diaries: [...state.diaries.filter((d) => diaryDateOf(d) !== saveDate), action.entry],
         selectedDay: action.entry.day,
+        selectedDate: saveDate,
       };
+    case 'diaries/merge': {
+      const byDate = new Map(state.diaries.map((d) => [diaryDateOf(d), d]));
+      action.entries.forEach((entry) => byDate.set(diaryDateOf(entry), entry));
+      return {
+        ...state,
+        diaries: [...byDate.values()].sort((a, b) => diaryDateOf(a).localeCompare(diaryDateOf(b))),
+      };
+    }
     case 'ui/select-day':
       return { ...state, selectedDay: action.day };
+    case 'ui/select-date': {
+      const entry = entryForDate(state.diaries, action.date);
+      return { ...state, selectedDate: action.date, selectedDay: entry?.day ?? null };
+    }
     case 'points/add':
       return { ...state, points: state.points + action.delta };
     case 'streak/inc':
@@ -389,18 +421,47 @@ export const MOOD_BAR: Record<Mood, string> = {
 export const WEEKDAY_KR = ['일', '월', '화', '수', '목', '금', '토'];
 // 5월 1일 2026 = 금요일 → 요일 인덱스(일=0..토=6)
 export const weekdayOf = (day: number) => (4 + day) % 7;
+export const weekdayOfDate = (date: string) => new Date(`${date}T00:00:00`).getDay();
+
+export const formatDateKey = (year: number, month: number, day: number) =>
+  `${year}-${pad2(month)}-${pad2(day)}`;
+
+export const formatMonthDay = (entry: DiaryEntry) => {
+  const { month, day } = dateParts(diaryDateOf(entry));
+  return `${month}월 ${day}일`;
+};
+
+export const monthKeyOf = (date: string) => date.slice(0, 7);
 
 export const entryForDay = (diaries: DiaryEntry[], day: number | null) =>
   day == null ? undefined : diaries.find((d) => d.day === day);
 
+export const entryForDate = (diaries: DiaryEntry[], date: string | null) =>
+  date == null ? undefined : diaries.find((d) => diaryDateOf(d) === date);
+
 export const latestEntry = (diaries: DiaryEntry[]) =>
-  diaries.length ? [...diaries].sort((a, b) => b.day - a.day)[0] : undefined;
+  diaries.length
+    ? [...diaries].sort((a, b) => diaryDateOf(b).localeCompare(diaryDateOf(a)))[0]
+    : undefined;
+
+export const entriesForMonth = (diaries: DiaryEntry[], year: number, month: number) => {
+  const monthKey = `${year}-${pad2(month)}`;
+  return diaries.filter((d) => monthKeyOf(diaryDateOf(d)) === monthKey);
+};
 
 // 달력 셀용: day → 대표 감정 이모지
 export const moodByDay = (diaries: DiaryEntry[]): Record<number, Mood> => {
   const m: Record<number, Mood> = {};
   diaries.forEach((d) => {
     if (d.moods[0]) m[d.day] = d.moods[0];
+  });
+  return m;
+};
+
+export const moodByDate = (diaries: DiaryEntry[]): Record<string, Mood> => {
+  const m: Record<string, Mood> = {};
+  diaries.forEach((d) => {
+    if (d.moods[0]) m[diaryDateOf(d)] = d.moods[0];
   });
   return m;
 };
