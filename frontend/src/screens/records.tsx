@@ -1,43 +1,135 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MoodFace, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import {
+  DiaryEntry,
+  Mood,
   Period,
   MOODS_ALL,
   MOOD_LABEL,
   MOOD_BAR,
   WEEKDAY_KR,
+  dateParts,
+  diaryDateOf,
+  entriesForMonth,
+  entryForDate,
   entryForDay,
+  formatDateKey,
+  formatMonthDay,
   latestEntry,
+  moodByDate,
   moodByDay,
   statsFor,
+  weekdayOfDate,
   weekdayOf,
   useStore,
 } from '../lib/store';
+import { listDiaries, type DiaryResponse } from '../lib/api';
 
 // 14-17 · Calendar / Diary detail / Stats / Insights
+
+const moodFromEmotion = (emotion: string): Mood[] => {
+  const e = emotion.toLowerCase();
+  if (['happy', 'excited', 'grateful'].includes(e)) return ['😊', '😌'];
+  if (e === 'sad') return ['😢', '😣'];
+  if (e === 'angry') return ['😡', '😣'];
+  if (['anxious', 'tired'].includes(e)) return ['😣', '😌'];
+  return ['😌'];
+};
+
+const diaryFromApi = (diary: DiaryResponse): DiaryEntry => {
+  const { day } = dateParts(diary.diary_date);
+  return {
+    day,
+    date: diary.diary_date,
+    moods: moodFromEmotion(diary.emotion),
+    keywords: diary.keywords?.slice(0, 3) ?? [],
+    body: diary.content,
+    check: {},
+    createdAt: Date.parse(diary.created_at) || Date.now(),
+  };
+};
+
+const stripDatePrefix = (entry: DiaryEntry) =>
+  entry.body.replace(new RegExp(`^${formatMonthDay(entry)}\\.\\s*`), '');
+
+const addDays = (date: string, delta: number) => {
+  const d = new Date(`${date}T00:00:00`);
+  d.setDate(d.getDate() + delta);
+  return formatDateKey(d.getFullYear(), d.getMonth() + 1, d.getDate());
+};
 
 export const S14_Calendar = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
-  const [picker, setPicker] = useState<number | null>(null);
-  const [localMoods, setLocalMoods] = useState<Record<number, string>>({});
+  const [visibleMonth, setVisibleMonth] = useState(() => {
+    const recent = latestEntry(state.diaries);
+    const baseDate = recent
+      ? diaryDateOf(recent)
+      : formatDateKey(new Date().getFullYear(), new Date().getMonth() + 1, 1);
+    const { year, month } = dateParts(baseDate);
+    return new Date(year, month - 1, 1);
+  });
+  const [picker, setPicker] = useState<{ date: string; day: number } | null>(null);
+  const [localMoods, setLocalMoods] = useState<Record<string, Mood>>({});
+  const [loadingDiaries, setLoadingDiaries] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
-  const moods = moodByDay(state.diaries);
+  useEffect(() => {
+    let alive = true;
+    setLoadingDiaries(true);
+    setLoadFailed(false);
+    listDiaries({ limit: 100 })
+      .then((res) => {
+        if (!alive) return;
+        dispatch({ type: 'diaries/merge', entries: res.items.map(diaryFromApi) });
+        const latestServerDiary = res.items[0];
+        if (latestServerDiary) {
+          const { year, month } = dateParts(latestServerDiary.diary_date);
+          setVisibleMonth(new Date(year, month - 1, 1));
+        }
+      })
+      .catch(() => {
+        if (alive) setLoadFailed(true);
+      })
+      .finally(() => {
+        if (alive) setLoadingDiaries(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [dispatch]);
+
+  const year = visibleMonth.getFullYear();
+  const month = visibleMonth.getMonth() + 1;
+  const firstWeekday = new Date(year, month - 1, 1).getDay();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const cellCount = Math.ceil((firstWeekday + daysInMonth) / 7) * 7;
+  const monthEntries = entriesForMonth(state.diaries, year, month);
+  const moods = moodByDate(monthEntries);
+  const todayKey = formatDateKey(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate());
+
+  const moveMonth = (delta: number) => {
+    setVisibleMonth((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
+    setPicker(null);
+  };
+
   const openDay = (day: number) => {
-    if (entryForDay(state.diaries, day)) {
-      dispatch({ type: 'ui/select-day', day });
+    const date = formatDateKey(year, month, day);
+    if (entryForDate(state.diaries, date)) {
+      dispatch({ type: 'ui/select-date', date });
       nav.go('diary-detail');
     } else {
-      setPicker(day);
+      setPicker({ date, day });
     }
   };
   const moodCounts = MOODS_ALL.map((m) => ({
     m,
     label: MOOD_LABEL[m],
-    n: state.diaries.filter((d) => d.moods[0] === m).length,
+    n: monthEntries.filter((d) => d.moods[0] === m).length,
   })).filter((x) => x.n > 0);
-  const recent = latestEntry(state.diaries);
+  const recent = latestEntry(monthEntries);
   return (
   <div className="phone-inner">
     <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
@@ -52,9 +144,23 @@ export const S14_Calendar = () => {
           marginTop: 14,
         }}
       >
-        <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>‹</span>
-        <div className="h-section">2026 · 5월</div>
-        <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>›</span>
+        <button
+          type="button"
+          onClick={() => moveMonth(-1)}
+          aria-label="이전 달"
+          style={{ border: 0, background: 'transparent', fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
+        >
+          ‹
+        </button>
+        <div className="h-section">{year} · {month}월</div>
+        <button
+          type="button"
+          onClick={() => moveMonth(1)}
+          aria-label="다음 달"
+          style={{ border: 0, background: 'transparent', fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
+        >
+          ›
+        </button>
       </div>
 
       <div
@@ -76,17 +182,18 @@ export const S14_Calendar = () => {
 
       <div className="hbox r-l" style={{ padding: 10, marginTop: 6 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
-          {Array.from({ length: 35 }, (_, i) => {
-            const day = i - 4;
-            if (day < 1 || day > 31)
+          {Array.from({ length: cellCount }, (_, i) => {
+            const day = i - firstWeekday + 1;
+            if (day < 1 || day > daysInMonth)
               return (
                 <div key={i} className="cal-cell off">
                   ·
                 </div>
               );
-            // 달력 셀 감정 = store 일기(moodByDay) + 이번 세션 picker 추가분
-            const mood = localMoods[day] ?? moods[day];
-            const today = day === 27;
+            const date = formatDateKey(year, month, day);
+            // 달력 셀 감정 = 서버/로컬 일기 + 이번 세션 picker 추가분
+            const mood = localMoods[date] ?? moods[date];
+            const today = date === todayKey;
             return (
               <div
                 key={i}
@@ -139,10 +246,22 @@ export const S14_Calendar = () => {
         </div>
       </div>
 
-      {state.diaries.length === 0 && (
+      {loadingDiaries && (
+        <div className="tiny" style={{ marginTop: 10, textAlign: 'center', color: '#7a5634' }}>
+          서버 일기 불러오는 중...
+        </div>
+      )}
+
+      {loadFailed && (
+        <div className="tiny" style={{ marginTop: 10, textAlign: 'center', color: '#8c4a1f' }}>
+          서버 일기를 불러오지 못해 기기 기록만 표시 중이에요
+        </div>
+      )}
+
+      {monthEntries.length === 0 && !loadingDiaries && (
         <div className="hbox dashed r-l" style={{ padding: 16, marginTop: 12, textAlign: 'center' }}>
-          <div className="body">아직 기록이 없어요</div>
-          <div className="tiny" style={{ marginTop: 6 }}>밤에 첫 회고를 시작하면 달력이 채워져요</div>
+          <div className="body">이 달 기록이 없어요</div>
+          <div className="tiny" style={{ marginTop: 6 }}>다른 달로 이동하거나 밤 회고를 시작하면 달력이 채워져요</div>
           <button
             type="button"
             onClick={() => nav.go('recap-start')}
@@ -177,7 +296,7 @@ export const S14_Calendar = () => {
         <div
           className="hbox r-r"
           onClick={() => {
-            dispatch({ type: 'ui/select-day', day: recent.day });
+            dispatch({ type: 'ui/select-date', date: diaryDateOf(recent) });
             nav.go('diary-detail');
           }}
           style={{ padding: 12, marginTop: 12, cursor: 'pointer' }}
@@ -190,7 +309,7 @@ export const S14_Calendar = () => {
             }}
           >
             <div>
-              <div className="h-section">5월 {recent.day}일</div>
+              <div className="h-section">{formatMonthDay(recent)}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
                 <span style={{ fontSize: 20 }}>{recent.moods[0]}</span>
                 <span style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
@@ -201,7 +320,7 @@ export const S14_Calendar = () => {
             <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>›</span>
           </div>
           <div className="tiny" style={{ marginTop: 6 }}>
-            "{recent.body.replace(/^5월 \d+일\.\s*/, '').slice(0, 30)}..."
+            "{stripDatePrefix(recent).slice(0, 30)}..."
           </div>
         </div>
       )}
@@ -210,9 +329,9 @@ export const S14_Calendar = () => {
         ※ 점선 동그라미 = 기록 없음 — 탭해서 빠르게 감정 추가
       </div>
 
-      {state.diaries.length > 0 && (
+      {monthEntries.length > 0 && (
         <div className="tiny" style={{ marginTop: 4, textAlign: 'center', color: '#8c4a1f' }}>
-          기록된 일기 {state.diaries.length}건 (Lv.{state.level} · {state.streak}일)
+          {month}월 기록 {monthEntries.length}건 (전체 {state.diaries.length}건)
         </div>
       )}
     </div>
@@ -242,7 +361,7 @@ export const S14_Calendar = () => {
             boxShadow: '4px 6px 0 rgba(0,0,0,0.25)',
           }}
         >
-          <div className="h-section">5월 {picker}일 감정</div>
+          <div className="h-section">{month}월 {picker.day}일 감정</div>
           <div className="h-title" style={{ fontSize: 18, marginTop: 2 }}>한 단어로 표현하면?</div>
           <div
             style={{
@@ -258,7 +377,7 @@ export const S14_Calendar = () => {
                 key={e}
                 type="button"
                 onClick={() => {
-                  setLocalMoods((m) => ({ ...m, [picker]: e }));
+                  setLocalMoods((m) => ({ ...m, [picker.date]: e as Mood }));
                   setPicker(null);
                 }}
                 style={{
@@ -295,7 +414,10 @@ export const S14_Calendar = () => {
 export const S15_DiaryDetail = () => {
   const nav = useNav();
   const { state } = useStore();
-  const entry = entryForDay(state.diaries, state.selectedDay) ?? latestEntry(state.diaries);
+  const entry =
+    entryForDate(state.diaries, state.selectedDate) ??
+    entryForDay(state.diaries, state.selectedDay) ??
+    latestEntry(state.diaries);
 
   if (!entry) {
     return (
@@ -319,7 +441,14 @@ export const S15_DiaryDetail = () => {
     );
   }
 
-  const weekday = WEEKDAY_KR[weekdayOf(entry.day)];
+  const entryDate = diaryDateOf(entry);
+  const weekday = WEEKDAY_KR[weekdayOfDate(entryDate)];
+  const displayDate = formatMonthDay(entry);
+  const tomorrowDate = formatMonthDay({
+    ...entry,
+    date: addDays(entryDate, 1),
+    day: dateParts(addDays(entryDate, 1)).day,
+  });
   const checks: [string, boolean][] = [
     ['🍚', !!entry.check.food],
     ['💧', !!entry.check.water],
@@ -348,7 +477,7 @@ export const S15_DiaryDetail = () => {
           >
             ‹
           </span>
-          <div className="h-section">달력 / 5월 {entry.day}일</div>
+          <div className="h-section">달력 / {displayDate}</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <span className="tiny">✎</span>
@@ -357,7 +486,7 @@ export const S15_DiaryDetail = () => {
       </div>
 
       <div className="h-display" style={{ marginTop: 8, fontSize: 32 }}>
-        {weekday}요일 · 5월 {entry.day}일
+        {weekday}요일 · {displayDate}
       </div>
 
       <div className="hbox r-l" style={{ padding: 12, marginTop: 14 }}>
@@ -450,7 +579,7 @@ export const S15_DiaryDetail = () => {
             <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
               내일 한 가지 — {entry.tomorrow}
             </div>
-            <div className="tiny">5월 {entry.day + 1}일에 알람으로 추가됨</div>
+            <div className="tiny">{tomorrowDate}에 알람으로 추가됨</div>
           </div>
         </div>
       )}
