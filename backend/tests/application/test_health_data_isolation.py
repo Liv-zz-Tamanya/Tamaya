@@ -8,6 +8,7 @@ import pytest
 
 from app.application.service.embedding_service import EmbeddingService
 from app.application.service.health_ai_service import HealthAiService
+from app.application.service.health_record_query_service import HealthRecordQueryService
 from app.application.usecase.health_chat_agent import HealthChatAgent
 from app.application.usecase.send_health_message import SendHealthMessageUseCase
 from app.domain.model.health_chunk import HealthChunk
@@ -91,6 +92,14 @@ def _cosine_distance(left: list[float], right: list[float]) -> float:
     return 1 - dot / (left_norm * right_norm)
 
 
+def _health_agent(
+    ai: HealthAiService,
+    embedding: EmbeddingService,
+    repo: HealthChunkRepository,
+) -> HealthChatAgent:
+    return HealthChatAgent(ai, HealthRecordQueryService(embedding, repo))
+
+
 def _chunk(device_id: str, text: str, embedding: list[float]) -> HealthChunk:
     return HealthChunk(
         device_id=device_id,
@@ -107,7 +116,7 @@ async def test_send_health_message_hides_other_device_session_and_does_not_mutat
     other_session = HealthSession(device_id="dev-b")
     other_session.add_message("assistant", "B의 시작")
     await repo.save(other_session)
-    agent = HealthChatAgent(_FakeHealthAi(), _FakeEmbedding(), _MemoryHealthChunkRepo([]))
+    agent = _health_agent(_FakeHealthAi(), _FakeEmbedding(), _MemoryHealthChunkRepo([]))
     usecase = SendHealthMessageUseCase(repo, agent)
 
     with pytest.raises(ValueError, match="세션을 찾을 수 없습니다."):
@@ -125,7 +134,7 @@ async def test_health_agent_excludes_other_device_chunk_even_when_more_similar()
         ]
     )
     ai = _FakeHealthAi()
-    agent = HealthChatAgent(ai, _FakeEmbedding(), repo)
+    agent = _health_agent(ai, _FakeEmbedding(), repo)
 
     await agent.run(
         device_id="dev-a",
@@ -142,7 +151,7 @@ async def test_health_agent_excludes_other_device_chunk_even_when_more_similar()
 async def test_health_agent_uses_empty_context_when_current_device_has_no_chunks():
     repo = _MemoryHealthChunkRepo([_chunk("dev-b", "B 사용자의 기록", [1.0, 0.0])])
     ai = _FakeHealthAi()
-    agent = HealthChatAgent(ai, _FakeEmbedding(), repo)
+    agent = _health_agent(ai, _FakeEmbedding(), repo)
 
     await agent.run(
         device_id="dev-a",

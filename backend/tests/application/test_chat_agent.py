@@ -4,11 +4,9 @@ from datetime import date, datetime
 from uuid import UUID, uuid4
 
 from app.application.service.ai_chat_service import AiChatService
-from app.application.service.embedding_service import EmbeddingService
 from app.application.usecase.chat_agent import ChatAgent
 from app.domain.model.chat_message import ChatMessage
 from app.domain.model.event_chunk import EventChunk
-from app.domain.repository.event_chunk_repository import EventChunkRepository
 
 
 class _FakeAi(AiChatService):
@@ -56,35 +54,22 @@ class _FakeAi(AiChatService):
         raise NotImplementedError
 
 
-class _FakeEmbedding(EmbeddingService):
-    def __init__(self, embedding: list[float]) -> None:
-        self.embedding = embedding
-        self.calls: list[list[str]] = []
-
-    def embed(self, texts: list[str]) -> list[list[float]]:
-        self.calls.append(texts)
-        return [self.embedding]
-
-
-class _FakeEventChunkRepo(EventChunkRepository):
+class _FakeMemoryQuery:
     def __init__(self, chunks: list[EventChunk]) -> None:
         self.chunks = chunks
-        self.search_calls: list[dict] = []
-
-    async def save_all(self, chunks: list[EventChunk]) -> None:  # pragma: no cover
-        raise NotImplementedError
+        self.calls: list[dict] = []
 
     async def search_similar(
         self,
         device_id: str,
-        embedding: list[float],
-        limit: int = 5,
+        query: str,
         exclude_session_id: UUID | None = None,
+        limit: int = 5,
     ) -> list[EventChunk]:
-        self.search_calls.append(
+        self.calls.append(
             {
                 "device_id": device_id,
-                "embedding": embedding,
+                "query": query,
                 "limit": limit,
                 "exclude_session_id": exclude_session_id,
             }
@@ -121,9 +106,8 @@ def _event_chunk(
 
 async def test_chat_agent_skips_memory_retrieval_when_not_needed():
     ai = _FakeAi(should_retrieve=False, reply="no memory reply")
-    embedding = _FakeEmbedding([0.7, 0.3])
-    repo = _FakeEventChunkRepo([])
-    agent = ChatAgent(ai, embedding, repo)
+    memory_query = _FakeMemoryQuery([])
+    agent = ChatAgent(ai, memory_query)
     messages = [_message("오늘은 그냥 얘기하고 싶어")]
     session_id = uuid4()
 
@@ -138,8 +122,7 @@ async def test_chat_agent_skips_memory_retrieval_when_not_needed():
 
     assert response == "no memory reply"
     assert ai.classify_calls == ["오늘은 그냥 얘기하고 싶어"]
-    assert embedding.calls == []
-    assert repo.search_calls == []
+    assert memory_query.calls == []
     assert ai.chat_calls == [
         {
             "messages": messages,
@@ -154,8 +137,7 @@ async def test_chat_agent_retrieves_and_formats_memories_when_needed():
     session_id = uuid4()
     chunk_session_id = uuid4()
     ai = _FakeAi(should_retrieve=True, reply="memory reply")
-    embedding = _FakeEmbedding([0.1, 0.9])
-    repo = _FakeEventChunkRepo(
+    memory_query = _FakeMemoryQuery(
         [
             _event_chunk(
                 session_id=chunk_session_id,
@@ -166,7 +148,7 @@ async def test_chat_agent_retrieves_and_formats_memories_when_needed():
             )
         ]
     )
-    agent = ChatAgent(ai, embedding, repo)
+    agent = ChatAgent(ai, memory_query)
     messages = [_message("지난 발표 기억나?")]
 
     response = await agent.run(
@@ -179,11 +161,10 @@ async def test_chat_agent_retrieves_and_formats_memories_when_needed():
     )
 
     assert response == "memory reply"
-    assert embedding.calls == [["지난 발표 기억나?"]]
-    assert repo.search_calls == [
+    assert memory_query.calls == [
         {
             "device_id": "dev-a",
-            "embedding": [0.1, 0.9],
+            "query": "지난 발표 기억나?",
             "limit": 5,
             "exclude_session_id": session_id,
         }
@@ -198,18 +179,24 @@ async def test_chat_agent_retrieves_and_formats_memories_when_needed():
 
 async def test_chat_agent_passes_no_memories_when_retrieval_returns_empty():
     ai = _FakeAi(should_retrieve=True, reply="empty memory reply")
-    embedding = _FakeEmbedding([0.4, 0.6])
-    repo = _FakeEventChunkRepo([])
-    agent = ChatAgent(ai, embedding, repo)
+    memory_query = _FakeMemoryQuery([])
+    agent = ChatAgent(ai, memory_query)
+    session_id = uuid4()
 
     response = await agent.run(
         device_id="dev-a",
-        session_id=uuid4(),
+        session_id=session_id,
         messages=[],
         current_user_message="예전에 말한 거 기억나?",
     )
 
     assert response == "empty memory reply"
-    assert embedding.calls == [["예전에 말한 거 기억나?"]]
-    assert len(repo.search_calls) == 1
+    assert memory_query.calls == [
+        {
+            "device_id": "dev-a",
+            "query": "예전에 말한 거 기억나?",
+            "limit": 5,
+            "exclude_session_id": session_id,
+        }
+    ]
     assert ai.chat_calls[0]["memories"] is None
