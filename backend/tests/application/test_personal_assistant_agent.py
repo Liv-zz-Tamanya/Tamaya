@@ -361,7 +361,8 @@ async def test_mode_specific_system_message_is_first_and_not_accumulated_in_stat
     assert "[현재 2턴째 / 5턴]" in diary_messages[0].content
     assert "search_diary_memories" in diary_messages[0].content
     assert isinstance(health_messages[0], SystemMessage)
-    assert "저장된 건강 기록" in health_messages[0].content
+    assert "헬시" in health_messages[0].content
+    assert "search_health_records" in health_messages[0].content
     assert diary_messages[1:] == input_messages
     assert health_messages[1:] == input_messages
     assert not any(isinstance(message, SystemMessage) for message in diary_state["messages"])
@@ -384,6 +385,40 @@ async def test_health_mode_rejects_diary_context():
             mode=PersonalAssistantMode.HEALTH,
             diary_context=_diary_context(),
         )
+
+
+async def test_health_prompt_is_applied_to_every_model_call_and_tool_scope_is_preserved():
+    health_calls: list[dict] = []
+    model = _FakeToolCallingChatModel(
+        [
+            AIMessage(
+                content="건강 기록 확인",
+                tool_calls=[_tool_call("search_health_records", "call-health", query="걸음 수")],
+            ),
+            AIMessage(content="걸음 수를 확인했어."),
+        ]
+    )
+    agent = PersonalAssistantAgent(
+        model,
+        [_recording_tool("search_health_records", health_calls, result="health result")],
+    )
+
+    response = await agent.run(
+        messages=[HumanMessage(content="어제 걸음 수 알려줘")],
+        mode=PersonalAssistantMode.HEALTH,
+    )
+
+    assert response.content == "걸음 수를 확인했어."
+    assert health_calls == [{"query": "걸음 수", "limit": 5}]
+    assert len(model.calls) == 2
+    for call in model.calls:
+        assert [tool.name for tool in call["tools"]] == ["search_health_records"]
+        system_message = call["messages"][0]
+        assert isinstance(system_message, SystemMessage)
+        assert "헬시" in system_message.content
+        assert "search_health_records" in system_message.content
+        assert "search_diary_memories" not in system_message.content
+    assert any(isinstance(message, ToolMessage) for message in model.calls[1]["messages"])
 
 
 async def test_diary_turn_policy_is_applied_to_every_model_call():

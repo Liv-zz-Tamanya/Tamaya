@@ -136,8 +136,14 @@ class _FakePersonalAssistantFactory:
         self.agent = agent
         self.calls: list[dict] = []
 
-    def create(self, *, device_id: str, session_id: UUID) -> _FakePersonalAssistantAgent:
-        self.calls.append({"device_id": device_id, "session_id": session_id})
+    def create(
+        self,
+        *,
+        device_id: str,
+        session_id: UUID,
+        mode: PersonalAssistantMode,
+    ) -> _FakePersonalAssistantAgent:
+        self.calls.append({"device_id": device_id, "session_id": session_id, "mode": mode})
         return self.agent
 
 
@@ -170,7 +176,9 @@ async def test_general_diary_response_uses_personal_assistant_and_saves_ai_messa
 
     user_msg, ai_msg, suggest, diary = await usecase.execute(session.id, "오늘 힘들었어", "dev-a")
 
-    assert factory.calls == [{"device_id": "dev-a", "session_id": session.id}]
+    assert factory.calls == [
+        {"device_id": "dev-a", "session_id": session.id, "mode": PersonalAssistantMode.DIARY}
+    ]
     assert len(agent.calls) == 1
     assert agent.calls[0]["mode"] == PersonalAssistantMode.DIARY
     assert [type(message) for message in agent.calls[0]["messages"]] == [
@@ -231,7 +239,9 @@ async def test_suggest_finalize_without_user_consent_still_uses_personal_assista
     _, ai_msg, suggest, diary = await usecase.execute(session.id, "아직 더 말할래", "dev-a")
 
     assert ai.detect_finalize_intent_calls == ["아직 더 말할래"]
-    assert factory.calls == [{"device_id": "dev-a", "session_id": session.id}]
+    assert factory.calls == [
+        {"device_id": "dev-a", "session_id": session.id, "mode": PersonalAssistantMode.DIARY}
+    ]
     assert agent.calls[0]["diary_context"] == DiaryConversationContext(
         max_turns=5,
         current_user_turn=4,
