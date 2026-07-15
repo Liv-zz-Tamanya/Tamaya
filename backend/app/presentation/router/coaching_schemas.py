@@ -12,7 +12,6 @@ class CoachingHistoryItem(BaseModel):
 
 class CoachingMessageRequest(BaseModel):
     message: str = Field(max_length=2000)
-    device_id: str | None = None
     persona: str | None = Field(default=None, max_length=200)
     history: list[CoachingHistoryItem] = Field(default_factory=list, max_length=50)
 

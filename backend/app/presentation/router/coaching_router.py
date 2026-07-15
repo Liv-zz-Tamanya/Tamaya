@@ -16,6 +16,7 @@ from app.infrastructure.config.dependencies import (
     get_coaching_agent,
     get_extract_signals_usecase,
 )
+from app.presentation.auth_deps import get_current_device_id
 from app.presentation.router.coaching_schemas import (
     CoachingMessageRequest,
     CoachingMessageResponse,
@@ -32,6 +33,7 @@ router = APIRouter(prefix="/api/v1/coaching", tags=["coaching"])
 )
 async def send_coaching_message(
     body: CoachingMessageRequest,
+    device_id: str = Depends(get_current_device_id),
     agent: CoachingAgent = Depends(get_coaching_agent),
     extract_signals: ExtractSignalsUseCase = Depends(get_extract_signals_usecase),
 ):
@@ -43,7 +45,7 @@ async def send_coaching_message(
     ]
     usecase = SendCoachingMessageUseCase(agent, extract_signals)
     reply = await usecase.execute(
-        device_id=body.device_id,
+        device_id=device_id,
         message=body.message,
         history=history,
         persona=body.persona,
