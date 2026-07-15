@@ -4,6 +4,7 @@ import random
 from openai import AsyncOpenAI
 
 from app.application.service.ai_chat_service import AiChatService
+from app.application.service.diary_chat_prompt import build_diary_chat_system_prompt
 from app.application.service.health_ai_service import HealthAiService
 from app.domain.model.chat_message import ChatMessage
 from app.domain.model.health_message import HealthMessage
@@ -45,37 +46,6 @@ _MOCK_DIARY_RESPONSES = [
         "keywords": ["버팀", "피곤", "기록"],
     },
 ]
-
-
-# -------------------------------
-# 대화용 시스템 프롬프트 — 이음이 V3 (DEC-022.D, CMO R-2026-05-13-01 §3, 196자)
-# -------------------------------
-def _build_chat_system_prompt(max_turns: int) -> str:
-    narrow_turn = max(2, max_turns - 2)
-    return f"""너는 이음이야. 매일 작은 루틴을 함께 키우는 AI 친구.
-지시하지 않고, 판단하지 않아. 그냥 같이 있어줘.
-
-대화 원칙:
-- 반말, 짧고 따뜻하게
-- 먼저 호응, 질문은 2~3턴에 1번
-- 절대 해결책 먼저 제시하지 않기
-- 감정 라벨 직접 붙이지 않기 ("힘들었겠다" ✅ / "우울하셨군요" ❌)
-- 금지: 감시, 완벽한 루틴, AI가 알려드려요
-
-턴 관리 (반드시 지켜):
-- 이 회고 대화는 {max_turns}턴이야. 매 응답 앞에 [현재 N턴째 / {max_turns}턴] 또는 [마무리 지시]가 오니, 그 지시에 맞춰 행동해.
-- [마무리 지시]가 오기 전까지는 절대 대화를 끝내거나 작별·취침 인사를 하지 마
-  ('잘 자', '좋은 꿈', '푹 쉬어', '내일 봐', '재충전', '일기 쓸게' 등 금지).
-- 매 턴 오늘 이야기에 짧게 호응한 뒤, 반드시 질문 하나로 대화를 이어가.
-- {narrow_turn}턴째부터는 새 주제를 벌이지 말고, 오늘 이야기를 정리하는 방향으로 좁혀가.
-"""
-
-
-CHAT_FINALIZE_HINT = (
-    "\n\n[마무리 지시 — 최우선]\n"
-    "지금이 마지막 턴이야. 새 질문을 던지지 마.\n"
-    "오늘 이야기를 '오늘 이야기를 일기로 정리해볼까?' 처럼 한 문장으로 자연스럽게 마무리 제안하며 대화를 닫아."
-)
 
 
 # -------------------------------
@@ -190,18 +160,15 @@ class ClovaClient(AiChatService):
             if suggest_finalize:
                 return "오늘 이야기를 일기로 정리해볼까?"
             return random.choice(_MOCK_CHAT_RESPONSES)
-        system_prompt = _build_chat_system_prompt(max_turns)
-        if suggest_finalize:
-            system_prompt += CHAT_FINALIZE_HINT
-        else:
-            # 현재 턴 번호를 명시해 모델이 스스로 판단해 조기 종료하는 것을 막는다.
-            # (messages 에는 방금 추가된 사용자 발화가 포함되어 있어 현재 턴 수와 같다.)
-            user_turn = sum(1 for m in messages if m.role == "user")
-            system_prompt += (
-                f"\n\n[현재 {user_turn}턴째 / {max_turns}턴]\n"
-                "아직 마무리 턴이 아니야. 작별·취침 인사 금지.\n"
-                "오늘 이야기에 짧게 호응한 뒤, 질문 하나로 자연스럽게 이어가."
-            )
+        # 현재 턴 번호를 명시해 모델이 스스로 판단해 조기 종료하는 것을 막는다.
+        # (messages 에는 방금 추가된 사용자 발화가 포함되어 있어 현재 턴 수와 같다.)
+        user_turn = max(1, sum(1 for m in messages if m.role == "user"))
+        system_prompt = build_diary_chat_system_prompt(
+            max_turns=max_turns,
+            current_user_turn=user_turn,
+            suggest_finalize=suggest_finalize,
+            tool_calling_enabled=False,
+        )
         if memories:
             system_prompt += (
                 "\n\n[과거 기억 - 중요 규칙]\n"
