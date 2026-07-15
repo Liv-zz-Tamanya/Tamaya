@@ -11,6 +11,7 @@ from app.application.usecase.personal_assistant_agent import PersonalAssistantMo
 from app.domain.model.health_message import HealthMessage
 from app.domain.model.health_session import HealthSession
 from app.domain.repository.health_session_repository import HealthSessionRepository
+from app.domain.service.medical_guardrail import GuardrailVerdict, build_disclaimer
 from app.infrastructure.config.dependencies import (
     get_health_ai_service,
     get_health_chat_agent,
@@ -166,3 +167,63 @@ def test_health_chat_message_uses_personal_assistant_factory_and_response_schema
     ]
     assert factory.agent.calls[0]["mode"] == PersonalAssistantMode.HEALTH
     assert factory.agent.calls[0]["diary_context"] is None
+
+
+def test_health_chat_message_returns_advice_disclaimer_with_existing_schema():
+    repo = _MemoryHealthSessionRepo()
+    session = HealthSession(device_id="dev-a")
+    session.add_message("assistant", "건강 인사")
+    repo.sessions[session.id] = session
+    factory = _FakePersonalAssistantFactory(
+        _FakePersonalAssistantAgent(build_disclaimer(GuardrailVerdict.ADVICE_BOUNDARY))
+    )
+    app.dependency_overrides[get_current_device_id] = lambda: "dev-a"
+    app.dependency_overrides[get_health_session_repo] = lambda: repo
+    app.dependency_overrides[get_personal_assistant_agent_factory] = lambda: factory
+
+    client = TestClient(app)
+    response = client.post(
+        f"/api/v1/health-chat/sessions/{session.id}/messages",
+        json={"content": "혈압약 끊어도 돼?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    ai_content = body["ai_message"]["content"]
+    assert ai_content == build_disclaimer(GuardrailVerdict.ADVICE_BOUNDARY)
+    assert "전문가" in ai_content
+    assert "GuardrailVerdict" not in ai_content
+    assert "blocked_response" not in ai_content
+    assert "search_health_records" not in ai_content
+    assert body["user_message"]["content"] == "혈압약 끊어도 돼?"
+    assert "device_id" not in body["ai_message"]
+
+
+def test_health_chat_message_returns_emergency_disclaimer_with_existing_schema():
+    repo = _MemoryHealthSessionRepo()
+    session = HealthSession(device_id="dev-a")
+    session.add_message("assistant", "건강 인사")
+    repo.sessions[session.id] = session
+    factory = _FakePersonalAssistantFactory(
+        _FakePersonalAssistantAgent(build_disclaimer(GuardrailVerdict.EMERGENCY))
+    )
+    app.dependency_overrides[get_current_device_id] = lambda: "dev-a"
+    app.dependency_overrides[get_health_session_repo] = lambda: repo
+    app.dependency_overrides[get_personal_assistant_agent_factory] = lambda: factory
+
+    client = TestClient(app)
+    response = client.post(
+        f"/api/v1/health-chat/sessions/{session.id}/messages",
+        json={"content": "가슴이 너무 아프고 숨이 막혀"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    ai_content = body["ai_message"]["content"]
+    assert ai_content == build_disclaimer(GuardrailVerdict.EMERGENCY)
+    assert "119" in ai_content
+    assert "응급실" in ai_content
+    assert "GuardrailVerdict" not in ai_content
+    assert "blocked_response" not in ai_content
+    assert "search_health_records" not in ai_content
+    assert body["user_message"]["content"] == "가슴이 너무 아프고 숨이 막혀"

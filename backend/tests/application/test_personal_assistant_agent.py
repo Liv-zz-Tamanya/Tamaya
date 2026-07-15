@@ -9,7 +9,9 @@ from app.application.usecase.personal_assistant_agent import (
     ITERATION_LIMIT_MESSAGE,
     PersonalAssistantAgent,
     PersonalAssistantMode,
+    find_latest_human_message_text,
 )
+from app.domain.service.medical_guardrail import GuardrailVerdict, build_disclaimer
 
 
 class _FakeToolCallingChatModel:
@@ -573,3 +575,304 @@ async def test_run_does_not_mutate_input_message_list_or_message_objects():
     assert messages == [human_message]
     assert id(messages[0]) == original_id
     assert messages[0].content == "원본"
+
+
+async def test_health_safe_input_runs_model_and_records_safe_verdict():
+    model = _FakeToolCallingChatModel([AIMessage(content="오늘 걸음 수 기록을 확인해볼게.")])
+    tool_calls: list[dict] = []
+    agent = PersonalAssistantAgent(
+        model,
+        [_recording_tool("search_health_records", tool_calls)],
+    )
+
+    state = await agent._ainvoke_state(
+        messages=[HumanMessage(content="오늘 걸음 수 기록 알려줘")],
+        mode=PersonalAssistantMode.HEALTH,
+    )
+
+    assert state["guardrail_verdict"] == GuardrailVerdict.SAFE
+    assert state["messages"][-1].content == "오늘 걸음 수 기록을 확인해볼게."
+    assert len(model.calls) == 1
+    assert tool_calls == []
+
+
+async def test_health_medical_advice_input_short_circuits_without_model_or_tool():
+    model = _FakeToolCallingChatModel([])
+    tool_calls: list[dict] = []
+    agent = PersonalAssistantAgent(
+        model,
+        [_recording_tool("search_health_records", tool_calls)],
+    )
+
+    response = await agent.run(
+        messages=[HumanMessage(content="이 약 먹어도 돼?")],
+        mode=PersonalAssistantMode.HEALTH,
+    )
+    state = await agent._ainvoke_state(
+        messages=[HumanMessage(content="이 약 먹어도 돼?")],
+        mode=PersonalAssistantMode.HEALTH,
+    )
+
+    assert state["guardrail_verdict"] == GuardrailVerdict.ADVICE_BOUNDARY
+    assert response.content == build_disclaimer(GuardrailVerdict.ADVICE_BOUNDARY)
+    assert "전문가" in response.content
+    assert "이 약 먹어도 돼" not in response.content
+    assert model.calls == []
+    assert tool_calls == []
+
+
+async def test_health_emergency_input_short_circuits_with_emergency_disclaimer():
+    model = _FakeToolCallingChatModel([])
+    tool_calls: list[dict] = []
+    agent = PersonalAssistantAgent(
+        model,
+        [_recording_tool("search_health_records", tool_calls)],
+    )
+
+    response = await agent.run(
+        messages=[HumanMessage(content="가슴이 너무 아프고 숨이 안 쉬어")],
+        mode=PersonalAssistantMode.HEALTH,
+    )
+
+    assert response.content == build_disclaimer(GuardrailVerdict.EMERGENCY)
+    assert "119" in response.content
+    assert "응급실" in response.content
+    assert response.content != build_disclaimer(GuardrailVerdict.ADVICE_BOUNDARY)
+    assert model.calls == []
+    assert tool_calls == []
+
+
+async def test_health_input_guardrail_uses_only_latest_human_message():
+    safe_model = _FakeToolCallingChatModel([AIMessage(content="안전 응답")])
+    safe_agent = PersonalAssistantAgent(safe_model, [])
+
+    safe_state = await safe_agent._ainvoke_state(
+        messages=[
+            HumanMessage(content="이 약 먹어도 돼?"),
+            AIMessage(content="전문가와 상담해줘."),
+            HumanMessage(content="오늘 걸음 수 알려줘"),
+        ],
+        mode=PersonalAssistantMode.HEALTH,
+    )
+
+    blocked_model = _FakeToolCallingChatModel([])
+    blocked_agent = PersonalAssistantAgent(blocked_model, [])
+    blocked_state = await blocked_agent._ainvoke_state(
+        messages=[
+            HumanMessage(content="오늘 걸음 수 알려줘"),
+            AIMessage(content="기록을 확인했어."),
+            HumanMessage(content="혈압약 끊어도 돼?"),
+        ],
+        mode=PersonalAssistantMode.HEALTH,
+    )
+
+    assert safe_state["guardrail_verdict"] == GuardrailVerdict.SAFE
+    assert len(safe_model.calls) == 1
+    assert blocked_state["guardrail_verdict"] == GuardrailVerdict.ADVICE_BOUNDARY
+    assert blocked_model.calls == []
+
+
+async def test_health_input_guardrail_ignores_tool_and_ai_message_content():
+    model = _FakeToolCallingChatModel([AIMessage(content="안전 응답")])
+    agent = PersonalAssistantAgent(model, [])
+
+    state = await agent._ainvoke_state(
+        messages=[
+            ToolMessage(content="약 복용 기록", tool_call_id="call-health"),
+            AIMessage(content="하루 500mg씩 드세요"),
+            HumanMessage(content="오늘 걸음 수 알려줘"),
+        ],
+        mode=PersonalAssistantMode.HEALTH,
+    )
+
+    assert state["guardrail_verdict"] == GuardrailVerdict.SAFE
+    assert len(model.calls) == 1
+
+
+async def test_health_output_guardrail_preserves_safe_final_response_after_tool_loop():
+    tool_calls: list[dict] = []
+    final_response = AIMessage(
+        content="어제는 9,144걸음이야.",
+        response_metadata={"provider": "fake"},
+    )
+    model = _FakeToolCallingChatModel(
+        [
+            AIMessage(
+                content="건강 기록을 확인할게.",
+                tool_calls=[_tool_call("search_health_records", "call-health", query="걸음 수")],
+            ),
+            final_response,
+        ]
+    )
+    agent = PersonalAssistantAgent(
+        model,
+        [_recording_tool("search_health_records", tool_calls, result="health result")],
+    )
+
+    state = await agent._ainvoke_state(
+        messages=[HumanMessage(content="어제 걸음 수 알려줘")],
+        mode=PersonalAssistantMode.HEALTH,
+    )
+
+    assert state["guardrail_verdict"] == GuardrailVerdict.SAFE
+    assert tool_calls == [{"query": "걸음 수", "limit": 5}]
+    assert state["llm_calls"] == 2
+    assert state["tool_rounds"] == 1
+    assert state["messages"][-1] is final_response
+    assert state["messages"][-1].response_metadata == {"provider": "fake"}
+
+
+async def test_health_output_tripwire_replaces_prescriptive_final_response_by_message_id():
+    unsafe = AIMessage(content="하루 500mg씩 드세요", id="unsafe-final")
+    model = _FakeToolCallingChatModel([unsafe])
+    agent = PersonalAssistantAgent(model, [])
+
+    state = await agent._ainvoke_state(
+        messages=[HumanMessage(content="오늘 걸음 수 알려줘")],
+        mode=PersonalAssistantMode.HEALTH,
+    )
+    response = await PersonalAssistantAgent(
+        _FakeToolCallingChatModel([AIMessage(content="하루 500mg씩 드세요")]),
+        [],
+    ).run(
+        messages=[HumanMessage(content="오늘 걸음 수 알려줘")],
+        mode=PersonalAssistantMode.HEALTH,
+    )
+
+    assert response.content == build_disclaimer(GuardrailVerdict.ADVICE_BOUNDARY)
+    assert "mg" not in response.content
+    final_ai_messages = [message for message in state["messages"] if isinstance(message, AIMessage)]
+    assert len(final_ai_messages) == 1
+    assert final_ai_messages[0].id == "unsafe-final"
+    assert final_ai_messages[0].content == build_disclaimer(GuardrailVerdict.ADVICE_BOUNDARY)
+    assert "500mg" not in final_ai_messages[0].content
+    assert state["guardrail_verdict"] == GuardrailVerdict.ADVICE_BOUNDARY
+
+
+async def test_diary_mode_does_not_apply_medical_guardrails_to_input_or_output():
+    model = _FakeToolCallingChatModel([AIMessage(content="하루 500mg씩 드세요")])
+    tool_calls: list[dict] = []
+    agent = PersonalAssistantAgent(
+        model,
+        [_recording_tool("search_diary_memories", tool_calls)],
+    )
+
+    response = await agent.run(
+        messages=[HumanMessage(content="이 약 먹어도 돼? 라고 쓴 일기를 돌아보고 싶어")],
+        mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
+    )
+
+    assert response.content == "하루 500mg씩 드세요"
+    assert len(model.calls) == 1
+    assert [tool.name for tool in model.calls[0]["tools"]] == ["search_diary_memories"]
+    assert "이음이야" in model.calls[0]["messages"][0].content
+
+
+async def test_health_mode_without_human_message_raises_before_model_or_tool():
+    model = _FakeToolCallingChatModel([AIMessage(content="호출되면 안 됨")])
+    tool_calls: list[dict] = []
+    agent = PersonalAssistantAgent(
+        model,
+        [_recording_tool("search_health_records", tool_calls)],
+    )
+
+    with pytest.raises(ValueError, match="HumanMessage"):
+        await agent.run(
+            messages=[AIMessage(content="이전 응답")], mode=PersonalAssistantMode.HEALTH
+        )
+
+    assert model.calls == []
+    assert tool_calls == []
+
+
+async def test_health_model_exception_after_safe_input_is_propagated_without_disclaimer():
+    model = _FakeToolCallingChatModel([RuntimeError("health model failed")])
+    agent = PersonalAssistantAgent(model, [])
+
+    with pytest.raises(RuntimeError, match="health model failed"):
+        await agent.run(
+            messages=[HumanMessage(content="오늘 걸음 수 알려줘")],
+            mode=PersonalAssistantMode.HEALTH,
+        )
+
+    assert len(model.calls) == 1
+
+
+async def test_health_tool_exception_after_safe_input_is_propagated_without_retry():
+    tool_calls: list[dict] = []
+    model = _FakeToolCallingChatModel(
+        [
+            AIMessage(
+                content="도구 호출",
+                tool_calls=[_tool_call("search_health_records", "call-error", query="걸음")],
+            )
+        ]
+    )
+    agent = PersonalAssistantAgent(
+        model,
+        [
+            _recording_tool(
+                "search_health_records",
+                tool_calls,
+                error=RuntimeError("health tool failed"),
+            )
+        ],
+    )
+
+    with pytest.raises(RuntimeError, match="health tool failed"):
+        await agent.run(
+            messages=[HumanMessage(content="오늘 걸음 수 알려줘")],
+            mode=PersonalAssistantMode.HEALTH,
+        )
+
+    assert tool_calls == [{"query": "걸음", "limit": 5}]
+    assert len(model.calls) == 1
+
+
+async def test_input_guardrail_runs_once_across_tool_rounds(monkeypatch):
+    import app.application.usecase.personal_assistant_agent as agent_module
+
+    verdict_calls: list[str] = []
+
+    def classify_once(text: str) -> GuardrailVerdict:
+        verdict_calls.append(text)
+        return GuardrailVerdict.SAFE
+
+    monkeypatch.setattr(agent_module, "classify_medical_request", classify_once)
+    tool_calls: list[dict] = []
+    model = _FakeToolCallingChatModel(
+        [
+            AIMessage(
+                content="도구 호출",
+                tool_calls=[_tool_call("search_health_records", "call-health", query="걸음")],
+            ),
+            AIMessage(content="최종 응답"),
+        ]
+    )
+    agent = PersonalAssistantAgent(
+        model,
+        [_recording_tool("search_health_records", tool_calls)],
+    )
+
+    state = await agent._ainvoke_state(
+        messages=[HumanMessage(content="오늘 걸음 수 알려줘")],
+        mode=PersonalAssistantMode.HEALTH,
+    )
+
+    assert verdict_calls == ["오늘 걸음 수 알려줘"]
+    assert state["llm_calls"] == 2
+    assert state["tool_rounds"] == 1
+
+
+def test_find_latest_human_message_text_uses_last_human_and_rejects_unsupported_content():
+    messages = [
+        HumanMessage(content="과거 메시지"),
+        AIMessage(content="응답"),
+        HumanMessage(content=[{"type": "text", "text": "최신"}, " 메시지"]),
+    ]
+
+    assert find_latest_human_message_text(messages) == "최신 메시지"
+
+    with pytest.raises(ValueError, match="unsupported message content block"):
+        find_latest_human_message_text([HumanMessage(content=[{"type": "image", "url": "x"}])])
