@@ -24,6 +24,8 @@ class HealthSessionRepositoryImpl(HealthSessionRepository):
         existing = result.scalar_one_or_none()
 
         if existing:
+            if existing.device_id != session.device_id:
+                raise ValueError("세션 소유자가 일치하지 않습니다.")
             existing_count = len(existing.messages)
             for msg in session.messages[existing_count:]:
                 existing.messages.append(
@@ -35,6 +37,7 @@ class HealthSessionRepositoryImpl(HealthSessionRepository):
         else:
             model = HealthSessionModel(
                 id=session.id,
+                device_id=session.device_id,
                 created_at=session.created_at,
             )
             for msg in session.messages:
@@ -49,11 +52,14 @@ class HealthSessionRepositoryImpl(HealthSessionRepository):
         await self._db.commit()
         return session
 
-    async def find_by_id(self, session_id: UUID) -> HealthSession | None:
+    async def find_by_id(self, session_id: UUID, device_id: str) -> HealthSession | None:
         stmt = (
             select(HealthSessionModel)
             .options(selectinload(HealthSessionModel.messages))
-            .where(HealthSessionModel.id == session_id)
+            .where(
+                HealthSessionModel.id == session_id,
+                HealthSessionModel.device_id == device_id,
+            )
         )
         result = await self._db.execute(stmt)
         model = result.scalar_one_or_none()
@@ -67,6 +73,7 @@ class HealthSessionRepositoryImpl(HealthSessionRepository):
         ]
         return HealthSession(
             id=model.id,
+            device_id=model.device_id,
             messages=messages,
             created_at=model.created_at,
         )

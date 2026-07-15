@@ -13,6 +13,7 @@ from app.infrastructure.config.dependencies import (
     get_health_chat_agent,
     get_health_session_repo,
 )
+from app.presentation.auth_deps import get_current_device_id
 from app.presentation.router.health_schemas import (
     HealthMessageResponse,
     HealthSessionResponse,
@@ -25,22 +26,24 @@ router = APIRouter(prefix="/api/v1/health-chat", tags=["health-chat"])
 
 @router.post("/sessions", response_model=HealthSessionResponse)
 async def start_session(
+    device_id: str = Depends(get_current_device_id),
     repo: HealthSessionRepository = Depends(get_health_session_repo),
     ai: HealthAiService = Depends(get_health_ai_service),
 ):
     use_case = StartHealthSessionUseCase(repo=repo, ai=ai)
-    session = await use_case.execute()
+    session = await use_case.execute(device_id)
     return HealthSessionResponse.from_domain(session)
 
 
 @router.get("/sessions/{session_id}", response_model=HealthSessionResponse)
 async def get_session(
     session_id: UUID,
+    device_id: str = Depends(get_current_device_id),
     repo: HealthSessionRepository = Depends(get_health_session_repo),
 ):
     use_case = GetHealthSessionUseCase(repo=repo)
     try:
-        session = await use_case.execute(session_id)
+        session = await use_case.execute(session_id, device_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return HealthSessionResponse.from_domain(session)
@@ -50,12 +53,13 @@ async def get_session(
 async def send_message(
     session_id: UUID,
     body: SendHealthMessageRequest,
+    device_id: str = Depends(get_current_device_id),
     repo: HealthSessionRepository = Depends(get_health_session_repo),
     agent: HealthChatAgent = Depends(get_health_chat_agent),
 ):
     use_case = SendHealthMessageUseCase(repo=repo, agent=agent)
     try:
-        user_msg, ai_msg = await use_case.execute(session_id, body.content)
+        user_msg, ai_msg = await use_case.execute(session_id, body.content, device_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return SendHealthMessageResponse(

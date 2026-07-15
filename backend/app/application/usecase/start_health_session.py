@@ -12,8 +12,8 @@ class StartHealthSessionUseCase:
         self._repo = repo
         self._ai = ai
 
-    async def execute(self) -> HealthSession:
-        session = HealthSession()
+    async def execute(self, device_id: str) -> HealthSession:
+        session = HealthSession(device_id=device_id)
         greeting = await self._ai.chat(messages=[], health_context=None)
         session.add_message("assistant", greeting)
         await self._repo.save(session)

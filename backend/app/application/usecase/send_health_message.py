@@ -18,14 +18,16 @@ class SendHealthMessageUseCase:
         self,
         session_id: UUID,
         content: str,
+        device_id: str,
     ) -> tuple[HealthMessage, HealthMessage]:
-        session = await self._repo.find_by_id(session_id)
+        session = await self._repo.find_by_id(session_id, device_id)
         if not session:
             raise ValueError("세션을 찾을 수 없습니다.")
 
         user_msg = session.add_message("user", content)
 
         ai_response = await self._agent.run(
+            device_id=session.device_id,
             session_id=session.id,
             messages=session.messages,
             current_user_message=content,

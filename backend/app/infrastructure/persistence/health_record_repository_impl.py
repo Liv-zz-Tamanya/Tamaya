@@ -15,6 +15,7 @@ class HealthRecordRepositoryImpl(HealthRecordRepository):
     async def save(self, record: HealthDailySummary) -> HealthDailySummary:
         model = HealthDailySummaryModel(
             id=record.id,
+            device_id=record.device_id,
             record_date=record.record_date,
             step_count=record.step_count,
             step_goal=record.step_goal,
@@ -36,21 +37,31 @@ class HealthRecordRepositoryImpl(HealthRecordRepository):
         await self._db.commit()
         return record
 
-    async def find_by_date(self, record_date: date) -> HealthDailySummary | None:
+    async def find_by_date(self, device_id: str, record_date: date) -> HealthDailySummary | None:
         stmt = sa.select(HealthDailySummaryModel).where(
-            HealthDailySummaryModel.record_date == record_date
+            HealthDailySummaryModel.device_id == device_id,
+            HealthDailySummaryModel.record_date == record_date,
         )
         result = await self._db.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
 
-    async def find_all(self) -> list[HealthDailySummary]:
-        stmt = sa.select(HealthDailySummaryModel).order_by(HealthDailySummaryModel.record_date)
+    async def find_all(self, device_id: str) -> list[HealthDailySummary]:
+        stmt = (
+            sa.select(HealthDailySummaryModel)
+            .where(HealthDailySummaryModel.device_id == device_id)
+            .order_by(HealthDailySummaryModel.record_date)
+        )
         result = await self._db.execute(stmt)
         return [self._to_domain(m) for m in result.scalars().all()]
 
-    async def source_hash_exists(self, source_hash: str) -> bool:
-        stmt = sa.select(sa.exists().where(HealthDailySummaryModel.source_hash == source_hash))
+    async def source_hash_exists(self, device_id: str, source_hash: str) -> bool:
+        stmt = sa.select(
+            sa.exists().where(
+                HealthDailySummaryModel.device_id == device_id,
+                HealthDailySummaryModel.source_hash == source_hash,
+            )
+        )
         result = await self._db.execute(stmt)
         return result.scalar()
 
@@ -58,6 +69,7 @@ class HealthRecordRepositoryImpl(HealthRecordRepository):
     def _to_domain(model: HealthDailySummaryModel) -> HealthDailySummary:
         return HealthDailySummary(
             id=model.id,
+            device_id=model.device_id,
             record_date=model.record_date,
             step_count=model.step_count,
             step_goal=model.step_goal,

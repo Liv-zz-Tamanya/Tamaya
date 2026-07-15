@@ -1,10 +1,11 @@
 """
 삼성 헬스 더미 데이터를 파싱하여 DB에 적재하고 RAG 청크를 생성하는 스크립트.
-idempotent: source_hash가 이미 존재하면 skip.
+idempotent: 같은 device_id 범위에서 source_hash가 이미 존재하면 skip.
 
-실행: uv run python scripts/ingest_health_data.py
+실행: uv run python scripts/ingest_health_data.py --device-id <DEVICE_ID>
 """
 
+import argparse
 import asyncio
 import hashlib
 import json
@@ -299,8 +300,9 @@ class FloorsParser:
 class HealthDataLoader:
     """파서들의 결과를 날짜별로 merge하여 HealthDailySummary 목록 반환."""
 
-    def __init__(self, base_dir: Path) -> None:
+    def __init__(self, base_dir: Path, device_id: str) -> None:
         self._base_dir = base_dir
+        self._device_id = device_id
         self._exercise_parser = ExerciseParser()
         self._hr_parser = HeartRateParser()
         self._pedometer_parser = PedometerParser()
@@ -364,6 +366,7 @@ class HealthDataLoader:
             source_hash = _compute_hash(source_files)
 
             summary = HealthDailySummary(
+                device_id=self._device_id,
                 record_date=record_date,
                 step_count=step_count,
                 step_goal=step_goal,
@@ -403,6 +406,7 @@ class HealthChunkBuilder:
         for summary, text, embedding in zip(summaries, texts, embeddings):
             chunks.append(
                 HealthChunk(
+                    device_id=summary.device_id,
                     record_date=summary.record_date,
                     text=text,
                     embedding=embedding,
@@ -482,9 +486,12 @@ def _compute_hash(files: list[Path]) -> str:
 
 
 async def main() -> None:
+    args = _parse_args()
+    device_id = _validate_device_id(args.device_id)
+
     print("삼성 헬스 데이터 수집 시작...")
 
-    loader = HealthDataLoader(DUMMY_DATA_DIR)
+    loader = HealthDataLoader(DUMMY_DATA_DIR, device_id)
     summaries = loader.load()
     print(f"파싱 완료: {len(summaries)}개 날짜 데이터 발견")
 
@@ -497,7 +504,7 @@ async def main() -> None:
 
         new_summaries: list[HealthDailySummary] = []
         for summary in summaries:
-            if await record_repo.source_hash_exists(summary.source_hash):
+            if await record_repo.source_hash_exists(device_id, summary.source_hash):
                 print(f"  Skip (이미 존재): {summary.record_date}")
             else:
                 await record_repo.save(summary)
@@ -515,6 +522,23 @@ async def main() -> None:
             print("\n새로 추가된 데이터 없음.")
 
     print("\n완료!")
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="삼성 헬스 더미 데이터를 지정한 device_id 소유 데이터로 적재합니다."
+    )
+    parser.add_argument("--device-id", required=True, help="적재 대상 사용자 device_id")
+    return parser.parse_args()
+
+
+def _validate_device_id(device_id: str) -> str:
+    normalized = device_id.strip()
+    if not normalized:
+        raise ValueError("--device-id는 빈 값일 수 없습니다.")
+    if len(normalized) > 64:
+        raise ValueError("--device-id는 64자를 초과할 수 없습니다.")
+    return normalized
 
 
 if __name__ == "__main__":

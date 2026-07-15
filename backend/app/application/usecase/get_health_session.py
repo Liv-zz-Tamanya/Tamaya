@@ -8,8 +8,8 @@ class GetHealthSessionUseCase:
     def __init__(self, repo: HealthSessionRepository) -> None:
         self._repo = repo
 
-    async def execute(self, session_id: UUID) -> HealthSession:
-        session = await self._repo.find_by_id(session_id)
+    async def execute(self, session_id: UUID, device_id: str) -> HealthSession:
+        session = await self._repo.find_by_id(session_id, device_id)
         if not session:
             raise ValueError("세션을 찾을 수 없습니다.")
         return session

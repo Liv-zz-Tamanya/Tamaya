@@ -101,9 +101,15 @@ class EventChunkModel(Base):
 
 class HealthDailySummaryModel(Base):
     __tablename__ = "health_daily_summaries"
+    __table_args__ = (
+        UniqueConstraint("device_id", "record_date", name="uq_health_daily_device_record_date"),
+        UniqueConstraint("device_id", "source_hash", name="uq_health_daily_device_source_hash"),
+        Index("ix_health_daily_device_record_date", "device_id", "record_date"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    record_date: Mapped[date] = mapped_column(Date, unique=True, nullable=False)
+    device_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    record_date: Mapped[date] = mapped_column(Date, nullable=False)
     step_count: Mapped[int] = mapped_column(Integer, default=0)
     step_goal: Mapped[int] = mapped_column(Integer, default=0)
     step_goal_achieved: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -117,15 +123,16 @@ class HealthDailySummaryModel(Base):
     heart_rate_min: Mapped[float | None] = mapped_column(Float, nullable=True)
     heart_rate_max: Mapped[float | None] = mapped_column(Float, nullable=True)
     floors_climbed: Mapped[int] = mapped_column(Integer, default=0)
-    source_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    source_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
 class HealthChunkModel(Base):
     __tablename__ = "health_chunks"
-    __table_args__ = (Index("ix_health_chunks_record_date", "record_date"),)
+    __table_args__ = (Index("ix_health_chunks_device_record_date", "device_id", "record_date"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    device_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     record_date: Mapped[date] = mapped_column(Date, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     embedding: Mapped[list[float]] = mapped_column(Vector(384), nullable=False)
@@ -189,6 +196,7 @@ class HealthSessionModel(Base):
     __tablename__ = "health_sessions"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    device_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     messages: Mapped[list["HealthMessageModel"]] = relationship(
@@ -300,9 +308,7 @@ class GameDiaryCompletionModel(Base):
     """
 
     __tablename__ = "game_diary_completions"
-    __table_args__ = (
-        UniqueConstraint("device_id", "diary_date", name="uq_game_diary_completion"),
-    )
+    __table_args__ = (UniqueConstraint("device_id", "diary_date", name="uq_game_diary_completion"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     device_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
