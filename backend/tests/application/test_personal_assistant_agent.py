@@ -4,6 +4,7 @@ import pytest
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import BaseTool, StructuredTool
 
+from app.application.service.diary_chat_prompt import DiaryConversationContext
 from app.application.usecase.personal_assistant_agent import (
     ITERATION_LIMIT_MESSAGE,
     PersonalAssistantAgent,
@@ -32,6 +33,19 @@ class _FakeToolCallingChatModel:
 
 def _tool_call(name: str, call_id: str, **args) -> dict:
     return {"name": name, "args": args, "id": call_id, "type": "tool_call"}
+
+
+def _diary_context(
+    *,
+    max_turns: int = 5,
+    current_user_turn: int = 1,
+    suggest_finalize: bool = False,
+) -> DiaryConversationContext:
+    return DiaryConversationContext(
+        max_turns=max_turns,
+        current_user_turn=current_user_turn,
+        suggest_finalize=suggest_finalize,
+    )
 
 
 def _recording_tool(
@@ -63,11 +77,19 @@ async def test_run_returns_general_response_without_tool_execution():
     agent = PersonalAssistantAgent(model, [tool])
     messages = [HumanMessage(content="오늘 기분이 복잡해")]
 
-    response = await agent.run(messages=messages, mode=PersonalAssistantMode.DIARY)
+    response = await agent.run(
+        messages=messages,
+        mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
+    )
     state = await PersonalAssistantAgent(
         _FakeToolCallingChatModel([AIMessage(content="상태 응답")]),
         [tool],
-    )._ainvoke_state(messages=messages, mode=PersonalAssistantMode.DIARY)
+    )._ainvoke_state(
+        messages=messages,
+        mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
+    )
 
     assert response.content == "일반 응답"
     assert len(model.calls) == 1
@@ -98,6 +120,7 @@ async def test_diary_memory_tool_round_returns_final_response():
     state = await agent._ainvoke_state(
         messages=[HumanMessage(content="발표했던 기억 찾아줘")],
         mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
     )
     response = await PersonalAssistantAgent(
         _FakeToolCallingChatModel(
@@ -115,6 +138,7 @@ async def test_diary_memory_tool_round_returns_final_response():
     ).run(
         messages=[HumanMessage(content="발표했던 기억 찾아줘")],
         mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
     )
 
     assert response.content == "발표 기억을 찾았어요."
@@ -192,6 +216,7 @@ async def test_sequential_multiple_tool_rounds_preserve_message_order_and_counts
     state = await agent._ainvoke_state(
         messages=[HumanMessage(content="산책과 건강 기록을 같이 봐줘")],
         mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
     )
 
     assert diary_calls == [{"query": "산책", "limit": 5}]
@@ -277,6 +302,7 @@ async def test_iteration_limit_returns_deterministic_ai_message_without_extra_to
     state = await agent._ainvoke_state(
         messages=[HumanMessage(content="계속 찾아봐")],
         mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
     )
 
     response_model = _FakeToolCallingChatModel(
@@ -302,6 +328,7 @@ async def test_iteration_limit_returns_deterministic_ai_message_without_extra_to
     ).run(
         messages=[HumanMessage(content="계속 찾아봐")],
         mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
     )
 
     assert response.content == ITERATION_LIMIT_MESSAGE
@@ -320,6 +347,7 @@ async def test_mode_specific_system_message_is_first_and_not_accumulated_in_stat
     diary_state = await PersonalAssistantAgent(diary_model, [])._ainvoke_state(
         messages=input_messages,
         mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(max_turns=5, current_user_turn=2),
     )
     health_state = await PersonalAssistantAgent(health_model, [])._ainvoke_state(
         messages=input_messages,
@@ -329,13 +357,64 @@ async def test_mode_specific_system_message_is_first_and_not_accumulated_in_stat
     diary_messages = diary_model.calls[0]["messages"]
     health_messages = health_model.calls[0]["messages"]
     assert isinstance(diary_messages[0], SystemMessage)
-    assert "회고와 일기" in diary_messages[0].content
+    assert "이음이야" in diary_messages[0].content
+    assert "[현재 2턴째 / 5턴]" in diary_messages[0].content
+    assert "search_diary_memories" in diary_messages[0].content
     assert isinstance(health_messages[0], SystemMessage)
     assert "저장된 건강 기록" in health_messages[0].content
     assert diary_messages[1:] == input_messages
     assert health_messages[1:] == input_messages
     assert not any(isinstance(message, SystemMessage) for message in diary_state["messages"])
     assert not any(isinstance(message, SystemMessage) for message in health_state["messages"])
+
+
+async def test_diary_mode_requires_diary_context():
+    agent = PersonalAssistantAgent(_FakeToolCallingChatModel([AIMessage(content="응답")]), [])
+
+    with pytest.raises(ValueError, match="diary_context is required"):
+        await agent.run(messages=[HumanMessage(content="안녕")], mode=PersonalAssistantMode.DIARY)
+
+
+async def test_health_mode_rejects_diary_context():
+    agent = PersonalAssistantAgent(_FakeToolCallingChatModel([AIMessage(content="응답")]), [])
+
+    with pytest.raises(ValueError, match="only supported for diary mode"):
+        await agent.run(
+            messages=[HumanMessage(content="안녕")],
+            mode=PersonalAssistantMode.HEALTH,
+            diary_context=_diary_context(),
+        )
+
+
+async def test_diary_turn_policy_is_applied_to_every_model_call():
+    tool_calls: list[dict] = []
+    model = _FakeToolCallingChatModel(
+        [
+            AIMessage(
+                content="기억 확인",
+                tool_calls=[_tool_call("search_diary_memories", "call-1", query="발표")],
+            ),
+            AIMessage(content="최종 응답"),
+        ]
+    )
+    agent = PersonalAssistantAgent(
+        model,
+        [_recording_tool("search_diary_memories", tool_calls)],
+    )
+
+    await agent.run(
+        messages=[HumanMessage(content="지난 발표 기억나?")],
+        mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(max_turns=5, current_user_turn=4, suggest_finalize=True),
+    )
+
+    assert len(model.calls) == 2
+    for call in model.calls:
+        system_message = call["messages"][0]
+        assert isinstance(system_message, SystemMessage)
+        assert "[마무리 지시" in system_message.content
+        assert "새 질문을 던지지 마" in system_message.content
+        assert "search_diary_memories" in system_message.content
 
 
 async def test_empty_tool_list_supports_general_response():
@@ -345,6 +424,7 @@ async def test_empty_tool_list_supports_general_response():
     response = await agent.run(
         messages=[HumanMessage(content="안녕")],
         mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
     )
 
     assert response.content == "도구 없이 답변"
@@ -356,7 +436,11 @@ async def test_model_exception_is_propagated_without_retry_or_fallback():
     agent = PersonalAssistantAgent(model, [])
 
     with pytest.raises(RuntimeError, match="model failed"):
-        await agent.run(messages=[HumanMessage(content="안녕")], mode=PersonalAssistantMode.DIARY)
+        await agent.run(
+            messages=[HumanMessage(content="안녕")],
+            mode=PersonalAssistantMode.DIARY,
+            diary_context=_diary_context(),
+        )
 
     assert len(model.calls) == 1
 
@@ -383,7 +467,11 @@ async def test_tool_exception_is_propagated_without_retry_or_fallback():
     )
 
     with pytest.raises(RuntimeError, match="tool failed"):
-        await agent.run(messages=[HumanMessage(content="실패")], mode=PersonalAssistantMode.DIARY)
+        await agent.run(
+            messages=[HumanMessage(content="실패")],
+            mode=PersonalAssistantMode.DIARY,
+            diary_context=_diary_context(),
+        )
 
     assert tool_calls == [{"query": "실패", "limit": 5}]
     assert len(model.calls) == 1
@@ -404,6 +492,7 @@ async def test_unknown_tool_call_is_converted_to_tool_message_by_tool_node():
     state = await agent._ainvoke_state(
         messages=[HumanMessage(content="없는 도구")],
         mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
     )
 
     tool_messages = [message for message in state["messages"] if isinstance(message, ToolMessage)]
@@ -440,7 +529,11 @@ async def test_run_does_not_mutate_input_message_list_or_message_objects():
     messages = [human_message]
     original_id = id(human_message)
 
-    await agent.run(messages=messages, mode=PersonalAssistantMode.DIARY)
+    await agent.run(
+        messages=messages,
+        mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
+    )
 
     assert messages == [human_message]
     assert id(messages[0]) == original_id

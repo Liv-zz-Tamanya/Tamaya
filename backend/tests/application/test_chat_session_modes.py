@@ -95,21 +95,13 @@ class _FakeAi(AiChatService):
         return []
 
 
-class _FakeChatAgent:
+class _FakePersonalAssistantFactory:
     def __init__(self) -> None:
-        self.calls: list[int] = []
+        self.calls = 0
 
-    async def run(
-        self,
-        device_id: str,
-        session_id: UUID,
-        messages: list[ChatMessage],
-        current_user_message: str,
-        suggest_finalize: bool = False,
-        max_turns: int = 5,
-    ) -> str:
-        self.calls.append(max_turns)
-        return "조금 더 들려줘."
+    def create(self, **kwargs):  # pragma: no cover
+        self.calls += 1
+        raise AssertionError("personal assistant should not be created")
 
 
 class _FakeExtractChunks:
@@ -189,7 +181,7 @@ async def test_send_message_auto_finalizes_on_third_turn_for_short_mode():
     repo = _MemoryChatSessionRepo()
     diary_repo = _MemoryDiaryRepo()
     ai = _FakeAi()
-    chat_agent = _FakeChatAgent()
+    personal_assistant_factory = _FakePersonalAssistantFactory()
     extract_chunks = _FakeExtractChunks()
 
     session = ChatSession(device_id="dev-1", max_turns=3)
@@ -200,7 +192,7 @@ async def test_send_message_auto_finalizes_on_third_turn_for_short_mode():
     session.add_message("assistant", "계속 들려줘")
     await repo.save(session)
 
-    usecase = SendMessageUseCase(repo, ai, diary_repo, chat_agent, extract_chunks)
+    usecase = SendMessageUseCase(repo, ai, diary_repo, personal_assistant_factory, extract_chunks)
     user_msg, ai_msg, suggest, diary = await usecase.execute(session.id, "세 번째", "dev-1")
 
     assert user_msg.content == "세 번째"
@@ -211,7 +203,7 @@ async def test_send_message_auto_finalizes_on_third_turn_for_short_mode():
     assert diary.keywords == ["방학", "운동", "자격증"]
     assert session.is_finalized is True
     assert len(diary_repo.saved) == 1
-    assert chat_agent.calls == []
+    assert personal_assistant_factory.calls == 0
     assert extract_chunks.calls == 1
 
 
