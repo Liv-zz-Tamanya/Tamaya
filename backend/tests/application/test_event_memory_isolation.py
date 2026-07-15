@@ -1,0 +1,255 @@
+from __future__ import annotations
+
+import math
+from datetime import date
+from uuid import UUID, uuid4
+
+import pytest
+
+from app.application.service.ai_chat_service import AiChatService
+from app.application.service.embedding_service import EmbeddingService
+from app.application.usecase.chat_agent import ChatAgent
+from app.application.usecase.send_message import SendMessageUseCase
+from app.domain.model.chat_message import ChatMessage
+from app.domain.model.chat_session import ChatSession
+from app.domain.model.diary import Diary
+from app.domain.model.event_chunk import EventChunk
+from app.domain.repository.chat_session_repository import ChatSessionRepository
+from app.domain.repository.diary_repository import DiaryRepository
+from app.domain.repository.event_chunk_repository import EventChunkRepository
+
+
+class _MemoryChatSessionRepo(ChatSessionRepository):
+    def __init__(self) -> None:
+        self._sessions: dict[UUID, ChatSession] = {}
+
+    async def save(self, session: ChatSession) -> ChatSession:
+        self._sessions[session.id] = session
+        return session
+
+    async def find_by_id(self, session_id: UUID) -> ChatSession | None:
+        return self._sessions.get(session_id)
+
+    async def find_by_device_and_date(
+        self, device_id: str, session_date: date
+    ) -> ChatSession | None:
+        for session in self._sessions.values():
+            if session.device_id == device_id and session.session_date == session_date:
+                return session
+        return None
+
+
+class _MemoryDiaryRepo(DiaryRepository):
+    async def save(self, diary: Diary) -> Diary:  # pragma: no cover
+        return diary
+
+    async def find_by_id(self, diary_id):  # pragma: no cover
+        raise NotImplementedError
+
+    async def find_by_device_and_date(self, device_id, diary_date):  # pragma: no cover
+        raise NotImplementedError
+
+    async def find_all(self, device_id: str, offset: int = 0, limit: int = 20):  # pragma: no cover
+        raise NotImplementedError
+
+    async def count(self, device_id: str) -> int:  # pragma: no cover
+        raise NotImplementedError
+
+
+class _FakeAi(AiChatService):
+    def __init__(self, should_retrieve: bool = True) -> None:
+        self.should_retrieve = should_retrieve
+        self.last_memories: list[str] | None = None
+
+    async def chat(
+        self,
+        messages: list[ChatMessage],
+        suggest_finalize: bool = False,
+        memories: list[str] | None = None,
+        max_turns: int = 5,
+    ) -> str:
+        self.last_memories = memories
+        return "응답"
+
+    async def generate_diary(self, messages: list[ChatMessage]) -> dict:  # pragma: no cover
+        raise NotImplementedError
+
+    async def detect_finalize_intent(self, user_message: str) -> bool:  # pragma: no cover
+        return False
+
+    async def generate_closing_message(self, messages: list[ChatMessage]) -> str:  # pragma: no cover
+        raise NotImplementedError
+
+    async def classify_memory_need(self, user_message: str) -> bool:
+        return self.should_retrieve
+
+    async def extract_event_chunks(self, messages: list[ChatMessage]) -> list[dict]:  # pragma: no cover
+        raise NotImplementedError
+
+
+class _FakeEmbedding(EmbeddingService):
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        return [[1.0, 0.0]]
+
+
+class _MemoryEventChunkRepo(EventChunkRepository):
+    def __init__(self, session_device_ids: dict[UUID, str], chunks: list[EventChunk]) -> None:
+        self._session_device_ids = session_device_ids
+        self._chunks = chunks
+        self.calls: list[tuple[str, UUID | None]] = []
+
+    async def save_all(self, chunks: list[EventChunk]) -> None:  # pragma: no cover
+        self._chunks.extend(chunks)
+
+    async def search_similar(
+        self,
+        device_id: str,
+        embedding: list[float],
+        limit: int = 5,
+        exclude_session_id: UUID | None = None,
+    ) -> list[EventChunk]:
+        self.calls.append((device_id, exclude_session_id))
+        scoped = [
+            chunk
+            for chunk in self._chunks
+            if self._session_device_ids[chunk.chat_session_id] == device_id
+            and chunk.chat_session_id != exclude_session_id
+        ]
+        return sorted(scoped, key=lambda chunk: _cosine_distance(chunk.embedding, embedding))[:limit]
+
+
+class _FakeExtractChunks:
+    async def execute(self, session_id: UUID, diary_date: date, messages: list[ChatMessage]) -> None:
+        return None
+
+
+def _cosine_distance(left: list[float], right: list[float]) -> float:
+    dot = sum(a * b for a, b in zip(left, right))
+    left_norm = math.sqrt(sum(a * a for a in left))
+    right_norm = math.sqrt(sum(b * b for b in right))
+    return 1 - dot / (left_norm * right_norm)
+
+
+def _chunk(session_id: UUID, text: str, embedding: list[float]) -> EventChunk:
+    return EventChunk(
+        id=uuid4(),
+        chat_session_id=session_id,
+        diary_date=date(2026, 7, 10),
+        text=text,
+        embedding=embedding,
+        tags=[],
+        event_type="daily",
+    )
+
+
+@pytest.mark.asyncio
+async def test_event_memory_search_excludes_other_device_even_when_more_similar():
+    current_session_id = uuid4()
+    device_a_past_session_id = uuid4()
+    device_b_session_id = uuid4()
+    repo = _MemoryEventChunkRepo(
+        {
+            current_session_id: "dev-a",
+            device_a_past_session_id: "dev-a",
+            device_b_session_id: "dev-b",
+        },
+        [
+            _chunk(device_a_past_session_id, "A 사용자의 과거 산책", [0.8, 0.2]),
+            _chunk(device_b_session_id, "B 사용자의 완전히 같은 질문", [1.0, 0.0]),
+        ],
+    )
+    ai = _FakeAi()
+    agent = ChatAgent(ai, _FakeEmbedding(), repo)
+
+    await agent.run(
+        device_id="dev-a",
+        session_id=current_session_id,
+        messages=[],
+        current_user_message="산책 기억나?",
+    )
+
+    assert ai.last_memories is not None
+    assert "A 사용자의 과거 산책" in ai.last_memories[0]
+    assert all("B 사용자의" not in memory for memory in ai.last_memories)
+
+
+@pytest.mark.asyncio
+async def test_event_memory_search_returns_same_device_past_chunk():
+    current_session_id = uuid4()
+    past_session_id = uuid4()
+    repo = _MemoryEventChunkRepo(
+        {current_session_id: "dev-a", past_session_id: "dev-a"},
+        [_chunk(past_session_id, "A 사용자의 과거 대화", [1.0, 0.0])],
+    )
+    ai = _FakeAi()
+    agent = ChatAgent(ai, _FakeEmbedding(), repo)
+
+    await agent.run(
+        device_id="dev-a",
+        session_id=current_session_id,
+        messages=[],
+        current_user_message="지난 대화",
+    )
+
+    assert ai.last_memories == ["- 2026-07-10: A 사용자의 과거 대화"]
+
+
+@pytest.mark.asyncio
+async def test_event_memory_search_excludes_current_session_only():
+    current_session_id = uuid4()
+    past_session_id = uuid4()
+    repo = _MemoryEventChunkRepo(
+        {current_session_id: "dev-a", past_session_id: "dev-a"},
+        [
+            _chunk(current_session_id, "현재 세션에서 만든 청크", [1.0, 0.0]),
+            _chunk(past_session_id, "과거 세션에서 만든 청크", [0.8, 0.2]),
+        ],
+    )
+    ai = _FakeAi()
+    agent = ChatAgent(ai, _FakeEmbedding(), repo)
+
+    await agent.run(
+        device_id="dev-a",
+        session_id=current_session_id,
+        messages=[],
+        current_user_message="기억 검색",
+    )
+
+    assert ai.last_memories == ["- 2026-07-10: 과거 세션에서 만든 청크"]
+
+
+@pytest.mark.asyncio
+async def test_send_message_passes_verified_device_id_to_event_memory_search():
+    session = ChatSession(device_id="dev-a", max_turns=5)
+    session.add_message("assistant", "시작해볼까?")
+    repo = _MemoryChatSessionRepo()
+    await repo.save(session)
+    event_repo = _MemoryEventChunkRepo({session.id: "dev-a"}, [])
+    agent = ChatAgent(_FakeAi(), _FakeEmbedding(), event_repo)
+    usecase = SendMessageUseCase(
+        repo,
+        _FakeAi(),
+        _MemoryDiaryRepo(),
+        agent,
+        _FakeExtractChunks(),
+    )
+
+    await usecase.execute(session.id, "지난번 얘기 기억나?", "dev-a")
+
+    assert event_repo.calls == [("dev-a", session.id)]
+
+
+@pytest.mark.asyncio
+async def test_event_memory_search_is_skipped_when_memory_is_not_needed():
+    session_id = uuid4()
+    event_repo = _MemoryEventChunkRepo({session_id: "dev-a"}, [])
+    agent = ChatAgent(_FakeAi(should_retrieve=False), _FakeEmbedding(), event_repo)
+
+    await agent.run(
+        device_id="dev-a",
+        session_id=session_id,
+        messages=[],
+        current_user_message="오늘은 그냥 이야기할래",
+    )
+
+    assert event_repo.calls == []
