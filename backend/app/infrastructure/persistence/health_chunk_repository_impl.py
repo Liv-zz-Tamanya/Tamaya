@@ -16,6 +16,7 @@ class HealthChunkRepositoryImpl(HealthChunkRepository):
         for chunk in chunks:
             model = HealthChunkModel(
                 id=chunk.id,
+                device_id=chunk.device_id,
                 record_date=chunk.record_date,
                 text=chunk.text,
                 embedding=chunk.embedding,
@@ -27,24 +28,34 @@ class HealthChunkRepositoryImpl(HealthChunkRepository):
 
     async def search_similar(
         self,
+        device_id: str,
         embedding: list[float],
         limit: int = 5,
     ) -> list[HealthChunk]:
         stmt = (
             sa.select(HealthChunkModel)
+            .where(HealthChunkModel.device_id == device_id)
             .order_by(HealthChunkModel.embedding.cosine_distance(embedding))
             .limit(limit)
         )
         result = await self._db.execute(stmt)
         return [self._to_domain(m) for m in result.scalars().all()]
 
-    async def find_by_date(self, record_date: date) -> list[HealthChunk]:
-        stmt = sa.select(HealthChunkModel).where(HealthChunkModel.record_date == record_date)
+    async def find_by_date(self, device_id: str, record_date: date) -> list[HealthChunk]:
+        stmt = sa.select(HealthChunkModel).where(
+            HealthChunkModel.device_id == device_id,
+            HealthChunkModel.record_date == record_date,
+        )
         result = await self._db.execute(stmt)
         return [self._to_domain(m) for m in result.scalars().all()]
 
-    async def exists_for_date(self, record_date: date) -> bool:
-        stmt = sa.select(sa.exists().where(HealthChunkModel.record_date == record_date))
+    async def exists_for_date(self, device_id: str, record_date: date) -> bool:
+        stmt = sa.select(
+            sa.exists().where(
+                HealthChunkModel.device_id == device_id,
+                HealthChunkModel.record_date == record_date,
+            )
+        )
         result = await self._db.execute(stmt)
         return result.scalar()
 
@@ -52,6 +63,7 @@ class HealthChunkRepositoryImpl(HealthChunkRepository):
     def _to_domain(model: HealthChunkModel) -> HealthChunk:
         return HealthChunk(
             id=model.id,
+            device_id=model.device_id,
             record_date=model.record_date,
             text=model.text,
             embedding=list(model.embedding),

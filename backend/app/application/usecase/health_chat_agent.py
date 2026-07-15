@@ -10,6 +10,7 @@ from app.domain.repository.health_chunk_repository import HealthChunkRepository
 
 
 class HealthChatAgentState(TypedDict):
+    device_id: str
     session_id: UUID
     messages: list[HealthMessage]
     current_user_message: str
@@ -44,6 +45,7 @@ class HealthChatAgent:
     async def _retrieve_node(self, state: HealthChatAgentState) -> dict:
         query_embedding = self._embedding_service.embed([state["current_user_message"]])[0]
         chunks = await self._health_chunk_repo.search_similar(
+            device_id=state["device_id"],
             embedding=query_embedding,
             limit=5,
         )
@@ -59,11 +61,13 @@ class HealthChatAgent:
 
     async def run(
         self,
+        device_id: str,
         session_id: UUID,
         messages: list[HealthMessage],
         current_user_message: str,
     ) -> str:
         initial_state: HealthChatAgentState = {
+            "device_id": device_id,
             "session_id": session_id,
             "messages": messages,
             "current_user_message": current_user_message,
