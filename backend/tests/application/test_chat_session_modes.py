@@ -101,6 +101,7 @@ class _FakeChatAgent:
 
     async def run(
         self,
+        device_id: str,
         session_id: UUID,
         messages: list[ChatMessage],
         current_user_message: str,
@@ -115,7 +116,9 @@ class _FakeExtractChunks:
     def __init__(self) -> None:
         self.calls = 0
 
-    async def execute(self, session_id: UUID, diary_date: date, messages: list[ChatMessage]) -> None:
+    async def execute(
+        self, session_id: UUID, diary_date: date, messages: list[ChatMessage]
+    ) -> None:
         self.calls += 1
 
 

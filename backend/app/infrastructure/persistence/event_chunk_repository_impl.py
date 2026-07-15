@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.model.event_chunk import EventChunk
 from app.domain.repository.event_chunk_repository import EventChunkRepository
-from app.infrastructure.persistence.models import EventChunkModel
+from app.infrastructure.persistence.models import ChatSessionModel, EventChunkModel
 
 
 class EventChunkRepositoryImpl(EventChunkRepository):
@@ -32,17 +32,22 @@ class EventChunkRepositoryImpl(EventChunkRepository):
 
     async def search_similar(
         self,
+        device_id: str,
         embedding: list[float],
         limit: int = 5,
         exclude_session_id: UUID | None = None,
     ) -> list[EventChunk]:
+        conditions = [ChatSessionModel.device_id == device_id]
+        if exclude_session_id:
+            conditions.append(EventChunkModel.chat_session_id != exclude_session_id)
+
         stmt = (
             sa.select(EventChunkModel)
+            .join(ChatSessionModel, EventChunkModel.chat_session_id == ChatSessionModel.id)
+            .where(*conditions)
             .order_by(EventChunkModel.embedding.cosine_distance(embedding))
             .limit(limit)
         )
-        if exclude_session_id:
-            stmt = stmt.where(EventChunkModel.chat_session_id != exclude_session_id)
 
         result = await self._db.execute(stmt)
         models = result.scalars().all()
