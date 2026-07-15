@@ -1,11 +1,15 @@
 from collections.abc import Sequence
+from typing import Protocol
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
-from app.domain.model.chat_message import ChatMessage
+
+class ConversationMessage(Protocol):
+    role: str
+    content: str
 
 
-def to_langchain_messages(messages: Sequence[ChatMessage]) -> list[BaseMessage]:
+def to_langchain_messages(messages: Sequence[ConversationMessage]) -> list[BaseMessage]:
     converted: list[BaseMessage] = []
     for message in messages:
         if message.role == "user":

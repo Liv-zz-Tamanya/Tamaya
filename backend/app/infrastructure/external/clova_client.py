@@ -6,6 +6,7 @@ from openai import AsyncOpenAI
 from app.application.service.ai_chat_service import AiChatService
 from app.application.service.diary_chat_prompt import build_diary_chat_system_prompt
 from app.application.service.health_ai_service import HealthAiService
+from app.application.service.health_chat_prompt import build_health_chat_system_prompt
 from app.domain.model.chat_message import ChatMessage
 from app.domain.model.health_message import HealthMessage
 from app.infrastructure.config.settings import settings
@@ -320,20 +321,6 @@ class ClovaClient(AiChatService):
             return []
 
 
-# -------------------------------
-# 헬스 챗봇 시스템 프롬프트
-# -------------------------------
-HEALTH_CHAT_SYSTEM_PROMPT = """너는 '헬시'야. 사용자의 삼성 헬스 데이터를 기반으로 건강 관련 질문에 답하는 AI 어시스턴트야.
-
-답변 스타일:
-- 한국어 반말로 말해.
-- 짧고 명확하게: 1~3문장.
-- 수치는 정확하게 언급해. (예: "어제 걸음수는 9,144걸음이야.")
-- 데이터가 없으면 솔직하게 "그 날 데이터가 없어서 모르겠어."라고 해.
-- 의학적 진단은 하지 마. 데이터를 해석해서 알려주는 역할이야.
-- 이모지는 가끔 1개만.
-"""
-
 HEALTH_CHAT_GREETING = """안녕! 나는 헬시야. 네 삼성 헬스 데이터 기반으로 건강 정보를 알려줄 수 있어.
 걸음수, 심박수, 운동 기록 같은 거 궁금한 거 물어봐! 💪"""
 
@@ -364,13 +351,10 @@ class HealthClovaClient(HealthAiService):
         if self._mock:
             return HEALTH_CHAT_MOCK_RESPONSE
 
-        system_prompt = HEALTH_CHAT_SYSTEM_PROMPT
-        if health_context:
-            system_prompt += (
-                "\n\n[건강 데이터 기록]\n"
-                "아래는 사용자의 실제 건강 데이터야. 반드시 이 내용만 근거로 답해.\n"
-                "데이터에 없는 내용은 절대 지어내지 마.\n\n" + "\n".join(health_context)
-            )
+        system_prompt = build_health_chat_system_prompt(
+            tool_calling_enabled=False,
+            health_context=health_context,
+        )
 
         api_messages = [{"role": "system", "content": system_prompt}]
         for m in messages:

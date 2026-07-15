@@ -13,6 +13,7 @@ from app.application.service.diary_chat_prompt import (
     DiaryConversationContext,
     build_diary_chat_system_prompt,
 )
+from app.application.service.health_chat_prompt import build_health_chat_system_prompt
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
 
 DEFAULT_MAX_TOOL_ROUNDS = 3
@@ -20,26 +21,6 @@ ITERATION_LIMIT_MESSAGE = (
     "요청을 처리하는 과정에서 도구 호출이 반복되어 현재 요청을 완료하지 못했어요. "
     "질문을 더 구체적으로 다시 요청해 주세요."
 )
-
-COMMON_SYSTEM_PROMPT = """
-개인의 과거 일기나 건강 기록에 관한 질문은 추측하지 말고 필요한 경우 적절한 도구를 사용한다.
-도구 결과에 없는 사실, 날짜, 인물, 장소, 수치를 만들어내지 않는다.
-검색 결과가 없으면 기록을 찾지 못했다고 명확히 답한다.
-같은 인자로 동일한 도구를 반복 호출하지 않는다.
-사용자의 질문에 필요한 최소한의 도구만 호출한다.
-도구 결과를 최종 답변에 자연스럽게 반영한다.
-도구 이름, 내부 ID, JSON 원문은 사용자에게 불필요하게 노출하지 않는다.
-""".strip()
-
-HEALTH_SYSTEM_PROMPT = f"""
-{COMMON_SYSTEM_PROMPT}
-
-너는 사용자의 저장된 건강 기록에 근거하여 답하는 개인 비서다.
-건강 데이터가 필요한 질문에는 건강 기록 도구를 사용한다.
-검색 결과에 없는 수치나 상태를 추측하지 않는다.
-진단, 처방, 약물 변경을 단정적으로 제시하지 않는다.
-현재 응급 의료 가드레일을 완전히 대체하지 않는다.
-""".strip()
 
 
 class PersonalAssistantMode(StrEnum):
@@ -74,7 +55,12 @@ def build_personal_assistant_system_message(
         case PersonalAssistantMode.HEALTH:
             if diary_context is not None:
                 raise ValueError("diary_context is only supported for diary mode")
-            return SystemMessage(content=HEALTH_SYSTEM_PROMPT)
+            return SystemMessage(
+                content=build_health_chat_system_prompt(
+                    tool_calling_enabled=True,
+                    health_context=None,
+                )
+            )
 
 
 class PersonalAssistantAgent:
