@@ -77,13 +77,17 @@ class _FakeAi(AiChatService):
     async def detect_finalize_intent(self, user_message: str) -> bool:  # pragma: no cover
         return False
 
-    async def generate_closing_message(self, messages: list[ChatMessage]) -> str:  # pragma: no cover
+    async def generate_closing_message(
+        self, messages: list[ChatMessage]
+    ) -> str:  # pragma: no cover
         raise NotImplementedError
 
     async def classify_memory_need(self, user_message: str) -> bool:
         return self.should_retrieve
 
-    async def extract_event_chunks(self, messages: list[ChatMessage]) -> list[dict]:  # pragma: no cover
+    async def extract_event_chunks(
+        self, messages: list[ChatMessage]
+    ) -> list[dict]:  # pragma: no cover
         raise NotImplementedError
 
 
@@ -115,11 +119,15 @@ class _MemoryEventChunkRepo(EventChunkRepository):
             if self._session_device_ids[chunk.chat_session_id] == device_id
             and chunk.chat_session_id != exclude_session_id
         ]
-        return sorted(scoped, key=lambda chunk: _cosine_distance(chunk.embedding, embedding))[:limit]
+        return sorted(scoped, key=lambda chunk: _cosine_distance(chunk.embedding, embedding))[
+            :limit
+        ]
 
 
 class _FakeExtractChunks:
-    async def execute(self, session_id: UUID, diary_date: date, messages: list[ChatMessage]) -> None:
+    async def execute(
+        self, session_id: UUID, diary_date: date, messages: list[ChatMessage]
+    ) -> None:
         return None
 
 
