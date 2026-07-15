@@ -2,9 +2,15 @@ import asyncio
 from uuid import UUID
 
 from app.application.service.ai_chat_service import AiChatService
-from app.application.usecase.chat_agent import ChatAgent
+from app.application.service.chat_message_adapter import (
+    extract_ai_message_text,
+    to_langchain_messages,
+)
+from app.application.service.diary_chat_prompt import DiaryConversationContext
 from app.application.usecase.diary_keywords import normalize_diary_keywords
 from app.application.usecase.extract_chunks import ExtractChunksUseCase
+from app.application.usecase.personal_assistant_agent import PersonalAssistantMode
+from app.application.usecase.personal_assistant_agent_factory import PersonalAssistantAgentFactory
 from app.domain.model.chat_message import ChatMessage
 from app.domain.model.chat_session import ChatSession
 from app.domain.model.diary import Diary
@@ -19,13 +25,13 @@ class SendMessageUseCase:
         repo: ChatSessionRepository,
         ai: AiChatService,
         diary_repo: DiaryRepository,
-        chat_agent: ChatAgent,
+        personal_assistant_factory: PersonalAssistantAgentFactory,
         extract_chunks: ExtractChunksUseCase,
     ) -> None:
         self._repo = repo
         self._ai = ai
         self._diary_repo = diary_repo
-        self._chat_agent = chat_agent
+        self._personal_assistant_factory = personal_assistant_factory
         self._extract_chunks = extract_chunks
 
     async def execute(
@@ -52,14 +58,20 @@ class SendMessageUseCase:
                 user_msg, ai_msg, diary = await self._handle_auto_finalize(session, user_msg)
                 return user_msg, ai_msg, False, diary
 
-        ai_response = await self._chat_agent.run(
+        agent = self._personal_assistant_factory.create(
             device_id=device_id,
             session_id=session.id,
-            messages=session.messages,
-            current_user_message=content,
-            suggest_finalize=session.should_suggest_finalize,
-            max_turns=session.max_turns,
         )
+        response = await agent.run(
+            messages=to_langchain_messages(session.messages),
+            mode=PersonalAssistantMode.DIARY,
+            diary_context=DiaryConversationContext(
+                max_turns=session.max_turns,
+                current_user_turn=session.user_message_count,
+                suggest_finalize=session.should_suggest_finalize,
+            ),
+        )
+        ai_response = extract_ai_message_text(response)
         ai_msg = session.add_message("assistant", ai_response)
         await self._repo.save(session)
         return user_msg, ai_msg, session.should_suggest_finalize, None
