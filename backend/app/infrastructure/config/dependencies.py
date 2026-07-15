@@ -4,8 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.application.service.ai_chat_service import AiChatService
 from app.application.service.clova_connection_tester import ClovaConnectionTester
 from app.application.service.coaching_ai_service import CoachingAiService
+from app.application.service.diary_memory_query_service import DiaryMemoryQueryService
 from app.application.service.embedding_service import EmbeddingService
 from app.application.service.health_ai_service import HealthAiService
+from app.application.service.health_record_query_service import HealthRecordQueryService
 from app.application.service.signal_extraction_service import SignalExtractionService
 from app.application.usecase.chat_agent import ChatAgent
 from app.application.usecase.coaching_agent import CoachingAgent
@@ -88,12 +90,18 @@ def get_extract_chunks_usecase(
     return ExtractChunksUseCase(ai, embedding, event_chunk_repo)
 
 
-def get_chat_agent(
-    ai: AiChatService = Depends(get_ai_chat_service),
+def get_diary_memory_query_service(
     embedding: EmbeddingService = Depends(get_embedding_service),
     event_chunk_repo: EventChunkRepository = Depends(get_event_chunk_repo),
+) -> DiaryMemoryQueryService:
+    return DiaryMemoryQueryService(embedding, event_chunk_repo)
+
+
+def get_chat_agent(
+    ai: AiChatService = Depends(get_ai_chat_service),
+    memory_query: DiaryMemoryQueryService = Depends(get_diary_memory_query_service),
 ) -> ChatAgent:
-    return ChatAgent(ai, embedding, event_chunk_repo)
+    return ChatAgent(ai, memory_query)
 
 
 def get_signal_extraction_service() -> SignalExtractionService:
@@ -170,13 +178,19 @@ def get_health_chunk_repo(db: AsyncSession = Depends(get_db)) -> HealthChunkRepo
     return HealthChunkRepositoryImpl(db)
 
 
+def get_health_record_query_service(
+    embedding: EmbeddingService = Depends(get_embedding_service),
+    health_chunk_repo: HealthChunkRepository = Depends(get_health_chunk_repo),
+) -> HealthRecordQueryService:
+    return HealthRecordQueryService(embedding, health_chunk_repo)
+
+
 def get_health_session_repo(db: AsyncSession = Depends(get_db)) -> HealthSessionRepository:
     return HealthSessionRepositoryImpl(db)
 
 
 def get_health_chat_agent(
     ai: HealthAiService = Depends(get_health_ai_service),
-    embedding: EmbeddingService = Depends(get_embedding_service),
-    health_chunk_repo: HealthChunkRepository = Depends(get_health_chunk_repo),
+    health_query: HealthRecordQueryService = Depends(get_health_record_query_service),
 ) -> HealthChatAgent:
-    return HealthChatAgent(ai, embedding, health_chunk_repo)
+    return HealthChatAgent(ai, health_query)

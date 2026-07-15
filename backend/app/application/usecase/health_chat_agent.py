@@ -3,10 +3,9 @@ from uuid import UUID
 
 from langgraph.graph import END, START, StateGraph
 
-from app.application.service.embedding_service import EmbeddingService
 from app.application.service.health_ai_service import HealthAiService
+from app.application.service.health_record_query_service import HealthRecordQueryService
 from app.domain.model.health_message import HealthMessage
-from app.domain.repository.health_chunk_repository import HealthChunkRepository
 
 
 class HealthChatAgentState(TypedDict):
@@ -22,12 +21,10 @@ class HealthChatAgent:
     def __init__(
         self,
         ai: HealthAiService,
-        embedding_service: EmbeddingService,
-        health_chunk_repo: HealthChunkRepository,
+        health_query: HealthRecordQueryService,
     ) -> None:
         self._ai = ai
-        self._embedding_service = embedding_service
-        self._health_chunk_repo = health_chunk_repo
+        self._health_query = health_query
         self._graph = self._build_graph()
 
     def _build_graph(self):
@@ -43,10 +40,9 @@ class HealthChatAgent:
         return builder.compile()
 
     async def _retrieve_node(self, state: HealthChatAgentState) -> dict:
-        query_embedding = self._embedding_service.embed([state["current_user_message"]])[0]
-        chunks = await self._health_chunk_repo.search_similar(
+        chunks = await self._health_query.search_similar(
             device_id=state["device_id"],
-            embedding=query_embedding,
+            query=state["current_user_message"],
             limit=5,
         )
         context = [f"- {chunk.record_date.strftime('%Y-%m-%d')}: {chunk.text}" for chunk in chunks]

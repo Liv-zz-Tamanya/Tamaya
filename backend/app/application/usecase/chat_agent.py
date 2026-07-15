@@ -4,9 +4,8 @@ from uuid import UUID
 from langgraph.graph import END, START, StateGraph
 
 from app.application.service.ai_chat_service import AiChatService
-from app.application.service.embedding_service import EmbeddingService
+from app.application.service.diary_memory_query_service import DiaryMemoryQueryService
 from app.domain.model.chat_message import ChatMessage
-from app.domain.repository.event_chunk_repository import EventChunkRepository
 
 
 class ChatAgentState(TypedDict):
@@ -25,12 +24,10 @@ class ChatAgent:
     def __init__(
         self,
         ai: AiChatService,
-        embedding_service: EmbeddingService,
-        event_chunk_repo: EventChunkRepository,
+        memory_query: DiaryMemoryQueryService,
     ) -> None:
         self._ai = ai
-        self._embedding_service = embedding_service
-        self._event_chunk_repo = event_chunk_repo
+        self._memory_query = memory_query
         self._graph = self._build_graph()
 
     def _build_graph(self):
@@ -55,11 +52,10 @@ class ChatAgent:
         return {"should_retrieve": should_retrieve}
 
     async def _retrieve_memory_node(self, state: ChatAgentState) -> dict:
-        query_embedding = self._embedding_service.embed([state["current_user_message"]])[0]
-        chunks = await self._event_chunk_repo.search_similar(
+        chunks = await self._memory_query.search_similar(
             device_id=state["device_id"],
-            embedding=query_embedding,
             limit=5,
+            query=state["current_user_message"],
             exclude_session_id=state["session_id"],
         )
         memories = []

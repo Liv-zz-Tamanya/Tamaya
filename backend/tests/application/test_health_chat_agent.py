@@ -3,12 +3,10 @@ from __future__ import annotations
 from datetime import date, datetime
 from uuid import uuid4
 
-from app.application.service.embedding_service import EmbeddingService
 from app.application.service.health_ai_service import HealthAiService
 from app.application.usecase.health_chat_agent import HealthChatAgent
 from app.domain.model.health_chunk import HealthChunk
 from app.domain.model.health_message import HealthMessage
-from app.domain.repository.health_chunk_repository import HealthChunkRepository
 
 
 class _FakeHealthAi(HealthAiService):
@@ -25,40 +23,19 @@ class _FakeHealthAi(HealthAiService):
         return self.reply
 
 
-class _FakeEmbedding(EmbeddingService):
-    def __init__(self, embedding: list[float]) -> None:
-        self.embedding = embedding
-        self.calls: list[list[str]] = []
-
-    def embed(self, texts: list[str]) -> list[list[float]]:
-        self.calls.append(texts)
-        return [self.embedding]
-
-
-class _FakeHealthChunkRepo(HealthChunkRepository):
+class _FakeHealthQuery:
     def __init__(self, chunks: list[HealthChunk]) -> None:
         self.chunks = chunks
-        self.search_calls: list[dict] = []
-
-    async def save_all(self, chunks: list[HealthChunk]) -> None:  # pragma: no cover
-        raise NotImplementedError
+        self.calls: list[dict] = []
 
     async def search_similar(
         self,
         device_id: str,
-        embedding: list[float],
+        query: str,
         limit: int = 5,
     ) -> list[HealthChunk]:
-        self.search_calls.append({"device_id": device_id, "embedding": embedding, "limit": limit})
+        self.calls.append({"device_id": device_id, "query": query, "limit": limit})
         return self.chunks
-
-    async def find_by_date(
-        self, device_id: str, record_date: date
-    ) -> list[HealthChunk]:  # pragma: no cover
-        raise NotImplementedError
-
-    async def exists_for_date(self, device_id: str, record_date: date) -> bool:  # pragma: no cover
-        raise NotImplementedError
 
 
 def _message(content: str) -> HealthMessage:
@@ -77,9 +54,8 @@ def _health_chunk(text: str) -> HealthChunk:
 
 async def test_health_chat_agent_retrieves_health_data_and_returns_ai_reply():
     ai = _FakeHealthAi(reply="health data reply")
-    embedding = _FakeEmbedding([0.2, 0.8])
-    repo = _FakeHealthChunkRepo([_health_chunk("9,144걸음을 걸었어.")])
-    agent = HealthChatAgent(ai, embedding, repo)
+    health_query = _FakeHealthQuery([_health_chunk("9,144걸음을 걸었어.")])
+    agent = HealthChatAgent(ai, health_query)
     messages = [_message("어제 몇 걸음 걸었어?")]
 
     response = await agent.run(
@@ -90,8 +66,9 @@ async def test_health_chat_agent_retrieves_health_data_and_returns_ai_reply():
     )
 
     assert response == "health data reply"
-    assert embedding.calls == [["어제 몇 걸음 걸었어?"]]
-    assert repo.search_calls == [{"device_id": "dev-a", "embedding": [0.2, 0.8], "limit": 5}]
+    assert health_query.calls == [
+        {"device_id": "dev-a", "query": "어제 몇 걸음 걸었어?", "limit": 5}
+    ]
     assert ai.chat_calls == [
         {
             "messages": messages,
@@ -102,9 +79,8 @@ async def test_health_chat_agent_retrieves_health_data_and_returns_ai_reply():
 
 async def test_health_chat_agent_passes_no_context_when_search_returns_empty():
     ai = _FakeHealthAi(reply="no health data reply")
-    embedding = _FakeEmbedding([0.5, 0.5])
-    repo = _FakeHealthChunkRepo([])
-    agent = HealthChatAgent(ai, embedding, repo)
+    health_query = _FakeHealthQuery([])
+    agent = HealthChatAgent(ai, health_query)
     messages = [_message("오늘 운동 기록 있어?")]
 
     response = await agent.run(
@@ -115,6 +91,7 @@ async def test_health_chat_agent_passes_no_context_when_search_returns_empty():
     )
 
     assert response == "no health data reply"
-    assert embedding.calls == [["오늘 운동 기록 있어?"]]
-    assert repo.search_calls == [{"device_id": "dev-a", "embedding": [0.5, 0.5], "limit": 5}]
+    assert health_query.calls == [
+        {"device_id": "dev-a", "query": "오늘 운동 기록 있어?", "limit": 5}
+    ]
     assert ai.chat_calls == [{"messages": messages, "health_context": None}]

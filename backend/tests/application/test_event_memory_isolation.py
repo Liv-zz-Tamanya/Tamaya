@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 import pytest
 
 from app.application.service.ai_chat_service import AiChatService
+from app.application.service.diary_memory_query_service import DiaryMemoryQueryService
 from app.application.service.embedding_service import EmbeddingService
 from app.application.usecase.chat_agent import ChatAgent
 from app.application.usecase.send_message import SendMessageUseCase
@@ -131,6 +132,14 @@ class _FakeExtractChunks:
         return None
 
 
+def _chat_agent(
+    ai: AiChatService,
+    embedding: EmbeddingService,
+    repo: EventChunkRepository,
+) -> ChatAgent:
+    return ChatAgent(ai, DiaryMemoryQueryService(embedding, repo))
+
+
 def _cosine_distance(left: list[float], right: list[float]) -> float:
     dot = sum(a * b for a, b in zip(left, right))
     left_norm = math.sqrt(sum(a * a for a in left))
@@ -167,7 +176,7 @@ async def test_event_memory_search_excludes_other_device_even_when_more_similar(
         ],
     )
     ai = _FakeAi()
-    agent = ChatAgent(ai, _FakeEmbedding(), repo)
+    agent = _chat_agent(ai, _FakeEmbedding(), repo)
 
     await agent.run(
         device_id="dev-a",
@@ -190,7 +199,7 @@ async def test_event_memory_search_returns_same_device_past_chunk():
         [_chunk(past_session_id, "A 사용자의 과거 대화", [1.0, 0.0])],
     )
     ai = _FakeAi()
-    agent = ChatAgent(ai, _FakeEmbedding(), repo)
+    agent = _chat_agent(ai, _FakeEmbedding(), repo)
 
     await agent.run(
         device_id="dev-a",
@@ -214,7 +223,7 @@ async def test_event_memory_search_excludes_current_session_only():
         ],
     )
     ai = _FakeAi()
-    agent = ChatAgent(ai, _FakeEmbedding(), repo)
+    agent = _chat_agent(ai, _FakeEmbedding(), repo)
 
     await agent.run(
         device_id="dev-a",
@@ -233,7 +242,7 @@ async def test_send_message_passes_verified_device_id_to_event_memory_search():
     repo = _MemoryChatSessionRepo()
     await repo.save(session)
     event_repo = _MemoryEventChunkRepo({session.id: "dev-a"}, [])
-    agent = ChatAgent(_FakeAi(), _FakeEmbedding(), event_repo)
+    agent = _chat_agent(_FakeAi(), _FakeEmbedding(), event_repo)
     usecase = SendMessageUseCase(
         repo,
         _FakeAi(),
@@ -251,7 +260,7 @@ async def test_send_message_passes_verified_device_id_to_event_memory_search():
 async def test_event_memory_search_is_skipped_when_memory_is_not_needed():
     session_id = uuid4()
     event_repo = _MemoryEventChunkRepo({session_id: "dev-a"}, [])
-    agent = ChatAgent(_FakeAi(should_retrieve=False), _FakeEmbedding(), event_repo)
+    agent = _chat_agent(_FakeAi(should_retrieve=False), _FakeEmbedding(), event_repo)
 
     await agent.run(
         device_id="dev-a",
