@@ -14,6 +14,7 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.46",
     "uvicorn[standard]>=0.41.0",
     "langgraph>=0.2",
+    "langchain-core>=1.2.19",
     "sentence-transformers>=3.0",
     "pgvector>=0.3",
     "torch>=2.0",
