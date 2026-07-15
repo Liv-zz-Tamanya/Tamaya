@@ -151,8 +151,15 @@ def get_clova_setting_repo(db: AsyncSession = Depends(get_db)) -> ClovaSettingRe
     return ClovaSettingRepositoryImpl(db)
 
 
-def get_health_ai_service() -> HealthAiService:
-    return HealthClovaClient()
+def get_health_ai_service(
+    x_clova_api_key: str | None = Header(default=None),
+) -> HealthAiService:
+    cred = resolve_clova_credential(
+        user_key=x_clova_api_key,
+        env_key=settings.clova_api_key,
+        mock_mode=settings.clova_mock_mode,
+    )
+    return HealthClovaClient(api_key=cred.api_key, mock=cred.use_mock)
 
 
 def get_health_record_repo(db: AsyncSession = Depends(get_db)) -> HealthRecordRepository:
