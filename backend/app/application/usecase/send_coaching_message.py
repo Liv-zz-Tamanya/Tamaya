@@ -27,12 +27,15 @@ class SendCoachingMessageUseCase:
 
     async def execute(
         self,
-        device_id: str | None,
+        device_id: str,
         message: str,
         history: list[ChatMessage],
         session_id: UUID | None = None,
         persona: str | None = None,
     ) -> str:
+        if not device_id.strip():
+            raise ValueError("device_id is required")
+
         sid = session_id or uuid4()
         full_messages = [
             *history,
@@ -42,7 +45,7 @@ class SendCoachingMessageUseCase:
         reply = await self._agent.run(sid, full_messages, message, persona)
 
         # best-effort: 대화 한 턴이 끝나면 정성신호를 추출(실패해도 무시).
-        if self._extract_signals is not None and device_id:
+        if self._extract_signals is not None:
             convo = [
                 *full_messages,
                 ChatMessage(role="assistant", content=reply, created_at=datetime.now()),
