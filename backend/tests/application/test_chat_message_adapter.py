@@ -8,10 +8,15 @@ from app.application.service.chat_message_adapter import (
     to_langchain_messages,
 )
 from app.domain.model.chat_message import ChatMessage
+from app.domain.model.health_message import HealthMessage
 
 
 def _message(role: str, content: str) -> ChatMessage:
     return ChatMessage(role=role, content=content, created_at=datetime(2026, 7, 15, 12, 0))
+
+
+def _health_message(role: str, content: str) -> HealthMessage:
+    return HealthMessage(role=role, content=content, created_at=datetime(2026, 7, 15, 12, 0))
 
 
 def test_to_langchain_messages_preserves_roles_content_and_order():
@@ -45,6 +50,47 @@ def test_to_langchain_messages_does_not_duplicate_last_user_message():
     assert len(converted) == 2
     assert isinstance(converted[-1], HumanMessage)
     assert converted[-1].content == "방금 보낸 메시지"
+
+
+def test_to_langchain_messages_supports_health_messages():
+    messages = [
+        _health_message("system", "건강 시스템"),
+        _health_message("user", "걸음 수 알려줘"),
+        _health_message("assistant", "9,144걸음이야"),
+    ]
+
+    converted = to_langchain_messages(messages)
+
+    assert [type(message) for message in converted] == [SystemMessage, HumanMessage, AIMessage]
+    assert [message.content for message in converted] == [
+        "건강 시스템",
+        "걸음 수 알려줘",
+        "9,144걸음이야",
+    ]
+    assert [message.content for message in messages] == [
+        "건강 시스템",
+        "걸음 수 알려줘",
+        "9,144걸음이야",
+    ]
+
+
+def test_to_langchain_messages_rejects_unknown_health_message_role_and_handles_empty():
+    with pytest.raises(ValueError, match="unsupported chat message role"):
+        to_langchain_messages([_health_message("tool", "도구")])
+    assert to_langchain_messages([]) == []
+
+
+def test_to_langchain_messages_does_not_duplicate_last_health_user_message():
+    messages = [
+        _health_message("assistant", "건강 인사"),
+        _health_message("user", "오늘 운동 기록 있어?"),
+    ]
+
+    converted = to_langchain_messages(messages)
+
+    assert len(converted) == 2
+    assert isinstance(converted[-1], HumanMessage)
+    assert converted[-1].content == "오늘 운동 기록 있어?"
 
 
 def test_extract_ai_message_text_returns_stripped_text():

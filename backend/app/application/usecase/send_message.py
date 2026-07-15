@@ -61,6 +61,7 @@ class SendMessageUseCase:
         agent = self._personal_assistant_factory.create(
             device_id=device_id,
             session_id=session.id,
+            mode=PersonalAssistantMode.DIARY,
         )
         response = await agent.run(
             messages=to_langchain_messages(session.messages),

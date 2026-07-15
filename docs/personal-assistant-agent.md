@@ -1,8 +1,8 @@
 # PersonalAssistantAgent Graph
 
-`PersonalAssistantAgent`는 Tool-calling Agent Graph다. 일반 회고 Chat 경로는
-`SendMessageUseCase`에서 이 Agent로 전환되었다. `HealthChatAgent`와 `CoachingAgent`는
-아직 기존 경로를 사용한다. 기존 `ChatAgent`도 cleanup 전까지 남겨둔다.
+`PersonalAssistantAgent`는 Tool-calling Agent Graph다. 일반 회고 Chat 경로와 Health Chat
+메시지 전송 경로는 이 Agent로 전환되었다. `CoachingAgent`는 아직 기존 경로를 사용한다.
+기존 `ChatAgent`와 `HealthChatAgent`도 cleanup 전까지 남겨둔다.
 
 ```mermaid
 flowchart TD
@@ -45,15 +45,20 @@ Tool 호출 여부는 `AIMessage.tool_calls`만으로 판단한다.
 
 ## Tool Loop
 
-Agent는 요청별 실행 context가 이미 바인딩된 `BaseTool` 목록을 생성자로 받는다. 현재 단계에서
-등록 가능한 Tool은 `search_diary_memories`, `search_health_records`다. `ToolNode`가
-생성한 `ToolMessage`는 다음 `agent` 호출의 messages에 포함된다.
+Agent는 요청별 실행 context가 이미 바인딩된 `BaseTool` 목록을 생성자로 받는다. `ToolNode`가
+생성한 `ToolMessage`는 다음 `agent` 호출의 messages에 포함되지만 Domain 대화 내역에는
+저장하지 않는다.
 
-일반 Chat 실행 구조는 다음과 같다.
+mode별 Tool scope는 다음과 같다.
+
+- diary: `search_diary_memories`, `search_health_records`
+- health: `search_health_records`만 허용
+
+Chat API 실행 구조는 다음과 같다.
 
 ```text
 SendMessageUseCase
-    → PersonalAssistantAgentFactory
+    → PersonalAssistantAgentFactory(mode=DIARY)
         → request-scoped read tools
         → ToolCallingChatModel
         → PersonalAssistantAgent
@@ -61,11 +66,28 @@ SendMessageUseCase
     → ChatSession assistant message 저장
 ```
 
+Health Chat API 메시지 전송 구조는 다음과 같다.
+
+```text
+SendHealthMessageUseCase
+    → PersonalAssistantAgentFactory(mode=HEALTH)
+        → request-scoped search_health_records tool
+        → ToolCallingChatModel
+        → PersonalAssistantAgent
+    → final AIMessage
+    → HealthSession assistant message 저장
+```
+
 `PersonalAssistantAgentFactory`는 요청별 `device_id`와 `session_id`를
 `AgentToolExecutionContext`에 바인딩해 Tool을 생성한다. `SendMessageUseCase`는
 `ChatMessage`를 LangChain `BaseMessage`로 변환한 뒤 diary mode와
 `DiaryConversationContext`를 전달한다. 일기 마무리 동의 판별, 강제 마무리, closing message,
 일기 생성, 이벤트 청크 추출은 여전히 `SendMessageUseCase` 책임이다.
+
+`SendHealthMessageUseCase`는 `HealthMessage`를 LangChain `BaseMessage`로 변환한 뒤 health
+mode로 실행한다. Health mode는 `헬시` 역할, 짧은 반말 응답, 데이터 부재 고지, 의학적 진단 및
+처방/약물 변경 단정 금지 정책을 사용한다. Health Chat 세션 시작 greeting은 아직
+`HealthAiService.chat(messages=[])` 경로를 사용한다.
 
 Tool 내부 예외는 `handle_tool_errors=False`로 상위에 전파한다. 현재 LangGraph `ToolNode`는
 존재하지 않는 Tool 이름에 대해서는 `status="error"`인 `ToolMessage`를 생성해 다음 모델
@@ -79,4 +101,4 @@ persistence, human-in-the-loop가 포함되지 않는다.
 
 ## Next
 
-다음 단계에서 Health Chat 경로를 이 Agent로 전환할 수 있다.
+다음 단계에서 Coaching guardrail 통합과 기존 `ChatAgent`/`HealthChatAgent` cleanup을 진행할 수 있다.

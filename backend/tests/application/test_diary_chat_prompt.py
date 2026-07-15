@@ -132,5 +132,8 @@ def test_clova_client_initial_greeting_uses_valid_turn_context(monkeypatch):
 
 
 def test_health_prompt_is_not_changed_by_diary_prompt_builder():
-    assert "헬시" in clova_client.HEALTH_CHAT_SYSTEM_PROMPT
-    assert "search_diary_memories" not in clova_client.HEALTH_CHAT_SYSTEM_PROMPT
+    from app.application.service.health_chat_prompt import build_health_chat_system_prompt
+
+    health_prompt = build_health_chat_system_prompt(tool_calling_enabled=True)
+    assert "헬시" in health_prompt
+    assert "search_diary_memories" not in health_prompt

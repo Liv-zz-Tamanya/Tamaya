@@ -4,14 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.application.service.health_ai_service import HealthAiService
 from app.application.usecase.get_health_session import GetHealthSessionUseCase
-from app.application.usecase.health_chat_agent import HealthChatAgent
+from app.application.usecase.personal_assistant_agent_factory import PersonalAssistantAgentFactory
 from app.application.usecase.send_health_message import SendHealthMessageUseCase
 from app.application.usecase.start_health_session import StartHealthSessionUseCase
 from app.domain.repository.health_session_repository import HealthSessionRepository
 from app.infrastructure.config.dependencies import (
     get_health_ai_service,
-    get_health_chat_agent,
     get_health_session_repo,
+    get_personal_assistant_agent_factory,
 )
 from app.presentation.auth_deps import get_current_device_id
 from app.presentation.router.health_schemas import (
@@ -55,9 +55,14 @@ async def send_message(
     body: SendHealthMessageRequest,
     device_id: str = Depends(get_current_device_id),
     repo: HealthSessionRepository = Depends(get_health_session_repo),
-    agent: HealthChatAgent = Depends(get_health_chat_agent),
+    personal_assistant_factory: PersonalAssistantAgentFactory = Depends(
+        get_personal_assistant_agent_factory
+    ),
 ):
-    use_case = SendHealthMessageUseCase(repo=repo, agent=agent)
+    use_case = SendHealthMessageUseCase(
+        repo=repo,
+        personal_assistant_factory=personal_assistant_factory,
+    )
     try:
         user_msg, ai_msg = await use_case.execute(session_id, body.content, device_id)
     except ValueError as e:

@@ -3,8 +3,15 @@ from uuid import UUID
 from app.application.service.diary_memory_query_service import DiaryMemoryQueryService
 from app.application.service.health_record_query_service import HealthRecordQueryService
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
-from app.application.tool.read_tools import AgentToolExecutionContext, create_read_tools
-from app.application.usecase.personal_assistant_agent import PersonalAssistantAgent
+from app.application.tool.read_tools import (
+    AgentToolExecutionContext,
+    create_read_tools,
+    create_search_health_records_tool,
+)
+from app.application.usecase.personal_assistant_agent import (
+    PersonalAssistantAgent,
+    PersonalAssistantMode,
+)
 
 
 class PersonalAssistantAgentFactory:
@@ -23,13 +30,25 @@ class PersonalAssistantAgentFactory:
         *,
         device_id: str,
         session_id: UUID,
+        mode: PersonalAssistantMode,
     ) -> PersonalAssistantAgent:
-        tools = create_read_tools(
-            diary_query_service=self._diary_query,
-            health_query_service=self._health_query,
-            execution_context=AgentToolExecutionContext(
-                device_id=device_id,
-                session_id=session_id,
-            ),
+        execution_context = AgentToolExecutionContext(
+            device_id=device_id,
+            session_id=session_id,
         )
+        if mode == PersonalAssistantMode.DIARY:
+            tools = create_read_tools(
+                diary_query_service=self._diary_query,
+                health_query_service=self._health_query,
+                execution_context=execution_context,
+            )
+        elif mode == PersonalAssistantMode.HEALTH:
+            tools = [
+                create_search_health_records_tool(
+                    query_service=self._health_query,
+                    execution_context=execution_context,
+                )
+            ]
+        else:
+            raise ValueError(f"unsupported personal assistant mode: {mode}")
         return PersonalAssistantAgent(self._model, tools)
