@@ -12,6 +12,7 @@ from openai import AsyncOpenAI
 from app.application.service.coaching_ai_service import CoachingAiService
 from app.domain.model.chat_message import ChatMessage
 from app.infrastructure.config.settings import settings
+from app.infrastructure.external.clova_client import _resolve_client_api_key
 
 # 건강냥 밤 코칭 mock 응답 — 공감 우선, 지시·진단 없음, 작은 넛지.
 _MOCK_COACHING_RESPONSES = [
@@ -39,11 +40,11 @@ _PERSONA_HINT = (
 
 class CoachingClovaClient(CoachingAiService):
     def __init__(self, api_key: str | None = None, mock: bool | None = None) -> None:
+        self._mock = mock if mock is not None else settings.clova_mock_mode
         self._client = AsyncOpenAI(
-            api_key=api_key if api_key is not None else settings.clova_api_key,
+            api_key=_resolve_client_api_key(api_key, self._mock),
             base_url=settings.clova_base_url,
         )
-        self._mock = mock if mock is not None else settings.clova_mock_mode
 
     async def coach(self, messages: list[ChatMessage], persona: str | None = None) -> str:
         if self._mock:

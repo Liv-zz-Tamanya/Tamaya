@@ -12,6 +12,7 @@ from openai import AsyncOpenAI
 from app.application.service.signal_extraction_service import SignalExtractionService
 from app.domain.model.chat_message import ChatMessage
 from app.infrastructure.config.settings import settings
+from app.infrastructure.external.clova_client import _resolve_client_api_key
 
 SIGNAL_EXTRACT_SYSTEM_PROMPT = """너는 대화에서 사용자의 정성신호를 추출하는 엔진이야.
 
@@ -42,11 +43,11 @@ SIGNAL_EXTRACT_USER_REQUEST = """위 대화에서 사용자의 정성신호를 J
 
 class SignalExtractionClovaClient(SignalExtractionService):
     def __init__(self) -> None:
+        self._mock = settings.clova_mock_mode
         self._client = AsyncOpenAI(
-            api_key=settings.clova_api_key,
+            api_key=_resolve_client_api_key(None, self._mock),
             base_url=settings.clova_base_url,
         )
-        self._mock = settings.clova_mock_mode
 
     async def extract_signal(self, messages: list[ChatMessage]) -> dict | None:
         if self._mock:
