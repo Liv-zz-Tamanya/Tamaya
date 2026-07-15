@@ -9,6 +9,14 @@ from app.domain.model.chat_message import ChatMessage
 from app.domain.model.health_message import HealthMessage
 from app.infrastructure.config.settings import settings
 
+
+def _resolve_client_api_key(api_key: str | None, mock: bool) -> str | None:
+    resolved = api_key if api_key is not None else settings.clova_api_key
+    if not resolved and mock:
+        return "mock-clova-api-key"
+    return resolved
+
+
 # ─── Mock 응답 풀 (이음이 V3 톤, CLOVA_MOCK_MODE=true 전용) ─────────────────────
 # NCP API 키 수령 전 FE 연동·흐름 검증용. 7개 랜덤 선택.
 _MOCK_CHAT_RESPONSES = [
@@ -163,12 +171,12 @@ CHUNK_EXTRACT_USER_REQUEST = """위 대화에서 기억할 만한 사건들을 J
 # -------------------------------
 class ClovaClient(AiChatService):
     def __init__(self, api_key: str | None = None, mock: bool | None = None) -> None:
+        self._mock = mock if mock is not None else settings.clova_mock_mode
         # BYOK: 요청별 키/모드 override. 미지정 시 settings 기본값(비파괴).
         self._client = AsyncOpenAI(
-            api_key=api_key if api_key is not None else settings.clova_api_key,
+            api_key=_resolve_client_api_key(api_key, self._mock),
             base_url=settings.clova_base_url,
         )
-        self._mock = mock if mock is not None else settings.clova_mock_mode
 
     async def chat(
         self,
@@ -372,11 +380,11 @@ HEALTH_CHAT_MOCK_RESPONSE = (
 # -------------------------------
 class HealthClovaClient(HealthAiService):
     def __init__(self, api_key: str | None = None, mock: bool | None = None) -> None:
+        self._mock = mock if mock is not None else settings.clova_mock_mode
         self._client = AsyncOpenAI(
-            api_key=api_key if api_key is not None else settings.clova_api_key,
+            api_key=_resolve_client_api_key(api_key, self._mock),
             base_url=settings.clova_base_url,
         )
-        self._mock = mock if mock is not None else settings.clova_mock_mode
 
     async def chat(
         self,

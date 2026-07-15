@@ -31,7 +31,7 @@ def test_health_di_without_header_uses_resolved_defaults(monkeypatch):
 
     assert isinstance(service, HealthClovaClient)
     assert service._mock is True
-    assert service._client.api_key in (None, "")
+    assert service._client.api_key == "mock-clova-api-key"
 
 
 def test_health_di_uses_env_key_when_mock_off(monkeypatch):
@@ -53,7 +53,7 @@ def test_health_di_ignores_blank_user_key(monkeypatch):
 
     assert isinstance(service, HealthClovaClient)
     assert service._mock is True
-    assert service._client.api_key in (None, "")
+    assert service._client.api_key == "mock-clova-api-key"
 
 
 def test_health_di_keeps_request_keys_isolated():
