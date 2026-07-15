@@ -1,4 +1,8 @@
+from collections.abc import Sequence
+
 from fastapi import Depends, Header
+from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.tools import BaseTool
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.service.ai_chat_service import AiChatService
@@ -9,6 +13,7 @@ from app.application.service.embedding_service import EmbeddingService
 from app.application.service.health_ai_service import HealthAiService
 from app.application.service.health_record_query_service import HealthRecordQueryService
 from app.application.service.signal_extraction_service import SignalExtractionService
+from app.application.service.tool_calling_chat_model import ToolCallingChatModel
 from app.application.usecase.chat_agent import ChatAgent
 from app.application.usecase.coaching_agent import CoachingAgent
 from app.application.usecase.extract_chunks import ExtractChunksUseCase
@@ -16,6 +21,7 @@ from app.application.usecase.extract_signals import ExtractSignalsUseCase
 from app.application.usecase.get_monthly_insight import GetMonthlyInsightUseCase
 from app.application.usecase.get_weekly_insight import GetWeeklyInsightUseCase
 from app.application.usecase.health_chat_agent import HealthChatAgent
+from app.application.usecase.personal_assistant_agent_factory import PersonalAssistantAgentFactory
 from app.domain.repository.chat_session_repository import ChatSessionRepository
 from app.domain.repository.clova_setting_repository import ClovaSettingRepository
 from app.domain.repository.diary_repository import DiaryRepository
@@ -29,6 +35,7 @@ from app.infrastructure.config.database import get_db
 from app.infrastructure.config.settings import settings
 from app.infrastructure.external.clova_client import ClovaClient, HealthClovaClient
 from app.infrastructure.external.clova_connection_tester_impl import ClovaConnectionTesterImpl
+from app.infrastructure.external.clova_tool_calling import ClovaToolCallingChatModel
 from app.infrastructure.external.coaching_clova import CoachingClovaClient
 from app.infrastructure.external.embedding_service_impl import SentenceTransformerEmbeddingService
 from app.infrastructure.external.signal_extraction_clova import SignalExtractionClovaClient
@@ -48,6 +55,16 @@ from app.infrastructure.persistence.qualitative_signal_repository_impl import (
 )
 
 _embedding_service: EmbeddingService | None = None
+MOCK_TOOL_CALLING_CHAT_RESPONSE = "그랬구나. 오늘 하루 어땠어?"
+
+
+class MockToolCallingChatModel(ToolCallingChatModel):
+    async def ainvoke(
+        self,
+        messages: Sequence[BaseMessage],
+        tools: Sequence[BaseTool],
+    ) -> AIMessage:
+        return AIMessage(content=MOCK_TOOL_CALLING_CHAT_RESPONSE)
 
 
 def get_chat_session_repo(db: AsyncSession = Depends(get_db)) -> ChatSessionRepository:
@@ -102,6 +119,19 @@ def get_chat_agent(
     memory_query: DiaryMemoryQueryService = Depends(get_diary_memory_query_service),
 ) -> ChatAgent:
     return ChatAgent(ai, memory_query)
+
+
+def get_tool_calling_chat_model(
+    x_clova_api_key: str | None = Header(default=None),
+) -> ToolCallingChatModel:
+    cred = resolve_clova_credential(
+        user_key=x_clova_api_key,
+        env_key=settings.clova_api_key,
+        mock_mode=settings.clova_mock_mode,
+    )
+    if cred.use_mock:
+        return MockToolCallingChatModel()
+    return ClovaToolCallingChatModel(api_key=cred.api_key)
 
 
 def get_signal_extraction_service() -> SignalExtractionService:
@@ -183,6 +213,14 @@ def get_health_record_query_service(
     health_chunk_repo: HealthChunkRepository = Depends(get_health_chunk_repo),
 ) -> HealthRecordQueryService:
     return HealthRecordQueryService(embedding, health_chunk_repo)
+
+
+def get_personal_assistant_agent_factory(
+    model: ToolCallingChatModel = Depends(get_tool_calling_chat_model),
+    diary_query: DiaryMemoryQueryService = Depends(get_diary_memory_query_service),
+    health_query: HealthRecordQueryService = Depends(get_health_record_query_service),
+) -> PersonalAssistantAgentFactory:
+    return PersonalAssistantAgentFactory(model, diary_query, health_query)
 
 
 def get_health_session_repo(db: AsyncSession = Depends(get_db)) -> HealthSessionRepository:

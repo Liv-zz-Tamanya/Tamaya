@@ -3,19 +3,19 @@ from uuid import UUID
 from fastapi import APIRouter, Body, Depends, HTTPException
 
 from app.application.service.ai_chat_service import AiChatService
-from app.application.usecase.chat_agent import ChatAgent
 from app.application.usecase.extract_chunks import ExtractChunksUseCase
 from app.application.usecase.get_chat_session import GetChatSessionUseCase
+from app.application.usecase.personal_assistant_agent_factory import PersonalAssistantAgentFactory
 from app.application.usecase.send_message import SendMessageUseCase
 from app.application.usecase.start_chat_session import StartChatSessionUseCase
 from app.domain.repository.chat_session_repository import ChatSessionRepository
 from app.domain.repository.diary_repository import DiaryRepository
 from app.infrastructure.config.dependencies import (
     get_ai_chat_service,
-    get_chat_agent,
     get_chat_session_repo,
     get_diary_repo,
     get_extract_chunks_usecase,
+    get_personal_assistant_agent_factory,
 )
 from app.presentation.auth_deps import get_current_device_id
 from app.presentation.router.schemas import (
@@ -83,10 +83,12 @@ async def send_message(
     repo: ChatSessionRepository = Depends(get_chat_session_repo),
     ai: AiChatService = Depends(get_ai_chat_service),
     diary_repo: DiaryRepository = Depends(get_diary_repo),
-    chat_agent: ChatAgent = Depends(get_chat_agent),
+    personal_assistant_factory: PersonalAssistantAgentFactory = Depends(
+        get_personal_assistant_agent_factory
+    ),
     extract_chunks: ExtractChunksUseCase = Depends(get_extract_chunks_usecase),
 ):
-    usecase = SendMessageUseCase(repo, ai, diary_repo, chat_agent, extract_chunks)
+    usecase = SendMessageUseCase(repo, ai, diary_repo, personal_assistant_factory, extract_chunks)
     try:
         user_msg, ai_msg, suggest, diary = await usecase.execute(
             session_id, body.content, device_id

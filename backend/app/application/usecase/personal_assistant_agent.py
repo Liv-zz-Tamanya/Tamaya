@@ -9,6 +9,10 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 
+from app.application.service.diary_chat_prompt import (
+    DiaryConversationContext,
+    build_diary_chat_system_prompt,
+)
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
 
 DEFAULT_MAX_TOOL_ROUNDS = 3
@@ -25,15 +29,6 @@ COMMON_SYSTEM_PROMPT = """
 사용자의 질문에 필요한 최소한의 도구만 호출한다.
 도구 결과를 최종 답변에 자연스럽게 반영한다.
 도구 이름, 내부 ID, JSON 원문은 사용자에게 불필요하게 노출하지 않는다.
-""".strip()
-
-DIARY_SYSTEM_PROMPT = f"""
-{COMMON_SYSTEM_PROMPT}
-
-너는 사용자의 회고와 일기 대화를 돕는 개인 비서다.
-과거 사건, 감정, 인물, 장소에 대한 질문에는 일기 기억 도구를 사용한다.
-건강 기록 질문은 건강 도구가 필요한 경우에만 사용한다.
-일반적인 감정 대화에는 도구 호출을 강제하지 않는다.
 """.strip()
 
 HEALTH_SYSTEM_PROMPT = f"""
@@ -55,15 +50,30 @@ class PersonalAssistantMode(StrEnum):
 class PersonalAssistantState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
     mode: PersonalAssistantMode
+    diary_context: DiaryConversationContext | None
     llm_calls: int
     tool_rounds: int
 
 
-def build_personal_assistant_system_message(mode: PersonalAssistantMode) -> SystemMessage:
+def build_personal_assistant_system_message(
+    mode: PersonalAssistantMode,
+    diary_context: DiaryConversationContext | None = None,
+) -> SystemMessage:
     match mode:
         case PersonalAssistantMode.DIARY:
-            return SystemMessage(content=DIARY_SYSTEM_PROMPT)
+            if diary_context is None:
+                raise ValueError("diary_context is required for diary mode")
+            return SystemMessage(
+                content=build_diary_chat_system_prompt(
+                    max_turns=diary_context.max_turns,
+                    current_user_turn=diary_context.current_user_turn,
+                    suggest_finalize=diary_context.suggest_finalize,
+                    tool_calling_enabled=True,
+                )
+            )
         case PersonalAssistantMode.HEALTH:
+            if diary_context is not None:
+                raise ValueError("diary_context is only supported for diary mode")
             return SystemMessage(content=HEALTH_SYSTEM_PROMPT)
 
 
@@ -114,7 +124,10 @@ class PersonalAssistantAgent:
     async def _agent_node(self, state: PersonalAssistantState) -> dict:
         response = await self._model.ainvoke(
             messages=[
-                build_personal_assistant_system_message(state["mode"]),
+                build_personal_assistant_system_message(
+                    state["mode"],
+                    state.get("diary_context"),
+                ),
                 *state["messages"],
             ],
             tools=self._tools,
@@ -156,10 +169,13 @@ class PersonalAssistantAgent:
         *,
         messages: Sequence[BaseMessage],
         mode: PersonalAssistantMode,
+        diary_context: DiaryConversationContext | None = None,
     ) -> PersonalAssistantState:
+        _validate_context_for_mode(mode, diary_context)
         initial_state: PersonalAssistantState = {
             "messages": list(messages),
             "mode": mode,
+            "diary_context": diary_context,
             "llm_calls": 0,
             "tool_rounds": 0,
         }
@@ -174,11 +190,26 @@ class PersonalAssistantAgent:
         *,
         messages: Sequence[BaseMessage],
         mode: PersonalAssistantMode,
+        diary_context: DiaryConversationContext | None = None,
     ) -> AIMessage:
-        result = await self._ainvoke_state(messages=messages, mode=mode)
+        result = await self._ainvoke_state(
+            messages=messages,
+            mode=mode,
+            diary_context=diary_context,
+        )
         for message in reversed(result["messages"]):
             if isinstance(message, AIMessage):
                 if message.tool_calls:
                     break
                 return message
         raise RuntimeError("personal assistant graph did not produce final AIMessage")
+
+
+def _validate_context_for_mode(
+    mode: PersonalAssistantMode,
+    diary_context: DiaryConversationContext | None,
+) -> None:
+    if mode == PersonalAssistantMode.DIARY and diary_context is None:
+        raise ValueError("diary_context is required for diary mode")
+    if mode == PersonalAssistantMode.HEALTH and diary_context is not None:
+        raise ValueError("diary_context is only supported for diary mode")
