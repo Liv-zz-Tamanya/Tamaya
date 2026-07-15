@@ -101,6 +101,7 @@ class _FakeChatAgent:
 
     async def run(
         self,
+        device_id: str,
         session_id: UUID,
         messages: list[ChatMessage],
         current_user_message: str,

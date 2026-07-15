@@ -53,6 +53,7 @@ class SendMessageUseCase:
                 return user_msg, ai_msg, False, diary
 
         ai_response = await self._chat_agent.run(
+            device_id=device_id,
             session_id=session.id,
             messages=session.messages,
             current_user_message=content,

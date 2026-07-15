@@ -10,6 +10,7 @@ from app.domain.repository.event_chunk_repository import EventChunkRepository
 
 
 class ChatAgentState(TypedDict):
+    device_id: str
     session_id: UUID
     messages: list[ChatMessage]
     current_user_message: str
@@ -56,6 +57,7 @@ class ChatAgent:
     async def _retrieve_memory_node(self, state: ChatAgentState) -> dict:
         query_embedding = self._embedding_service.embed([state["current_user_message"]])[0]
         chunks = await self._event_chunk_repo.search_similar(
+            device_id=state["device_id"],
             embedding=query_embedding,
             limit=5,
             exclude_session_id=state["session_id"],
@@ -89,6 +91,7 @@ class ChatAgent:
 
     async def run(
         self,
+        device_id: str,
         session_id: UUID,
         messages: list[ChatMessage],
         current_user_message: str,
@@ -96,6 +99,7 @@ class ChatAgent:
         max_turns: int = 5,
     ) -> str:
         initial_state: ChatAgentState = {
+            "device_id": device_id,
             "session_id": session_id,
             "messages": messages,
             "current_user_message": current_user_message,

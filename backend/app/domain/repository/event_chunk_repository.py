@@ -11,6 +11,7 @@ class EventChunkRepository(ABC):
     @abstractmethod
     async def search_similar(
         self,
+        device_id: str,
         embedding: list[float],
         limit: int = 5,
         exclude_session_id: UUID | None = None,
