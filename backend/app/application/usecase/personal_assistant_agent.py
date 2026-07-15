@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Annotated, Literal, TypedDict
 
-from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, StateGraph
@@ -15,6 +15,12 @@ from app.application.service.diary_chat_prompt import (
 )
 from app.application.service.health_chat_prompt import build_health_chat_system_prompt
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
+from app.domain.service.medical_guardrail import (
+    GuardrailVerdict,
+    build_disclaimer,
+    classify_medical_request,
+    contains_prescriptive_content,
+)
 
 DEFAULT_MAX_TOOL_ROUNDS = 3
 ITERATION_LIMIT_MESSAGE = (
@@ -34,6 +40,7 @@ class PersonalAssistantState(TypedDict):
     diary_context: DiaryConversationContext | None
     llm_calls: int
     tool_rounds: int
+    guardrail_verdict: GuardrailVerdict
 
 
 def build_personal_assistant_system_message(
@@ -88,26 +95,67 @@ class PersonalAssistantAgent:
     def _build_graph(self):
         builder = StateGraph(PersonalAssistantState)
 
+        builder.add_node("input_guardrail", self._input_guardrail_node)
+        builder.add_node("blocked_response", self._blocked_response_node)
         builder.add_node("agent", self._agent_node)
         builder.add_node("tools", self._tools_node)
+        builder.add_node("output_guardrail", self._output_guardrail_node)
         builder.add_node("iteration_limit", self._iteration_limit_node)
 
-        builder.add_edge(START, "agent")
+        builder.add_edge(START, "input_guardrail")
+        builder.add_conditional_edges(
+            "input_guardrail",
+            self._route_after_input_guardrail,
+            {
+                "agent": "agent",
+                "blocked_response": "blocked_response",
+            },
+        )
+        builder.add_edge("blocked_response", END)
         builder.add_conditional_edges(
             "agent",
             self._route_after_agent,
             {
                 "tools": "tools",
                 "iteration_limit": "iteration_limit",
-                END: END,
+                "output_guardrail": "output_guardrail",
             },
         )
         builder.add_edge("tools", "agent")
+        builder.add_edge("output_guardrail", END)
         builder.add_edge("iteration_limit", END)
 
         return builder.compile()
 
+    def _input_guardrail_node(self, state: PersonalAssistantState) -> dict:
+        if state["mode"] == PersonalAssistantMode.DIARY:
+            return {"guardrail_verdict": GuardrailVerdict.SAFE}
+
+        latest_user_text = find_latest_human_message_text(state["messages"])
+        return {
+            "guardrail_verdict": classify_medical_request(latest_user_text),
+        }
+
+    def _route_after_input_guardrail(
+        self,
+        state: PersonalAssistantState,
+    ) -> Literal["agent", "blocked_response"]:
+        if state["guardrail_verdict"] == GuardrailVerdict.SAFE:
+            return "agent"
+        return "blocked_response"
+
+    def _blocked_response_node(self, state: PersonalAssistantState) -> dict:
+        verdict = state["guardrail_verdict"]
+        if verdict == GuardrailVerdict.SAFE:
+            raise RuntimeError("blocked_response requires unsafe guardrail verdict")
+
+        content = build_disclaimer(verdict)
+        if not content:
+            raise RuntimeError("blocked_response produced empty disclaimer")
+        return {"messages": [AIMessage(content=content, id="guardrail-blocked-response")]}
+
     async def _agent_node(self, state: PersonalAssistantState) -> dict:
+        llm_calls = state.get("llm_calls", 0) + 1
         response = await self._model.ainvoke(
             messages=[
                 build_personal_assistant_system_message(
@@ -118,9 +166,10 @@ class PersonalAssistantAgent:
             ],
             tools=self._tools,
         )
+        _ensure_ai_message_id(response, f"agent-response-{llm_calls}")
         return {
             "messages": [response],
-            "llm_calls": state.get("llm_calls", 0) + 1,
+            "llm_calls": llm_calls,
         }
 
     async def _tools_node(
@@ -137,15 +186,40 @@ class PersonalAssistantAgent:
     async def _iteration_limit_node(self, state: PersonalAssistantState) -> dict:
         return {"messages": [AIMessage(content=ITERATION_LIMIT_MESSAGE)]}
 
+    def _output_guardrail_node(self, state: PersonalAssistantState) -> dict:
+        if state["mode"] == PersonalAssistantMode.DIARY:
+            return {}
+
+        last_message = state["messages"][-1]
+        if not isinstance(last_message, AIMessage) or last_message.tool_calls:
+            raise RuntimeError("output_guardrail requires final AIMessage")
+
+        if not contains_prescriptive_content(_ai_message_text(last_message)):
+            return {}
+
+        content = build_disclaimer(GuardrailVerdict.ADVICE_BOUNDARY)
+        if not content:
+            raise RuntimeError("output_guardrail produced empty disclaimer")
+
+        return {
+            "messages": [
+                AIMessage(
+                    content=content,
+                    id=last_message.id,
+                )
+            ],
+            "guardrail_verdict": GuardrailVerdict.ADVICE_BOUNDARY,
+        }
+
     def _route_after_agent(
         self,
         state: PersonalAssistantState,
-    ) -> Literal["tools", "iteration_limit", "__end__"]:
+    ) -> Literal["tools", "iteration_limit", "output_guardrail"]:
         last_message = state["messages"][-1]
         if not isinstance(last_message, AIMessage):
             raise RuntimeError("agent node must append AIMessage")
         if not last_message.tool_calls:
-            return END
+            return "output_guardrail"
         if state.get("tool_rounds", 0) >= self._max_tool_rounds:
             return "iteration_limit"
         return "tools"
@@ -164,6 +238,7 @@ class PersonalAssistantAgent:
             "diary_context": diary_context,
             "llm_calls": 0,
             "tool_rounds": 0,
+            "guardrail_verdict": GuardrailVerdict.ADVICE_BOUNDARY,
         }
         recursion_limit = self._max_tool_rounds * 2 + 5
         return await self._graph.ainvoke(
@@ -199,3 +274,38 @@ def _validate_context_for_mode(
         raise ValueError("diary_context is required for diary mode")
     if mode == PersonalAssistantMode.HEALTH and diary_context is not None:
         raise ValueError("diary_context is only supported for diary mode")
+
+
+def find_latest_human_message_text(messages: Sequence[BaseMessage]) -> str:
+    for message in reversed(messages):
+        if isinstance(message, HumanMessage):
+            return _message_content_text(message)
+    raise ValueError("health mode requires at least one HumanMessage")
+
+
+def _message_content_text(message: BaseMessage) -> str:
+    content = message.content
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(_content_block_text(block) for block in content)
+    raise ValueError("unsupported message content type")
+
+
+def _ai_message_text(message: AIMessage) -> str:
+    return _message_content_text(message)
+
+
+def _content_block_text(block: str | dict) -> str:
+    if isinstance(block, str):
+        return block
+    if isinstance(block, dict) and block.get("type") == "text":
+        text = block.get("text")
+        if isinstance(text, str):
+            return text
+    raise ValueError("unsupported message content block")
+
+
+def _ensure_ai_message_id(message: AIMessage, default_id: str) -> None:
+    if message.id is None:
+        message.id = default_id
