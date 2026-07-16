@@ -5,6 +5,9 @@ from uuid import UUID
 from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, Field, field_validator
 
+from app.application.service.agent_execution_observability import (
+    get_active_agent_execution_trace,
+)
 from app.application.service.diary_memory_query_service import DiaryMemoryQueryService
 from app.application.service.health_record_query_service import HealthRecordQueryService
 from app.domain.model.event_chunk import EventChunk
@@ -120,6 +123,9 @@ def create_search_diary_memories_tool(
             exclude_session_id=execution_context.session_id,
             limit=limit,
         )
+        trace = get_active_agent_execution_trace()
+        if trace is not None:
+            trace.record_retrieval_result("search_diary_memories", len(chunks))
         return _diary_memories_result(chunks).model_dump(mode="json")
 
     return StructuredTool.from_function(
@@ -141,6 +147,9 @@ def create_search_health_records_tool(
             query=query,
             limit=limit,
         )
+        trace = get_active_agent_execution_trace()
+        if trace is not None:
+            trace.record_retrieval_result("search_health_records", len(chunks))
         return _health_records_result(chunks).model_dump(mode="json")
 
     return StructuredTool.from_function(

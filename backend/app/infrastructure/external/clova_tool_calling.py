@@ -1,6 +1,6 @@
 import asyncio
 from collections.abc import Callable, Sequence
-from typing import Protocol
+from typing import Any, Protocol
 
 import httpx
 import openai
@@ -100,6 +100,7 @@ class ClovaToolCallingChatModel(ToolCallingChatModel):
             ) from exc
         if not isinstance(response, AIMessage):
             raise TypeError("CLOVA tool-calling model must return AIMessage")
+        _normalize_usage_metadata(response)
         return response
 
 
@@ -139,3 +140,32 @@ def _model_provider_error_from_status(status_code: int) -> ModelProviderError:
         retryable=False,
         status_code=status_code,
     )
+
+
+def _normalize_usage_metadata(response: AIMessage) -> None:
+    if response.usage_metadata is not None:
+        return
+    raw_usage = response.response_metadata.get("token_usage")
+    if not isinstance(raw_usage, dict):
+        return
+
+    input_tokens = _token_count(raw_usage, "input_tokens", "prompt_tokens")
+    output_tokens = _token_count(raw_usage, "output_tokens", "completion_tokens")
+    total_tokens = _token_count(raw_usage, "total_tokens")
+    if total_tokens is None and input_tokens is not None and output_tokens is not None:
+        total_tokens = input_tokens + output_tokens
+    if input_tokens is None and output_tokens is None and total_tokens is None:
+        return
+    response.usage_metadata = {
+        "input_tokens": input_tokens or 0,
+        "output_tokens": output_tokens or 0,
+        "total_tokens": total_tokens or 0,
+    }
+
+
+def _token_count(raw_usage: dict[str, Any], *keys: str) -> int | None:
+    for key in keys:
+        value = raw_usage.get(key)
+        if isinstance(value, int):
+            return value
+    return None

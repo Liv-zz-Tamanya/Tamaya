@@ -1,5 +1,9 @@
 from uuid import UUID
 
+from app.application.service.agent_execution_observability import (
+    AgentExecutionRecorder,
+    NullAgentExecutionRecorder,
+)
 from app.application.service.diary_memory_query_service import DiaryMemoryQueryService
 from app.application.service.health_record_query_service import HealthRecordQueryService
 from app.application.service.personal_assistant_timeout import (
@@ -25,11 +29,13 @@ class PersonalAssistantAgentFactory:
         diary_query: DiaryMemoryQueryService,
         health_query: HealthRecordQueryService,
         timeout_policy: PersonalAssistantTimeoutPolicy = DEFAULT_PERSONAL_ASSISTANT_TIMEOUT_POLICY,
+        execution_recorder: AgentExecutionRecorder = NullAgentExecutionRecorder(),
     ) -> None:
         self._model = model
         self._diary_query = diary_query
         self._health_query = health_query
         self._timeout_policy = timeout_policy
+        self._execution_recorder = execution_recorder
 
     def create(
         self,
@@ -59,4 +65,9 @@ class PersonalAssistantAgentFactory:
             tools = []
         else:
             raise ValueError(f"unsupported personal assistant mode: {mode}")
-        return PersonalAssistantAgent(self._model, tools, timeout_policy=self._timeout_policy)
+        return PersonalAssistantAgent(
+            self._model,
+            tools,
+            timeout_policy=self._timeout_policy,
+            execution_recorder=self._execution_recorder,
+        )
