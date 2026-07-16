@@ -8,12 +8,12 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.application.usecase.coaching_agent import CoachingAgent
 from app.application.usecase.extract_signals import ExtractSignalsUseCase
+from app.application.usecase.personal_assistant_agent_factory import PersonalAssistantAgentFactory
 from app.application.usecase.send_coaching_message import SendCoachingMessageUseCase
 from app.domain.model.chat_message import ChatMessage
 from app.infrastructure.config.dependencies import (
-    get_coaching_agent,
+    get_coaching_personal_assistant_agent_factory,
     get_extract_signals_usecase,
 )
 from app.presentation.auth_deps import get_current_device_id
@@ -34,7 +34,9 @@ router = APIRouter(prefix="/api/v1/coaching", tags=["coaching"])
 async def send_coaching_message(
     body: CoachingMessageRequest,
     device_id: str = Depends(get_current_device_id),
-    agent: CoachingAgent = Depends(get_coaching_agent),
+    personal_assistant_factory: PersonalAssistantAgentFactory = Depends(
+        get_coaching_personal_assistant_agent_factory
+    ),
     extract_signals: ExtractSignalsUseCase = Depends(get_extract_signals_usecase),
 ):
     if not body.message or not body.message.strip():
@@ -43,7 +45,7 @@ async def send_coaching_message(
     history = [
         ChatMessage(role=h.role, content=h.content, created_at=datetime.now()) for h in body.history
     ]
-    usecase = SendCoachingMessageUseCase(agent, extract_signals)
+    usecase = SendCoachingMessageUseCase(personal_assistant_factory, extract_signals)
     reply = await usecase.execute(
         device_id=device_id,
         message=body.message,

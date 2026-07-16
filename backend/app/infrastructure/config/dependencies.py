@@ -134,6 +134,23 @@ def get_tool_calling_chat_model(
     return ClovaToolCallingChatModel(api_key=cred.api_key)
 
 
+def get_coaching_tool_calling_chat_model(
+    x_clova_api_key: str | None = Header(default=None),
+) -> ToolCallingChatModel:
+    cred = resolve_clova_credential(
+        user_key=x_clova_api_key,
+        env_key=settings.clova_api_key,
+        mock_mode=settings.clova_mock_mode,
+    )
+    if cred.use_mock:
+        return MockToolCallingChatModel()
+    return ClovaToolCallingChatModel(
+        api_key=cred.api_key,
+        temperature=0.6,
+        max_tokens=300,
+    )
+
+
 def get_signal_extraction_service() -> SignalExtractionService:
     return SignalExtractionClovaClient()
 
@@ -217,6 +234,14 @@ def get_health_record_query_service(
 
 def get_personal_assistant_agent_factory(
     model: ToolCallingChatModel = Depends(get_tool_calling_chat_model),
+    diary_query: DiaryMemoryQueryService = Depends(get_diary_memory_query_service),
+    health_query: HealthRecordQueryService = Depends(get_health_record_query_service),
+) -> PersonalAssistantAgentFactory:
+    return PersonalAssistantAgentFactory(model, diary_query, health_query)
+
+
+def get_coaching_personal_assistant_agent_factory(
+    model: ToolCallingChatModel = Depends(get_coaching_tool_calling_chat_model),
     diary_query: DiaryMemoryQueryService = Depends(get_diary_memory_query_service),
     health_query: HealthRecordQueryService = Depends(get_health_record_query_service),
 ) -> PersonalAssistantAgentFactory:

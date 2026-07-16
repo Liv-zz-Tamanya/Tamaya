@@ -90,6 +90,24 @@ async def test_factory_limits_health_tool_scope_to_health_records():
     assert [tool.name for tool in model.calls[0]["tools"]] == ["search_health_records"]
 
 
+async def test_factory_uses_empty_tool_scope_for_coaching():
+    model = _FakeToolCallingModel()
+    factory = _factory(model)
+
+    agent = factory.create(
+        device_id="dev-a",
+        session_id=uuid4(),
+        mode=PersonalAssistantMode.COACHING,
+    )
+    await agent.run(
+        messages=[HumanMessage(content="오늘 너무 지쳤어")],
+        mode=PersonalAssistantMode.COACHING,
+        coaching_context={"persona": None},
+    )
+
+    assert model.calls[0]["tools"] == []
+
+
 def test_factory_creates_request_scoped_tool_objects():
     factory = _factory()
     first_session_id = uuid4()

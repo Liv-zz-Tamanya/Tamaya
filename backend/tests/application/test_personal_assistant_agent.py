@@ -769,6 +769,64 @@ async def test_diary_mode_does_not_apply_medical_guardrails_to_input_or_output()
     assert "이음이야" in model.calls[0]["messages"][0].content
 
 
+async def test_coaching_mode_uses_coaching_prompt_persona_and_empty_tools():
+    model = _FakeToolCallingChatModel([AIMessage(content="코칭 응답")])
+    agent = PersonalAssistantAgent(model, [])
+
+    response = await agent.run(
+        messages=[HumanMessage(content="오늘 너무 지쳤어")],
+        mode=PersonalAssistantMode.COACHING,
+        coaching_context={"persona": "부모님"},
+    )
+
+    assert response.content == "코칭 응답"
+    assert model.calls[0]["tools"] == []
+    system_message = model.calls[0]["messages"][0]
+    assert isinstance(system_message, SystemMessage)
+    assert "건강냥" in system_message.content
+    assert "부모님" in system_message.content
+
+
+async def test_coaching_mode_applies_medical_guardrail_without_model_call():
+    model = _FakeToolCallingChatModel([])
+    agent = PersonalAssistantAgent(model, [])
+
+    response = await agent.run(
+        messages=[HumanMessage(content="이 약 먹어도 돼?")],
+        mode=PersonalAssistantMode.COACHING,
+        coaching_context={"persona": None},
+    )
+
+    assert response.content == build_disclaimer(GuardrailVerdict.ADVICE_BOUNDARY)
+    assert model.calls == []
+
+
+async def test_coaching_mode_applies_output_tripwire():
+    model = _FakeToolCallingChatModel([AIMessage(content="하루 500mg씩 드세요")])
+    agent = PersonalAssistantAgent(model, [])
+
+    response = await agent.run(
+        messages=[HumanMessage(content="오늘 너무 지쳤어")],
+        mode=PersonalAssistantMode.COACHING,
+        coaching_context={"persona": None},
+    )
+
+    assert response.content == build_disclaimer(GuardrailVerdict.ADVICE_BOUNDARY)
+    assert "mg" not in response.content
+    assert len(model.calls) == 1
+
+
+async def test_coaching_context_is_rejected_for_non_coaching_modes():
+    agent = PersonalAssistantAgent(_FakeToolCallingChatModel([AIMessage(content="응답")]), [])
+
+    with pytest.raises(ValueError, match="coaching_context"):
+        await agent.run(
+            messages=[HumanMessage(content="안녕")],
+            mode=PersonalAssistantMode.HEALTH,
+            coaching_context={"persona": "부모님"},
+        )
+
+
 async def test_health_mode_without_human_message_raises_before_model_or_tool():
     model = _FakeToolCallingChatModel([AIMessage(content="호출되면 안 됨")])
     tool_calls: list[dict] = []
