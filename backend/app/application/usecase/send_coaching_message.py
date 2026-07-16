@@ -1,7 +1,7 @@
-"""코칭 메시지 usecase — guardrail-first 합성 + best-effort 정성신호 추출 (G004-1).
+"""코칭 메시지 usecase — PersonalAssistantAgent 합성 + best-effort 정성신호 추출.
 
-stateless: 클라이언트가 보낸 history에 현재 사용자 메시지를 덧붙여 CoachingAgent로 흘려보낸다.
-coach는 전체 맥락(history+현재)을 보고, guardrail은 현재 메시지로 판정한다.
+stateless: 클라이언트가 보낸 history에 현재 사용자 메시지를 덧붙여 COACHING mode Agent로
+흘려보낸다. Agent는 전체 맥락(history+현재)을 보고, guardrail은 최신 사용자 메시지로 판정한다.
 대화 종료 후 정성신호 추출은 best-effort(실패해도 대화 흐름 보호).
 """
 
