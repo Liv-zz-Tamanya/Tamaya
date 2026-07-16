@@ -9,8 +9,13 @@ import logging
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from app.application.usecase.coaching_agent import CoachingAgent
+from app.application.service.chat_message_adapter import (
+    extract_ai_message_text,
+    to_langchain_messages,
+)
 from app.application.usecase.extract_signals import ExtractSignalsUseCase
+from app.application.usecase.personal_assistant_agent import PersonalAssistantMode
+from app.application.usecase.personal_assistant_agent_factory import PersonalAssistantAgentFactory
 from app.domain.model.chat_message import ChatMessage
 
 logger = logging.getLogger(__name__)
@@ -19,10 +24,10 @@ logger = logging.getLogger(__name__)
 class SendCoachingMessageUseCase:
     def __init__(
         self,
-        agent: CoachingAgent,
+        personal_assistant_factory: PersonalAssistantAgentFactory,
         extract_signals: ExtractSignalsUseCase | None = None,
     ) -> None:
-        self._agent = agent
+        self._personal_assistant_factory = personal_assistant_factory
         self._extract_signals = extract_signals
 
     async def execute(
@@ -42,7 +47,17 @@ class SendCoachingMessageUseCase:
             ChatMessage(role="user", content=message, created_at=datetime.now()),
         ]
 
-        reply = await self._agent.run(sid, full_messages, message, persona)
+        agent = self._personal_assistant_factory.create(
+            device_id=device_id,
+            session_id=sid,
+            mode=PersonalAssistantMode.COACHING,
+        )
+        response = await agent.run(
+            messages=to_langchain_messages(full_messages),
+            mode=PersonalAssistantMode.COACHING,
+            coaching_context={"persona": persona},
+        )
+        reply = extract_ai_message_text(response)
 
         # best-effort: 대화 한 턴이 끝나면 정성신호를 추출(실패해도 무시).
         if self._extract_signals is not None:
