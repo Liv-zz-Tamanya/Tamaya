@@ -68,7 +68,6 @@ class _FakeAi(AiChatService):
     def __init__(self, *, finalize_intent: bool = False) -> None:
         self.finalize_intent = finalize_intent
         self.detect_finalize_intent_calls: list[str] = []
-        self.classify_memory_need_calls: list[str] = []
         self.generate_closing_message_calls = 0
         self.generate_diary_calls = 0
 
@@ -76,7 +75,6 @@ class _FakeAi(AiChatService):
         self,
         messages: list[ChatMessage],
         suggest_finalize: bool = False,
-        memories: list[str] | None = None,
         max_turns: int = 5,
     ) -> str:  # pragma: no cover
         raise AssertionError("legacy chat should not be called")
@@ -98,10 +96,6 @@ class _FakeAi(AiChatService):
     async def generate_closing_message(self, messages: list[ChatMessage]) -> str:
         self.generate_closing_message_calls += 1
         return "오늘 이야기를 일기로 정리해볼게."
-
-    async def classify_memory_need(self, user_message: str) -> bool:
-        self.classify_memory_need_calls.append(user_message)
-        return True
 
     async def extract_event_chunks(self, messages: list[ChatMessage]) -> list[dict]:
         return []
@@ -199,7 +193,6 @@ async def test_general_diary_response_uses_personal_assistant_and_saves_ai_messa
     assert suggest is False
     assert diary is None
     assert repo.save_count == 2
-    assert ai.classify_memory_need_calls == []
 
 
 async def test_initial_turn_passes_current_turn_and_max_turns():
@@ -315,7 +308,6 @@ async def test_agent_exception_is_not_saved_or_fallback_to_legacy_chat():
         await usecase.execute(session.id, "오늘 힘들었어", "dev-a")
 
     assert repo.save_count == 1
-    assert ai.classify_memory_need_calls == []
 
 
 async def test_empty_or_tool_call_final_content_is_not_saved():

@@ -14,7 +14,6 @@ from app.domain.repository.health_session_repository import HealthSessionReposit
 from app.domain.service.medical_guardrail import GuardrailVerdict, build_disclaimer
 from app.infrastructure.config.dependencies import (
     get_health_ai_service,
-    get_health_chat_agent,
     get_health_session_repo,
     get_personal_assistant_agent_factory,
 )
@@ -146,9 +145,6 @@ def test_health_chat_message_uses_personal_assistant_factory_and_response_schema
     app.dependency_overrides[get_current_device_id] = lambda: "dev-a"
     app.dependency_overrides[get_health_session_repo] = lambda: repo
     app.dependency_overrides[get_personal_assistant_agent_factory] = lambda: factory
-    app.dependency_overrides[get_health_chat_agent] = lambda: (_ for _ in ()).throw(
-        AssertionError("HealthChatAgent should not be used")
-    )
 
     client = TestClient(app)
     response = client.post(

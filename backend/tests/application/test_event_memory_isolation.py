@@ -13,7 +13,6 @@ from app.application.service.diary_memory_query_service import DiaryMemoryQueryS
 from app.application.service.embedding_service import EmbeddingService
 from app.application.service.health_record_query_service import HealthRecordQueryService
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
-from app.application.usecase.chat_agent import ChatAgent
 from app.application.usecase.personal_assistant_agent_factory import PersonalAssistantAgentFactory
 from app.application.usecase.send_message import SendMessageUseCase
 from app.domain.model.chat_message import ChatMessage
@@ -64,18 +63,12 @@ class _MemoryDiaryRepo(DiaryRepository):
 
 
 class _FakeAi(AiChatService):
-    def __init__(self, should_retrieve: bool = True) -> None:
-        self.should_retrieve = should_retrieve
-        self.last_memories: list[str] | None = None
-
     async def chat(
         self,
         messages: list[ChatMessage],
         suggest_finalize: bool = False,
-        memories: list[str] | None = None,
         max_turns: int = 5,
     ) -> str:
-        self.last_memories = memories
         return "응답"
 
     async def generate_diary(self, messages: list[ChatMessage]) -> dict:  # pragma: no cover
@@ -88,9 +81,6 @@ class _FakeAi(AiChatService):
         self, messages: list[ChatMessage]
     ) -> str:  # pragma: no cover
         raise NotImplementedError
-
-    async def classify_memory_need(self, user_message: str) -> bool:
-        return self.should_retrieve
 
     async def extract_event_chunks(
         self, messages: list[ChatMessage]
@@ -187,14 +177,6 @@ class _FakeExtractChunks:
         return None
 
 
-def _chat_agent(
-    ai: AiChatService,
-    embedding: EmbeddingService,
-    repo: EventChunkRepository,
-) -> ChatAgent:
-    return ChatAgent(ai, DiaryMemoryQueryService(embedding, repo))
-
-
 def _cosine_distance(left: list[float], right: list[float]) -> float:
     dot = sum(a * b for a, b in zip(left, right))
     left_norm = math.sqrt(sum(a * a for a in left))
@@ -212,82 +194,6 @@ def _chunk(session_id: UUID, text: str, embedding: list[float]) -> EventChunk:
         tags=[],
         event_type="daily",
     )
-
-
-@pytest.mark.asyncio
-async def test_event_memory_search_excludes_other_device_even_when_more_similar():
-    current_session_id = uuid4()
-    device_a_past_session_id = uuid4()
-    device_b_session_id = uuid4()
-    repo = _MemoryEventChunkRepo(
-        {
-            current_session_id: "dev-a",
-            device_a_past_session_id: "dev-a",
-            device_b_session_id: "dev-b",
-        },
-        [
-            _chunk(device_a_past_session_id, "A 사용자의 과거 산책", [0.8, 0.2]),
-            _chunk(device_b_session_id, "B 사용자의 완전히 같은 질문", [1.0, 0.0]),
-        ],
-    )
-    ai = _FakeAi()
-    agent = _chat_agent(ai, _FakeEmbedding(), repo)
-
-    await agent.run(
-        device_id="dev-a",
-        session_id=current_session_id,
-        messages=[],
-        current_user_message="산책 기억나?",
-    )
-
-    assert ai.last_memories is not None
-    assert "A 사용자의 과거 산책" in ai.last_memories[0]
-    assert all("B 사용자의" not in memory for memory in ai.last_memories)
-
-
-@pytest.mark.asyncio
-async def test_event_memory_search_returns_same_device_past_chunk():
-    current_session_id = uuid4()
-    past_session_id = uuid4()
-    repo = _MemoryEventChunkRepo(
-        {current_session_id: "dev-a", past_session_id: "dev-a"},
-        [_chunk(past_session_id, "A 사용자의 과거 대화", [1.0, 0.0])],
-    )
-    ai = _FakeAi()
-    agent = _chat_agent(ai, _FakeEmbedding(), repo)
-
-    await agent.run(
-        device_id="dev-a",
-        session_id=current_session_id,
-        messages=[],
-        current_user_message="지난 대화",
-    )
-
-    assert ai.last_memories == ["- 2026-07-10: A 사용자의 과거 대화"]
-
-
-@pytest.mark.asyncio
-async def test_event_memory_search_excludes_current_session_only():
-    current_session_id = uuid4()
-    past_session_id = uuid4()
-    repo = _MemoryEventChunkRepo(
-        {current_session_id: "dev-a", past_session_id: "dev-a"},
-        [
-            _chunk(current_session_id, "현재 세션에서 만든 청크", [1.0, 0.0]),
-            _chunk(past_session_id, "과거 세션에서 만든 청크", [0.8, 0.2]),
-        ],
-    )
-    ai = _FakeAi()
-    agent = _chat_agent(ai, _FakeEmbedding(), repo)
-
-    await agent.run(
-        device_id="dev-a",
-        session_id=current_session_id,
-        messages=[],
-        current_user_message="기억 검색",
-    )
-
-    assert ai.last_memories == ["- 2026-07-10: 과거 세션에서 만든 청크"]
 
 
 @pytest.mark.asyncio
@@ -348,19 +254,3 @@ async def test_send_message_uses_personal_assistant_without_tool_search_when_mod
     assert event_repo.calls == []
     assert health_repo.calls == 0
     assert len(model.calls) == 1
-
-
-@pytest.mark.asyncio
-async def test_event_memory_search_is_skipped_when_memory_is_not_needed():
-    session_id = uuid4()
-    event_repo = _MemoryEventChunkRepo({session_id: "dev-a"}, [])
-    agent = _chat_agent(_FakeAi(should_retrieve=False), _FakeEmbedding(), event_repo)
-
-    await agent.run(
-        device_id="dev-a",
-        session_id=session_id,
-        messages=[],
-        current_user_message="오늘은 그냥 이야기할래",
-    )
-
-    assert event_repo.calls == []
