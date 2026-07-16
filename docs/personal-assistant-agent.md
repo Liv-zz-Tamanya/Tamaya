@@ -1,8 +1,8 @@
 # PersonalAssistantAgent Graph
 
 `PersonalAssistantAgent`는 Tool-calling Agent Graph다. 일반 회고 Chat, Health Chat 메시지
-전송, Coaching 메시지 경로는 이 Agent로 전환되었다. 기존 `ChatAgent`, `HealthChatAgent`,
-`CoachingAgent`는 cleanup 전까지 남겨둔다.
+전송, Coaching 메시지 경로는 이 Agent로 전환되었다. 기존 legacy Agent 구현은 제거되었고,
+세 운영 메시지 경로는 `PersonalAssistantAgentFactory`를 통해 Agent를 생성한다.
 
 ```mermaid
 flowchart TD
@@ -64,9 +64,8 @@ Tool 호출 여부는 `AIMessage.tool_calls`만으로 판단한다.
 
 ## Safety Policy
 
-의료 안전 정책은 기존 `CoachingAgent`가 사용하던 순수 도메인 서비스
-`app.domain.service.medical_guardrail`을 재사용한다. keyword 목록, 판정 우선순위, 면책 문구를
-Health 전용으로 복사하지 않는다.
+의료 안전 정책은 순수 도메인 서비스 `app.domain.service.medical_guardrail`을 재사용한다.
+keyword 목록, 판정 우선순위, 면책 문구를 mode별로 복사하지 않는다.
 
 - `SAFE`: 기존 Agent 및 Tool loop로 진행한다.
 - `ADVICE_BOUNDARY`: 진단, 처방, 약물, 증상 상담 요청으로 보고 고정 면책 응답을 반환한다.
@@ -130,6 +129,10 @@ SendCoachingMessageUseCase
 `DiaryConversationContext`를 전달한다. 일기 마무리 동의 판별, 강제 마무리, closing message,
 일기 생성, 이벤트 청크 추출은 여전히 `SendMessageUseCase` 책임이다.
 
+회고 세션 시작 greeting, finalize intent, closing message, 일기 생성, 이벤트 청크 추출은
+`AiChatService`/`ClovaClient` 책임으로 남아 있다. 메시지 중 과거 기억 검색 여부는 더 이상
+별도 yes/no 분류를 사용하지 않고 모델의 Tool Calling으로 결정한다.
+
 `SendHealthMessageUseCase`는 `HealthMessage`를 LangChain `BaseMessage`로 변환한 뒤 health
 mode로 실행한다. Health mode는 `헬시` 역할, 짧은 반말 응답, 데이터 부재 고지, 의학적 진단 및
 처방/약물 변경 단정 금지 정책을 사용한다. Health Chat 세션 시작 greeting은 아직
@@ -159,5 +162,5 @@ persistence, human-in-the-loop가 포함되지 않는다.
 
 ## Next
 
-다음 단계에서 기존 `ChatAgent`/`HealthChatAgent`/`CoachingAgent` cleanup, Tool/model timeout,
-오류 분류와 선택적 retry, LangGraph checkpointer/resume, Agent/RAG 평가 코드를 진행할 수 있다.
+다음 단계에서 Tool/model timeout, 오류 분류와 선택적 retry, LangGraph checkpointer/resume,
+Agent/RAG 평가 코드를 진행할 수 있다.

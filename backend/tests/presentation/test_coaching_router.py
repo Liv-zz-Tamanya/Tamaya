@@ -7,7 +7,6 @@ from langchain_core.messages import AIMessage
 from app.application.usecase.personal_assistant_agent import PersonalAssistantMode
 from app.domain.service.medical_guardrail import GuardrailVerdict, build_disclaimer
 from app.infrastructure.config.dependencies import (
-    get_coaching_agent,
     get_coaching_personal_assistant_agent_factory,
     get_extract_signals_usecase,
 )
@@ -94,9 +93,6 @@ def test_safe_coaching_message_returns_reply():
     _authenticate()
     _override_extract_signals()
     factory = _override_factory()
-    app.dependency_overrides[get_coaching_agent] = lambda: (_ for _ in ()).throw(
-        AssertionError("CoachingAgent should not be used")
-    )
     client = TestClient(app)
 
     resp = client.post(

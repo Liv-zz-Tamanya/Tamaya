@@ -1,7 +1,7 @@
 """정성신호 추출 서비스 인터페이스 — 좁은 단일 메서드(extract_signal).
 
 기존 AiChatService(일기 계약)를 오염시키지 않도록 코칭 정성신호 전용 인터페이스를
-분리한다(슬라이스1 CoachingAiService와 동일한 원칙). 구현체는 infrastructure에 둔다.
+분리한다. 구현체는 infrastructure에 둔다.
 """
 
 from abc import ABC, abstractmethod

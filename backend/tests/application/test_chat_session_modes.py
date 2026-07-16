@@ -67,7 +67,6 @@ class _FakeAi(AiChatService):
         self,
         messages: list[ChatMessage],
         suggest_finalize: bool = False,
-        memories: list[str] | None = None,
         max_turns: int = 5,
     ) -> str:
         self.chat_calls.append(max_turns)
@@ -87,9 +86,6 @@ class _FakeAi(AiChatService):
 
     async def generate_closing_message(self, messages: list[ChatMessage]) -> str:
         return "여기까지 들은 걸로 오늘 일기를 정리해볼게."
-
-    async def classify_memory_need(self, user_message: str) -> bool:
-        return False
 
     async def extract_event_chunks(self, messages: list[ChatMessage]) -> list[dict]:
         return []

@@ -1,7 +1,7 @@
 """코칭 라우터 — 밤 코칭 대화(guardrail-first).
 
 stateless 엔드포인트: 클라이언트가 history를 보관·전송한다. 위험 입력은 면책으로 단락된다.
-BYOK 헤더(X-Clova-Api-Key)는 get_coaching_ai_service에서 처리된다.
+BYOK 헤더(X-Clova-Api-Key)는 코칭 전용 ToolCallingChatModel provider에서 처리된다.
 """
 
 from datetime import datetime

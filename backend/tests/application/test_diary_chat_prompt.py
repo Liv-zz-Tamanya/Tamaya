@@ -90,7 +90,7 @@ def test_clova_client_uses_shared_diary_prompt_builder(monkeypatch):
 
     import anyio
 
-    result = anyio.run(client.chat, messages, False, None, 5)
+    result = anyio.run(client.chat, messages, False, 5)
 
     assert result == "응답"
     assert captured == {
@@ -127,7 +127,7 @@ def test_clova_client_initial_greeting_uses_valid_turn_context(monkeypatch):
 
     import anyio
 
-    assert anyio.run(client.chat, [], False, None, 5) == "안녕"
+    assert anyio.run(client.chat, [], False, 5) == "안녕"
     assert captured["current_user_turn"] == 1
 
 
