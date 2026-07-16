@@ -1,11 +1,18 @@
+import asyncio
 from collections.abc import Callable, Sequence
 from typing import Protocol
 
+import httpx
+import openai
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 from langchain_naver import ChatClovaX
 
+from app.application.service.model_provider_error import (
+    ModelProviderError,
+    ModelProviderErrorCategory,
+)
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
 from app.infrastructure.config.settings import settings
 
@@ -75,7 +82,60 @@ class ClovaToolCallingChatModel(ToolCallingChatModel):
             if tools
             else self._chat_model
         )
-        response = await runnable.ainvoke(list(messages))
+        try:
+            response = await runnable.ainvoke(list(messages))
+        except asyncio.CancelledError:
+            raise
+        except (openai.APIStatusError, httpx.HTTPStatusError) as exc:
+            raise _model_provider_error_from_status(_status_code_from_error(exc)) from exc
+        except (openai.APIConnectionError, httpx.TransportError) as exc:
+            raise ModelProviderError(
+                category=ModelProviderErrorCategory.NETWORK,
+                retryable=True,
+            ) from exc
+        except (openai.APIError, httpx.HTTPError) as exc:
+            raise ModelProviderError(
+                category=ModelProviderErrorCategory.UNKNOWN,
+                retryable=False,
+            ) from exc
         if not isinstance(response, AIMessage):
             raise TypeError("CLOVA tool-calling model must return AIMessage")
         return response
+
+
+def _status_code_from_error(exc: openai.APIStatusError | httpx.HTTPStatusError) -> int:
+    if isinstance(exc, openai.APIStatusError):
+        return exc.status_code
+    return exc.response.status_code
+
+
+def _model_provider_error_from_status(status_code: int) -> ModelProviderError:
+    if status_code == 429:
+        return ModelProviderError(
+            category=ModelProviderErrorCategory.RATE_LIMIT,
+            retryable=True,
+            status_code=status_code,
+        )
+    if status_code in {500, 502, 503, 504}:
+        return ModelProviderError(
+            category=ModelProviderErrorCategory.UNAVAILABLE,
+            retryable=True,
+            status_code=status_code,
+        )
+    if status_code in {401, 403}:
+        return ModelProviderError(
+            category=ModelProviderErrorCategory.AUTHENTICATION,
+            retryable=False,
+            status_code=status_code,
+        )
+    if status_code in {400, 404}:
+        return ModelProviderError(
+            category=ModelProviderErrorCategory.INVALID_REQUEST,
+            retryable=False,
+            status_code=status_code,
+        )
+    return ModelProviderError(
+        category=ModelProviderErrorCategory.UNKNOWN,
+        retryable=False,
+        status_code=status_code,
+    )
