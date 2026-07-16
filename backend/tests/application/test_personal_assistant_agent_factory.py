@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 from langchain_core.messages import AIMessage, HumanMessage
 
 from app.application.service.diary_chat_prompt import DiaryConversationContext
+from app.application.service.personal_assistant_timeout import PersonalAssistantTimeoutPolicy
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
 from app.application.usecase.personal_assistant_agent import PersonalAssistantMode
 from app.application.usecase.personal_assistant_agent_factory import PersonalAssistantAgentFactory
@@ -128,3 +129,17 @@ def test_factory_creates_request_scoped_tool_objects():
     assert first._tools[0] is not second._tools[0]
     assert first._tools[0].name == "search_health_records"
     assert second._tools[0].name == "search_health_records"
+
+
+def test_factory_passes_timeout_policy_to_each_agent():
+    policy = PersonalAssistantTimeoutPolicy(20, 10, 30)
+    factory = PersonalAssistantAgentFactory(
+        _FakeToolCallingModel(),
+        _FakeDiaryQuery(),
+        _FakeHealthQuery(),
+        policy,
+    )
+
+    agent = factory.create(device_id="dev-a", session_id=uuid4(), mode=PersonalAssistantMode.HEALTH)
+
+    assert agent._timeout_policy is policy

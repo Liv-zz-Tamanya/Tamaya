@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
@@ -9,6 +10,9 @@ class Settings(BaseSettings):
     clova_agent_max_tokens: int = 1024
     clova_agent_temperature: float = 0.2
     clova_agent_timeout_seconds: float = 30.0
+    personal_assistant_model_call_timeout_seconds: float = Field(default=25.0, gt=0)
+    personal_assistant_tool_round_timeout_seconds: float = Field(default=15.0, gt=0)
+    personal_assistant_execution_timeout_seconds: float = Field(default=45.0, gt=0)
     # DEC-022.4: Mock mode — NCP API 키 수령 전 true (디폴트 true)
     clova_mock_mode: bool = True
     # DEC-022.4: 카카오 REST API 앱 키 (사용자 발급 후 .env에 설정)
