@@ -11,7 +11,9 @@ from app.application.service.diary_memory_query_service import DiaryMemoryQueryS
 from app.application.service.embedding_service import EmbeddingService
 from app.application.service.health_ai_service import HealthAiService
 from app.application.service.health_record_query_service import HealthRecordQueryService
+from app.application.service.model_retry_policy import ModelRetryPolicy
 from app.application.service.personal_assistant_timeout import PersonalAssistantTimeoutPolicy
+from app.application.service.retrying_tool_calling_chat_model import RetryingToolCallingChatModel
 from app.application.service.signal_extraction_service import SignalExtractionService
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
 from app.application.usecase.extract_chunks import ExtractChunksUseCase
@@ -63,6 +65,15 @@ class MockToolCallingChatModel(ToolCallingChatModel):
         return AIMessage(content=MOCK_TOOL_CALLING_CHAT_RESPONSE)
 
 
+def get_model_retry_policy() -> ModelRetryPolicy:
+    return ModelRetryPolicy(
+        max_attempts=settings.personal_assistant_model_retry_max_attempts,
+        initial_backoff_seconds=settings.personal_assistant_model_retry_initial_backoff_seconds,
+        backoff_multiplier=settings.personal_assistant_model_retry_backoff_multiplier,
+        max_backoff_seconds=settings.personal_assistant_model_retry_max_backoff_seconds,
+    )
+
+
 def get_chat_session_repo(db: AsyncSession = Depends(get_db)) -> ChatSessionRepository:
     return ChatSessionRepositoryImpl(db)
 
@@ -112,6 +123,7 @@ def get_diary_memory_query_service(
 
 def get_tool_calling_chat_model(
     x_clova_api_key: str | None = Header(default=None),
+    retry_policy: ModelRetryPolicy = Depends(get_model_retry_policy),
 ) -> ToolCallingChatModel:
     cred = resolve_clova_credential(
         user_key=x_clova_api_key,
@@ -119,12 +131,15 @@ def get_tool_calling_chat_model(
         mock_mode=settings.clova_mock_mode,
     )
     if cred.use_mock:
-        return MockToolCallingChatModel()
-    return ClovaToolCallingChatModel(api_key=cred.api_key)
+        model: ToolCallingChatModel = MockToolCallingChatModel()
+    else:
+        model = ClovaToolCallingChatModel(api_key=cred.api_key)
+    return RetryingToolCallingChatModel(model, retry_policy)
 
 
 def get_coaching_tool_calling_chat_model(
     x_clova_api_key: str | None = Header(default=None),
+    retry_policy: ModelRetryPolicy = Depends(get_model_retry_policy),
 ) -> ToolCallingChatModel:
     cred = resolve_clova_credential(
         user_key=x_clova_api_key,
@@ -132,12 +147,14 @@ def get_coaching_tool_calling_chat_model(
         mock_mode=settings.clova_mock_mode,
     )
     if cred.use_mock:
-        return MockToolCallingChatModel()
-    return ClovaToolCallingChatModel(
-        api_key=cred.api_key,
-        temperature=0.6,
-        max_tokens=300,
-    )
+        model: ToolCallingChatModel = MockToolCallingChatModel()
+    else:
+        model = ClovaToolCallingChatModel(
+            api_key=cred.api_key,
+            temperature=0.6,
+            max_tokens=300,
+        )
+    return RetryingToolCallingChatModel(model, retry_policy)
 
 
 def get_signal_extraction_service() -> SignalExtractionService:

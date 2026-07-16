@@ -5,10 +5,16 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.tools import BaseTool, StructuredTool
 
 from app.application.service.diary_chat_prompt import DiaryConversationContext
+from app.application.service.model_provider_error import (
+    ModelProviderError,
+    ModelProviderErrorCategory,
+)
+from app.application.service.model_retry_policy import ModelRetryPolicy
 from app.application.service.personal_assistant_timeout import (
     PersonalAssistantTimeoutError,
     PersonalAssistantTimeoutPolicy,
 )
+from app.application.service.retrying_tool_calling_chat_model import RetryingToolCallingChatModel
 from app.application.usecase.personal_assistant_agent import (
     PersonalAssistantAgent,
     PersonalAssistantMode,
@@ -101,7 +107,7 @@ async def test_tool_round_timeout_has_tool_stage_without_follow_up_model_call():
     agent = PersonalAssistantAgent(
         model,
         [_hanging_tool(tool_started)],
-        timeout_policy=_policy(tool=0.01, execution=1),
+        timeout_policy=_policy(tool=0.1, execution=1),
     )
 
     with pytest.raises(PersonalAssistantTimeoutError) as error:
@@ -190,6 +196,44 @@ async def test_cancelled_error_is_not_converted_to_timeout_error():
 
     with pytest.raises(asyncio.CancelledError):
         await task
+
+
+async def test_model_retry_backoff_shares_the_agent_model_call_deadline():
+    class _RetryableModel:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def ainvoke(self, messages, tools) -> AIMessage:
+            self.calls += 1
+            raise ModelProviderError(
+                category=ModelProviderErrorCategory.UNAVAILABLE,
+                retryable=True,
+            )
+
+    async def _hanging_sleep(delay: float) -> None:
+        await asyncio.Event().wait()
+
+    delegate = _RetryableModel()
+    model = RetryingToolCallingChatModel(
+        delegate,
+        ModelRetryPolicy(max_attempts=2, initial_backoff_seconds=1),
+        sleep=_hanging_sleep,
+    )
+    agent = PersonalAssistantAgent(
+        model,
+        [],
+        timeout_policy=_policy(model=0.01, execution=1),
+    )
+
+    with pytest.raises(PersonalAssistantTimeoutError) as error:
+        await agent.run(
+            messages=[HumanMessage(content="오늘 기분이 복잡해")],
+            mode=PersonalAssistantMode.DIARY,
+            diary_context=_diary_context(),
+        )
+
+    assert error.value.stage == "model"
+    assert delegate.calls == 1
 
 
 def test_timeout_policy_rejects_non_positive_values():
