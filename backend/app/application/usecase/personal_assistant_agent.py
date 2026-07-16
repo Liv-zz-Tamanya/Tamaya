@@ -9,6 +9,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 
+from app.application.service.coaching_prompt import build_coaching_system_prompt
 from app.application.service.diary_chat_prompt import (
     DiaryConversationContext,
     build_diary_chat_system_prompt,
@@ -32,12 +33,18 @@ ITERATION_LIMIT_MESSAGE = (
 class PersonalAssistantMode(StrEnum):
     DIARY = "diary"
     HEALTH = "health"
+    COACHING = "coaching"
+
+
+class CoachingConversationContext(TypedDict):
+    persona: str | None
 
 
 class PersonalAssistantState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
     mode: PersonalAssistantMode
     diary_context: DiaryConversationContext | None
+    coaching_context: CoachingConversationContext | None
     llm_calls: int
     tool_rounds: int
     guardrail_verdict: GuardrailVerdict
@@ -46,11 +53,14 @@ class PersonalAssistantState(TypedDict):
 def build_personal_assistant_system_message(
     mode: PersonalAssistantMode,
     diary_context: DiaryConversationContext | None = None,
+    coaching_context: CoachingConversationContext | None = None,
 ) -> SystemMessage:
     match mode:
         case PersonalAssistantMode.DIARY:
             if diary_context is None:
                 raise ValueError("diary_context is required for diary mode")
+            if coaching_context is not None:
+                raise ValueError("coaching_context is only supported for coaching mode")
             return SystemMessage(
                 content=build_diary_chat_system_prompt(
                     max_turns=diary_context.max_turns,
@@ -62,10 +72,20 @@ def build_personal_assistant_system_message(
         case PersonalAssistantMode.HEALTH:
             if diary_context is not None:
                 raise ValueError("diary_context is only supported for diary mode")
+            if coaching_context is not None:
+                raise ValueError("coaching_context is only supported for coaching mode")
             return SystemMessage(
                 content=build_health_chat_system_prompt(
                     tool_calling_enabled=True,
                     health_context=None,
+                )
+            )
+        case PersonalAssistantMode.COACHING:
+            if diary_context is not None:
+                raise ValueError("diary_context is only supported for diary mode")
+            return SystemMessage(
+                content=build_coaching_system_prompt(
+                    persona=coaching_context.get("persona") if coaching_context else None
                 )
             )
 
@@ -161,6 +181,7 @@ class PersonalAssistantAgent:
                 build_personal_assistant_system_message(
                     state["mode"],
                     state.get("diary_context"),
+                    state.get("coaching_context"),
                 ),
                 *state["messages"],
             ],
@@ -230,12 +251,14 @@ class PersonalAssistantAgent:
         messages: Sequence[BaseMessage],
         mode: PersonalAssistantMode,
         diary_context: DiaryConversationContext | None = None,
+        coaching_context: CoachingConversationContext | None = None,
     ) -> PersonalAssistantState:
-        _validate_context_for_mode(mode, diary_context)
+        _validate_context_for_mode(mode, diary_context, coaching_context)
         initial_state: PersonalAssistantState = {
             "messages": list(messages),
             "mode": mode,
             "diary_context": diary_context,
+            "coaching_context": coaching_context,
             "llm_calls": 0,
             "tool_rounds": 0,
             "guardrail_verdict": GuardrailVerdict.ADVICE_BOUNDARY,
@@ -252,11 +275,13 @@ class PersonalAssistantAgent:
         messages: Sequence[BaseMessage],
         mode: PersonalAssistantMode,
         diary_context: DiaryConversationContext | None = None,
+        coaching_context: CoachingConversationContext | None = None,
     ) -> AIMessage:
         result = await self._ainvoke_state(
             messages=messages,
             mode=mode,
             diary_context=diary_context,
+            coaching_context=coaching_context,
         )
         for message in reversed(result["messages"]):
             if isinstance(message, AIMessage):
@@ -269,18 +294,21 @@ class PersonalAssistantAgent:
 def _validate_context_for_mode(
     mode: PersonalAssistantMode,
     diary_context: DiaryConversationContext | None,
+    coaching_context: CoachingConversationContext | None,
 ) -> None:
     if mode == PersonalAssistantMode.DIARY and diary_context is None:
         raise ValueError("diary_context is required for diary mode")
-    if mode == PersonalAssistantMode.HEALTH and diary_context is not None:
+    if mode != PersonalAssistantMode.DIARY and diary_context is not None:
         raise ValueError("diary_context is only supported for diary mode")
+    if mode != PersonalAssistantMode.COACHING and coaching_context is not None:
+        raise ValueError("coaching_context is only supported for coaching mode")
 
 
 def find_latest_human_message_text(messages: Sequence[BaseMessage]) -> str:
     for message in reversed(messages):
         if isinstance(message, HumanMessage):
             return _message_content_text(message)
-    raise ValueError("health mode requires at least one HumanMessage")
+    raise ValueError("guarded modes require at least one HumanMessage")
 
 
 def _message_content_text(message: BaseMessage) -> str:

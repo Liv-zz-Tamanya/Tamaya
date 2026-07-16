@@ -49,6 +49,8 @@ class PersonalAssistantAgentFactory:
                     execution_context=execution_context,
                 )
             ]
+        elif mode == PersonalAssistantMode.COACHING:
+            tools = []
         else:
             raise ValueError(f"unsupported personal assistant mode: {mode}")
         return PersonalAssistantAgent(self._model, tools)
