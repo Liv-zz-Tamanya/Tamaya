@@ -1,3 +1,5 @@
+import asyncio
+
 from app.application.service.embedding_service import EmbeddingService
 from app.domain.model.health_chunk import HealthChunk
 from app.domain.repository.health_chunk_repository import HealthChunkRepository
@@ -18,7 +20,8 @@ class HealthRecordQueryService:
         query: str,
         limit: int = 5,
     ) -> list[HealthChunk]:
-        query_embedding = self._embedding_service.embed([query])[0]
+        embeddings = await asyncio.to_thread(self._embedding_service.embed, [query])
+        query_embedding = embeddings[0]
         return await self._health_chunk_repo.search_similar(
             device_id=device_id,
             embedding=query_embedding,
