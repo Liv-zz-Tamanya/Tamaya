@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.application.service.model_provider_error import ModelProviderError
 from app.application.service.personal_assistant_timeout import PersonalAssistantTimeoutError
 from app.infrastructure.config.database import engine
 from app.presentation.router.auth_router import router as auth_router
@@ -29,6 +30,10 @@ app = FastAPI(title="AI Diary", version="0.1.0", lifespan=lifespan)
 PERSONAL_ASSISTANT_TIMEOUT_DETAIL = (
     "AI 응답 처리 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요."
 )
+MODEL_PROVIDER_RETRY_EXHAUSTED_DETAIL = (
+    "AI 서비스가 일시적으로 응답하지 않습니다. 잠시 후 다시 시도해 주세요."
+)
+MODEL_PROVIDER_FAILURE_DETAIL = "AI 서비스 응답을 처리하지 못했습니다."
 
 
 @app.exception_handler(PersonalAssistantTimeoutError)
@@ -40,6 +45,20 @@ async def handle_personal_assistant_timeout(
         status_code=status.HTTP_504_GATEWAY_TIMEOUT,
         content={"detail": PERSONAL_ASSISTANT_TIMEOUT_DETAIL},
     )
+
+
+@app.exception_handler(ModelProviderError)
+async def handle_model_provider_error(
+    request: Request,
+    exc: ModelProviderError,
+) -> JSONResponse:
+    if exc.retryable:
+        status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        detail = MODEL_PROVIDER_RETRY_EXHAUSTED_DETAIL
+    else:
+        status_code = status.HTTP_502_BAD_GATEWAY
+        detail = MODEL_PROVIDER_FAILURE_DETAIL
+    return JSONResponse(status_code=status_code, content={"detail": detail})
 
 
 # B-001: CORS — FE(localhost:3000, 5173) + Expo Web 허용

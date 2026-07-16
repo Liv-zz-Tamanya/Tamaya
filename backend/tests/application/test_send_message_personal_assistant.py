@@ -8,6 +8,10 @@ from langchain_core.messages import AIMessage, HumanMessage
 
 from app.application.service.ai_chat_service import AiChatService
 from app.application.service.diary_chat_prompt import DiaryConversationContext
+from app.application.service.model_provider_error import (
+    ModelProviderError,
+    ModelProviderErrorCategory,
+)
 from app.application.service.personal_assistant_timeout import PersonalAssistantTimeoutError
 from app.application.usecase.personal_assistant_agent import PersonalAssistantMode
 from app.application.usecase.send_message import SendMessageUseCase
@@ -329,6 +333,30 @@ async def test_agent_timeout_is_not_saved_or_followed_by_chunk_extraction():
         await usecase.execute(session.id, "오늘 힘들었어", "dev-a")
 
     assert error.value.stage == "execution"
+    assert repo.save_count == 1
+    assert diary_repo.saved == []
+    assert extract_chunks.calls == []
+
+
+async def test_model_provider_error_is_not_saved_or_followed_by_chunk_extraction():
+    repo = _MemoryChatSessionRepo()
+    session = await _saved_session(repo)
+    diary_repo = _MemoryDiaryRepo()
+    extract_chunks = _FakeExtractChunks()
+    agent = _FakePersonalAssistantAgent(
+        ModelProviderError(category=ModelProviderErrorCategory.UNAVAILABLE, retryable=True)
+    )
+    usecase = SendMessageUseCase(
+        repo,
+        _FakeAi(),
+        diary_repo,
+        _FakePersonalAssistantFactory(agent),
+        extract_chunks,
+    )
+
+    with pytest.raises(ModelProviderError):
+        await usecase.execute(session.id, "오늘 힘들었어", "dev-a")
+
     assert repo.save_count == 1
     assert diary_repo.saved == []
     assert extract_chunks.calls == []
