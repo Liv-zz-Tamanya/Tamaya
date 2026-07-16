@@ -7,6 +7,7 @@ import pytest
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.tools import BaseTool
 
+from app.application.service.personal_assistant_timeout import PersonalAssistantTimeoutError
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
 from app.application.usecase.personal_assistant_agent_factory import PersonalAssistantAgentFactory
 from app.application.usecase.send_coaching_message import SendCoachingMessageUseCase
@@ -206,5 +207,21 @@ async def test_model_error_is_propagated_without_signal_extraction():
             history=[],
         )
 
+    assert len(model.calls) == 1
+    assert extract.calls == []
+
+
+async def test_agent_timeout_is_propagated_without_signal_extraction():
+    model = _FakeToolCallingModel([PersonalAssistantTimeoutError("execution")])
+    extract = _SpyExtract()
+
+    with pytest.raises(PersonalAssistantTimeoutError) as error:
+        await _uc(model, extract).execute(
+            device_id="dev-1",
+            message="오늘 너무 지쳤어",
+            history=[],
+        )
+
+    assert error.value.stage == "execution"
     assert len(model.calls) == 1
     assert extract.calls == []

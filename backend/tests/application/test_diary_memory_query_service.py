@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import threading
 from datetime import date
 from uuid import UUID, uuid4
 
@@ -100,3 +102,33 @@ async def test_diary_memory_query_service_returns_empty_results():
             "exclude_session_id": None,
         }
     ]
+
+
+async def test_diary_embedding_does_not_block_event_loop_before_repository_search():
+    started = threading.Event()
+    release = threading.Event()
+    loop_progressed = asyncio.Event()
+
+    class _BlockingEmbedding(_FakeEmbedding):
+        def embed(self, texts: list[str]) -> list[list[float]]:
+            started.set()
+            release.wait()
+            return super().embed(texts)
+
+    embedding = _BlockingEmbedding([0.2, 0.8])
+    repo = _FakeEventChunkRepo([])
+    service = DiaryMemoryQueryService(embedding, repo)
+    task = asyncio.create_task(service.search_similar(device_id="dev-a", query="기억 검색"))
+
+    await asyncio.to_thread(started.wait)
+
+    async def _mark_loop_progress() -> None:
+        await asyncio.sleep(0)
+        loop_progressed.set()
+
+    asyncio.create_task(_mark_loop_progress())
+    await asyncio.wait_for(loop_progressed.wait(), timeout=1)
+    assert repo.search_calls == []
+
+    release.set()
+    await task

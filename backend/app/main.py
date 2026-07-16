@@ -1,8 +1,10 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
+from app.application.service.personal_assistant_timeout import PersonalAssistantTimeoutError
 from app.infrastructure.config.database import engine
 from app.presentation.router.auth_router import router as auth_router
 from app.presentation.router.chat_router import router as chat_router
@@ -23,6 +25,22 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="AI Diary", version="0.1.0", lifespan=lifespan)
+
+PERSONAL_ASSISTANT_TIMEOUT_DETAIL = (
+    "AI 응답 처리 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요."
+)
+
+
+@app.exception_handler(PersonalAssistantTimeoutError)
+async def handle_personal_assistant_timeout(
+    request: Request,
+    exc: PersonalAssistantTimeoutError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+        content={"detail": PERSONAL_ASSISTANT_TIMEOUT_DETAIL},
+    )
+
 
 # B-001: CORS — FE(localhost:3000, 5173) + Expo Web 허용
 app.add_middleware(

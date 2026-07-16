@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 import pytest
 from langchain_core.messages import AIMessage
 
+from app.application.service.personal_assistant_timeout import PersonalAssistantTimeoutError
 from app.application.usecase.personal_assistant_agent import PersonalAssistantMode
 from app.application.usecase.send_health_message import SendHealthMessageUseCase
 from app.domain.model.health_session import HealthSession
@@ -120,6 +121,21 @@ async def test_agent_error_is_propagated_without_saving_empty_response():
     with pytest.raises(RuntimeError, match="agent failed"):
         await usecase.execute(session.id, "어제 기록", "dev-a")
 
+    assert repo.save_count == 1
+    assert [message.content for message in session.messages] == ["건강 인사", "어제 기록"]
+
+
+async def test_agent_timeout_is_propagated_without_saving_assistant_message():
+    repo = _MemoryHealthSessionRepo()
+    session = _session()
+    await repo.save(session)
+    agent = _FakePersonalAssistantAgent(PersonalAssistantTimeoutError("execution"))
+    usecase = SendHealthMessageUseCase(repo, _FakePersonalAssistantFactory(agent))
+
+    with pytest.raises(PersonalAssistantTimeoutError) as error:
+        await usecase.execute(session.id, "어제 기록", "dev-a")
+
+    assert error.value.stage == "execution"
     assert repo.save_count == 1
     assert [message.content for message in session.messages] == ["건강 인사", "어제 기록"]
 

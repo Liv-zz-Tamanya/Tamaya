@@ -1,3 +1,4 @@
+import asyncio
 from uuid import UUID
 
 from app.application.service.embedding_service import EmbeddingService
@@ -21,7 +22,8 @@ class DiaryMemoryQueryService:
         exclude_session_id: UUID | None = None,
         limit: int = 5,
     ) -> list[EventChunk]:
-        query_embedding = self._embedding_service.embed([query])[0]
+        embeddings = await asyncio.to_thread(self._embedding_service.embed, [query])
+        query_embedding = embeddings[0]
         return await self._event_chunk_repo.search_similar(
             device_id=device_id,
             embedding=query_embedding,

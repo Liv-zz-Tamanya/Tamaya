@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Sequence
 from enum import StrEnum
 from typing import Annotated, Literal, TypedDict
@@ -15,6 +16,11 @@ from app.application.service.diary_chat_prompt import (
     build_diary_chat_system_prompt,
 )
 from app.application.service.health_chat_prompt import build_health_chat_system_prompt
+from app.application.service.personal_assistant_timeout import (
+    DEFAULT_PERSONAL_ASSISTANT_TIMEOUT_POLICY,
+    PersonalAssistantTimeoutError,
+    PersonalAssistantTimeoutPolicy,
+)
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
 from app.domain.service.medical_guardrail import (
     GuardrailVerdict,
@@ -97,6 +103,7 @@ class PersonalAssistantAgent:
         tools: Sequence[BaseTool],
         *,
         max_tool_rounds: int = DEFAULT_MAX_TOOL_ROUNDS,
+        timeout_policy: PersonalAssistantTimeoutPolicy = DEFAULT_PERSONAL_ASSISTANT_TIMEOUT_POLICY,
     ) -> None:
         if max_tool_rounds < 1:
             raise ValueError("max_tool_rounds must be at least 1")
@@ -109,6 +116,7 @@ class PersonalAssistantAgent:
         self._model = model
         self._tools = tuple(tools)
         self._max_tool_rounds = max_tool_rounds
+        self._timeout_policy = timeout_policy
         self._tool_node = ToolNode(self._tools, handle_tool_errors=False)
         self._graph = self._build_graph()
 
@@ -176,17 +184,21 @@ class PersonalAssistantAgent:
 
     async def _agent_node(self, state: PersonalAssistantState) -> dict:
         llm_calls = state.get("llm_calls", 0) + 1
-        response = await self._model.ainvoke(
-            messages=[
-                build_personal_assistant_system_message(
-                    state["mode"],
-                    state.get("diary_context"),
-                    state.get("coaching_context"),
-                ),
-                *state["messages"],
-            ],
-            tools=self._tools,
-        )
+        try:
+            async with asyncio.timeout(self._timeout_policy.model_call_seconds):
+                response = await self._model.ainvoke(
+                    messages=[
+                        build_personal_assistant_system_message(
+                            state["mode"],
+                            state.get("diary_context"),
+                            state.get("coaching_context"),
+                        ),
+                        *state["messages"],
+                    ],
+                    tools=self._tools,
+                )
+        except TimeoutError as exc:
+            raise PersonalAssistantTimeoutError("model") from exc
         _ensure_ai_message_id(response, f"agent-response-{llm_calls}")
         return {
             "messages": [response],
@@ -198,7 +210,11 @@ class PersonalAssistantAgent:
         state: PersonalAssistantState,
         config: RunnableConfig,
     ) -> dict:
-        result = await self._tool_node.ainvoke(state, config=config)
+        try:
+            async with asyncio.timeout(self._timeout_policy.tool_round_seconds):
+                result = await self._tool_node.ainvoke(state, config=config)
+        except TimeoutError as exc:
+            raise PersonalAssistantTimeoutError("tool") from exc
         return {
             "messages": result["messages"],
             "tool_rounds": state.get("tool_rounds", 0) + 1,
@@ -277,12 +293,16 @@ class PersonalAssistantAgent:
         diary_context: DiaryConversationContext | None = None,
         coaching_context: CoachingConversationContext | None = None,
     ) -> AIMessage:
-        result = await self._ainvoke_state(
-            messages=messages,
-            mode=mode,
-            diary_context=diary_context,
-            coaching_context=coaching_context,
-        )
+        try:
+            async with asyncio.timeout(self._timeout_policy.execution_seconds):
+                result = await self._ainvoke_state(
+                    messages=messages,
+                    mode=mode,
+                    diary_context=diary_context,
+                    coaching_context=coaching_context,
+                )
+        except TimeoutError as exc:
+            raise PersonalAssistantTimeoutError("execution") from exc
         for message in reversed(result["messages"]):
             if isinstance(message, AIMessage):
                 if message.tool_calls:

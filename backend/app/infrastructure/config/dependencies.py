@@ -11,6 +11,7 @@ from app.application.service.diary_memory_query_service import DiaryMemoryQueryS
 from app.application.service.embedding_service import EmbeddingService
 from app.application.service.health_ai_service import HealthAiService
 from app.application.service.health_record_query_service import HealthRecordQueryService
+from app.application.service.personal_assistant_timeout import PersonalAssistantTimeoutPolicy
 from app.application.service.signal_extraction_service import SignalExtractionService
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
 from app.application.usecase.extract_chunks import ExtractChunksUseCase
@@ -202,20 +203,30 @@ def get_health_record_query_service(
     return HealthRecordQueryService(embedding, health_chunk_repo)
 
 
+def get_personal_assistant_timeout_policy() -> PersonalAssistantTimeoutPolicy:
+    return PersonalAssistantTimeoutPolicy(
+        model_call_seconds=settings.personal_assistant_model_call_timeout_seconds,
+        tool_round_seconds=settings.personal_assistant_tool_round_timeout_seconds,
+        execution_seconds=settings.personal_assistant_execution_timeout_seconds,
+    )
+
+
 def get_personal_assistant_agent_factory(
     model: ToolCallingChatModel = Depends(get_tool_calling_chat_model),
     diary_query: DiaryMemoryQueryService = Depends(get_diary_memory_query_service),
     health_query: HealthRecordQueryService = Depends(get_health_record_query_service),
+    timeout_policy: PersonalAssistantTimeoutPolicy = Depends(get_personal_assistant_timeout_policy),
 ) -> PersonalAssistantAgentFactory:
-    return PersonalAssistantAgentFactory(model, diary_query, health_query)
+    return PersonalAssistantAgentFactory(model, diary_query, health_query, timeout_policy)
 
 
 def get_coaching_personal_assistant_agent_factory(
     model: ToolCallingChatModel = Depends(get_coaching_tool_calling_chat_model),
     diary_query: DiaryMemoryQueryService = Depends(get_diary_memory_query_service),
     health_query: HealthRecordQueryService = Depends(get_health_record_query_service),
+    timeout_policy: PersonalAssistantTimeoutPolicy = Depends(get_personal_assistant_timeout_policy),
 ) -> PersonalAssistantAgentFactory:
-    return PersonalAssistantAgentFactory(model, diary_query, health_query)
+    return PersonalAssistantAgentFactory(model, diary_query, health_query, timeout_policy)
 
 
 def get_health_session_repo(db: AsyncSession = Depends(get_db)) -> HealthSessionRepository:
