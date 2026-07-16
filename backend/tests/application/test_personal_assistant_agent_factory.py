@@ -2,6 +2,7 @@ from uuid import UUID, uuid4
 
 from langchain_core.messages import AIMessage, HumanMessage
 
+from app.application.service.agent_execution_observability import AgentExecutionRecord
 from app.application.service.diary_chat_prompt import DiaryConversationContext
 from app.application.service.personal_assistant_timeout import PersonalAssistantTimeoutPolicy
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
@@ -143,3 +144,21 @@ def test_factory_passes_timeout_policy_to_each_agent():
     agent = factory.create(device_id="dev-a", session_id=uuid4(), mode=PersonalAssistantMode.HEALTH)
 
     assert agent._timeout_policy is policy
+
+
+def test_factory_passes_execution_recorder_to_each_agent():
+    class _Recorder:
+        def record(self, record: AgentExecutionRecord) -> None:
+            return None
+
+    recorder = _Recorder()
+    factory = PersonalAssistantAgentFactory(
+        _FakeToolCallingModel(),
+        _FakeDiaryQuery(),
+        _FakeHealthQuery(),
+        execution_recorder=recorder,
+    )
+
+    agent = factory.create(device_id="dev-a", session_id=uuid4(), mode=PersonalAssistantMode.HEALTH)
+
+    assert agent._execution_recorder is recorder

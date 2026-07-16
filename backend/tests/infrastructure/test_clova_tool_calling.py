@@ -208,6 +208,28 @@ async def test_clova_tool_calling_model_preserves_general_response_content():
     assert response.tool_calls == []
 
 
+async def test_clova_tool_calling_model_normalizes_provider_token_usage():
+    model = ClovaToolCallingChatModel(chat_model_factory=_FakeChatModel)
+    fake_chat = _FakeChatModel.instances[0]
+    fake_chat.response = AIMessage(
+        content="응답",
+        response_metadata={
+            "token_usage": {
+                "prompt_tokens": 3,
+                "completion_tokens": 4,
+            }
+        },
+    )
+
+    response = await model.ainvoke([HumanMessage(content="질문")], [])
+
+    assert response.usage_metadata == {
+        "input_tokens": 3,
+        "output_tokens": 4,
+        "total_tokens": 7,
+    }
+
+
 async def test_clova_tool_calling_model_preserves_message_sequence_and_tool_message_link():
     previous_tool_call = {
         "name": "search_diary_memories",

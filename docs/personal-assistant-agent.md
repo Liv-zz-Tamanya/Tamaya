@@ -152,7 +152,7 @@ DIARY mode는 의료 keyword를 새로 차단하지 않는다. 회고 prompt, To
 
 Tool 내부 예외는 `handle_tool_errors=False`로 상위에 전파한다. 현재 LangGraph `ToolNode`는
 존재하지 않는 Tool 이름에 대해서는 `status="error"`인 `ToolMessage`를 생성해 다음 모델
-호출로 전달한다. 본격적인 오류 분류, 사용자 친화적 오류 응답, retry는 후속 PR 범위다.
+호출로 전달한다.
 
 ## Timeout Policy
 
@@ -212,10 +212,44 @@ non-retryable provider 오류는 HTTP 502, PersonalAssistant timeout은 기존 H
 ## Limits
 
 기본 최대 Tool round는 3회다. 이 제한은 비즈니스 수준의 반복 제한이며, Graph 실행에는 보조
-안전장치로 별도 recursion limit을 설정한다. 이번 PR에는 retry, checkpointer, persistence,
-human-in-the-loop가 포함되지 않는다.
+안전장치로 별도 recursion limit을 설정한다. checkpointer, persistence, human-in-the-loop는
+포함하지 않는다.
+
+## Execution Observability
+
+각 `PersonalAssistantAgent.run()` 호출은 새 UUID `trace_id`를 만들고, 실행 종료 시점에 하나의
+terminal record를 남긴다. Application 계층은 `AgentExecutionRecorder` protocol에만 의존하고,
+DI가 기본 `StructuredLoggingAgentExecutionRecorder`를 주입한다. recorder는 Python logger에
+`event="personal_assistant_execution"`과 함께 구조화된 key-value를 남긴다.
+
+record에는 mode, termination reason, guardrail verdict, model attempt와 retry 횟수, 완료된 Tool
+round, Tool 이름, diary/health 검색 결과 수, provider error category, timeout stage, token usage와
+duration을 포함한다. `tool_names`는 ToolNode 실행 순서대로 누적되며 중복 호출도 보존한다.
+`tool_rounds`는 시작한 ToolNode round를 센다. `model_duration_ms`는 retry attempt와
+backoff를 포함한 agent model node 시간의 합이고, `tool_duration_ms`는 모든 ToolNode 실행 시간의
+합이며, `execution_duration_ms`는 guardrail과 Graph 전체를 포함한다.
+
+termination reason은 `completed`, `input_guardrail_blocked`, `output_guardrail_blocked`,
+`iteration_limit`, `timeout`, `provider_error`, `tool_error`, `cancelled`, `unexpected_error` 중
+하나다. DIARY mode의 medical guardrail verdict는 적용 대상이 아니므로 `null`로 기록한다.
+retry 후 성공한 경우에도 가장 최근에 관측된 provider category를 남길 수 있다. token usage는
+adapter가 표준 `AIMessage.usage_metadata`로 정규화한 값만 모든 AIMessage에서 합산하며, metadata가
+없으면 세 token 필드는 `null`이다.
+
+로그와 record에는 사용자/AI 메시지 원문, diary/health 기록, persona, device/session ID, Tool
+arguments·결과, API key, provider 원본 오류를 넣지 않는다. 예시는 다음과 같다.
+
+```text
+event=personal_assistant_execution trace_id=8c3c... mode=health
+termination_reason=completed llm_calls=2 retry_attempts=1
+tool_rounds=1 tool_names=[search_health_records] retrieval_result_count=2
+model_duration_ms=840 tool_duration_ms=18 execution_duration_ms=871
+```
+
+recorder와 logger는 best-effort다. 기록이 실패하면 안전한 경고만 남기고 정상 응답, 원래 예외,
+timeout 및 cancellation 흐름을 바꾸지 않는다. 이 trace는 다음 Agent/RAG 평가 파이프라인에서
+실행 경로와 검색 사용량을 집계하는 입력으로 사용할 수 있다.
 
 ## Next
 
-다음 단계에서 오류 분류와 선택적 retry, LangGraph checkpointer/resume, Agent/RAG 평가 코드를
-진행할 수 있다.
+다음 단계에서는 이 execution trace를 사용하는 Agent/RAG 평가 파이프라인을 진행할 수 있다.
