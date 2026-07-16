@@ -10,14 +10,17 @@ from app.application.usecase.send_health_message import SendHealthMessageUseCase
 from app.domain.model.health_chunk import HealthChunk
 from app.domain.model.health_session import HealthSession
 from app.domain.repository.health_session_repository import HealthSessionRepository
+from app.domain.service.medical_guardrail import GuardrailVerdict, build_disclaimer
 
 
 class _MemoryHealthSessionRepo(HealthSessionRepository):
     def __init__(self) -> None:
         self.sessions: dict[UUID, HealthSession] = {}
+        self.save_count = 0
 
     async def save(self, session: HealthSession) -> HealthSession:
         self.sessions[session.id] = session
+        self.save_count += 1
         return session
 
     async def find_by_id(self, session_id: UUID, device_id: str) -> HealthSession | None:
@@ -38,6 +41,8 @@ class _FakeToolCallingModel(ToolCallingChatModel):
         tools: list[BaseTool],
     ) -> AIMessage:
         self.calls.append({"messages": list(messages), "tools": list(tools)})
+        if not self.responses:
+            raise AssertionError("unexpected model call")
         return self.responses.pop(0)
 
 
@@ -180,3 +185,101 @@ async def test_health_message_empty_search_result_is_normal_tool_result():
     ]
     assert len(tool_messages) == 1
     assert '"count": 0' in tool_messages[0].content
+
+
+async def test_risky_health_message_short_circuits_and_saves_advice_disclaimer():
+    repo = _MemoryHealthSessionRepo()
+    session = _session()
+    await repo.save(session)
+    model = _FakeToolCallingModel([])
+    health_query = _FakeHealthQuery([])
+    factory = PersonalAssistantAgentFactory(model, _FakeDiaryQuery(), health_query)
+    usecase = SendHealthMessageUseCase(repo, factory)
+
+    user_msg, ai_msg = await usecase.execute(session.id, "혈압약 끊어도 돼?", "dev-a")
+
+    expected = build_disclaimer(GuardrailVerdict.ADVICE_BOUNDARY)
+    assert user_msg.content == "혈압약 끊어도 돼?"
+    assert ai_msg.content == expected
+    assert "전문가" in ai_msg.content
+    assert "혈압약 끊어도 돼" not in ai_msg.content
+    assert model.calls == []
+    assert health_query.calls == []
+    assert repo.save_count == 2
+    assert [message.content for message in session.messages] == [
+        "건강 인사",
+        "혈압약 끊어도 돼?",
+        expected,
+    ]
+
+
+async def test_emergency_health_message_short_circuits_and_saves_emergency_disclaimer():
+    repo = _MemoryHealthSessionRepo()
+    session = _session()
+    await repo.save(session)
+    model = _FakeToolCallingModel([])
+    health_query = _FakeHealthQuery([])
+    factory = PersonalAssistantAgentFactory(model, _FakeDiaryQuery(), health_query)
+    usecase = SendHealthMessageUseCase(repo, factory)
+
+    _, ai_msg = await usecase.execute(session.id, "가슴이 너무 아프고 숨이 막혀", "dev-a")
+
+    assert ai_msg.content == build_disclaimer(GuardrailVerdict.EMERGENCY)
+    assert "119" in ai_msg.content
+    assert "응급실" in ai_msg.content
+    assert "GuardrailVerdict" not in ai_msg.content
+    assert "blocked_response" not in ai_msg.content
+    assert model.calls == []
+    assert health_query.calls == []
+
+
+async def test_prescriptive_health_model_response_is_replaced_before_session_save():
+    repo = _MemoryHealthSessionRepo()
+    session = _session()
+    await repo.save(session)
+    model = _FakeToolCallingModel([AIMessage(content="하루 500mg씩 드세요")])
+    health_query = _FakeHealthQuery([])
+    factory = PersonalAssistantAgentFactory(model, _FakeDiaryQuery(), health_query)
+    usecase = SendHealthMessageUseCase(repo, factory)
+
+    _, ai_msg = await usecase.execute(session.id, "오늘 걸음 수 기록 알려줘", "dev-a")
+
+    assert ai_msg.content == build_disclaimer(GuardrailVerdict.ADVICE_BOUNDARY)
+    assert "mg" not in ai_msg.content
+    assert "드세요" not in ai_msg.content
+    assert [message.content for message in session.messages] == [
+        "건강 인사",
+        "오늘 걸음 수 기록 알려줘",
+        build_disclaimer(GuardrailVerdict.ADVICE_BOUNDARY),
+    ]
+    assert len(model.calls) == 1
+    assert health_query.calls == []
+
+
+async def test_safe_health_model_error_is_propagated_without_success_save():
+    class _FailingToolCallingModel(ToolCallingChatModel):
+        def __init__(self) -> None:
+            self.calls: list[dict] = []
+
+        async def ainvoke(self, messages: list[BaseMessage], tools: list[BaseTool]) -> AIMessage:
+            self.calls.append({"messages": list(messages), "tools": list(tools)})
+            raise RuntimeError("model failed")
+
+    repo = _MemoryHealthSessionRepo()
+    session = _session()
+    await repo.save(session)
+    model = _FailingToolCallingModel()
+    factory = PersonalAssistantAgentFactory(model, _FakeDiaryQuery(), _FakeHealthQuery([]))
+    usecase = SendHealthMessageUseCase(repo, factory)
+
+    import pytest
+
+    with pytest.raises(RuntimeError, match="model failed"):
+        await usecase.execute(session.id, "오늘 걸음 수 기록 알려줘", "dev-a")
+
+    assert len(model.calls) == 1
+    assert repo.save_count == 1
+    assert [message.content for message in session.messages] == [
+        "건강 인사",
+        "오늘 걸음 수 기록 알려줘",
+    ]
