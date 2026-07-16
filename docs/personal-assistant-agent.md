@@ -179,6 +179,36 @@ offload하고 Repository 호출은 기존 async 흐름으로 유지한다. threa
 cancellation 뒤 즉시 강제 종료할 수 없지만, 읽기 전용 Tool이므로 이번 단계에서는 결과를 기다리거나
 부분 결과를 저장하지 않는다.
 
+## Model Provider Retry
+
+`ClovaToolCallingChatModel`은 공개 `openai`와 `httpx` 예외를 Application의
+`ModelProviderError`로 변환한다. 원본 provider 예외와 API key, 요청 내용은 API 응답에 노출하지
+않고 cause chaining으로만 보존한다.
+
+- retryable: HTTP 429, 500, 502, 503, 504와 provider transport/network 오류
+- non-retryable: HTTP 400, 401, 403, 404, 지원하지 않는 provider 오류, model response type 오류,
+  validation 오류, cancellation
+
+`RetryingToolCallingChatModel`은 model 호출만 감싼다. 기본값은 최초 호출을 포함해 최대 2회이며,
+0.5초에서 시작해 2배씩 증가하고 최대 2초로 제한한다. jitter와 provider 내부 retry는 사용하지
+않으며, CLOVA adapter의 `max_retries=0`을 유지한다.
+
+```text
+PersonalAssistantAgent model-call timeout
+  -> RetryingToolCallingChatModel
+     -> provider attempt 1
+     -> backoff
+     -> provider attempt 2
+```
+
+retry와 backoff는 새 deadline을 만들지 않고 기존 model-call timeout 안에서 실행된다. Tool,
+Repository, embedding, Graph, UseCase, guardrail, validation, application timeout은 재시도하지 않는다.
+
+retryable provider 오류가 모두 소진되면 Diary, Health, Coaching API는 HTTP 503으로 응답한다.
+non-retryable provider 오류는 HTTP 502, PersonalAssistant timeout은 기존 HTTP 504를 유지한다.
+어느 실패도 assistant message 저장, diary/chunk 후속 처리, coaching signal extraction을 실행하지
+않는다.
+
 ## Limits
 
 기본 최대 Tool round는 3회다. 이 제한은 비즈니스 수준의 반복 제한이며, Graph 실행에는 보조
