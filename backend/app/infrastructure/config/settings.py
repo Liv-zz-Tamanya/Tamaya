@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     personal_assistant_model_call_timeout_seconds: float = Field(default=25.0, gt=0)
     personal_assistant_tool_round_timeout_seconds: float = Field(default=15.0, gt=0)
     personal_assistant_execution_timeout_seconds: float = Field(default=45.0, gt=0)
+    personal_assistant_model_retry_max_attempts: int = Field(default=2, ge=1)
+    personal_assistant_model_retry_initial_backoff_seconds: float = Field(default=0.5, ge=0)
+    personal_assistant_model_retry_backoff_multiplier: float = Field(default=2.0, ge=1)
+    personal_assistant_model_retry_max_backoff_seconds: float = Field(default=2.0, ge=0)
     # DEC-022.4: Mock mode — NCP API 키 수령 전 true (디폴트 true)
     clova_mock_mode: bool = True
     # DEC-022.4: 카카오 REST API 앱 키 (사용자 발급 후 .env에 설정)
@@ -21,6 +25,18 @@ class Settings(BaseSettings):
     jwt_secret: str = "CHANGE_ME_IN_PRODUCTION_USE_STRONG_RANDOM_SECRET"
 
     model_config = {"env_file": ".env", "extra": "ignore"}
+
+    @model_validator(mode="after")
+    def _validate_model_retry_backoff(self) -> "Settings":
+        if (
+            self.personal_assistant_model_retry_max_backoff_seconds
+            < self.personal_assistant_model_retry_initial_backoff_seconds
+        ):
+            raise ValueError(
+                "personal_assistant_model_retry_max_backoff_seconds must be at least "
+                "personal_assistant_model_retry_initial_backoff_seconds"
+            )
+        return self
 
 
 settings = Settings()
