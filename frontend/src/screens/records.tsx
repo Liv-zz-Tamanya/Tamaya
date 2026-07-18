@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MoodFace, TabBar } from '../components/primitives';
+import { MoodHeatmap } from '../components/mood-heatmap';
 import { useNav } from '../lib/router';
 import {
   DiaryEntry,
@@ -71,6 +72,7 @@ export const S14_Calendar = () => {
     return new Date(year, month - 1, 1);
   });
   const [picker, setPicker] = useState<{ date: string; day: number } | null>(null);
+  const [view, setView] = useState<'emoji' | 'heat'>('emoji');
   const [localMoods, setLocalMoods] = useState<Record<string, Mood>>({});
   const [loadingDiaries, setLoadingDiaries] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -124,6 +126,8 @@ export const S14_Calendar = () => {
       setPicker({ date, day });
     }
   };
+  // 히트맵 셀 탭 → 기존 일기 상세 이동 핸들러(openDay) 재사용.
+  const openDate = (dateKey: string) => openDay(dateParts(dateKey).day);
   const moodCounts = MOODS_ALL.map((m) => ({
     m,
     label: MOOD_LABEL[m],
@@ -163,6 +167,24 @@ export const S14_Calendar = () => {
         </button>
       </div>
 
+      {/* 표시 레이어 토글 — 이모지 달력 ↔ 무드 색 히트맵 (서버 조회·월 이동 로직 불변) */}
+      <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+        {(['emoji', 'heat'] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setView(v)}
+            className={'chip chip-btn ' + (view === v ? 'solid' : '')}
+            aria-pressed={view === v}
+            style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            {v === 'emoji' ? '이모지' : '무드 색'}
+          </button>
+        ))}
+      </div>
+
+      {view === 'emoji' && (
+        <>
       <div
         style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginTop: 8, gap: 2 }}
       >
@@ -245,6 +267,14 @@ export const S14_Calendar = () => {
           })}
         </div>
       </div>
+        </>
+      )}
+
+      {view === 'heat' && (
+        <div className="widget-card" style={{ marginTop: 8 }}>
+          <MoodHeatmap diaries={monthEntries} month={visibleMonth} onSelect={openDate} />
+        </div>
+      )}
 
       {loadingDiaries && (
         <div className="tiny" style={{ marginTop: 10, textAlign: 'center', color: 'var(--pencil)' }}>
@@ -325,9 +355,11 @@ export const S14_Calendar = () => {
         </div>
       )}
 
-      <div className="tiny" style={{ marginTop: 8, textAlign: 'center', color: 'var(--pencil)' }}>
-        ※ 점선 동그라미 = 기록 없음 — 탭해서 빠르게 감정 추가
-      </div>
+      {view === 'emoji' && (
+        <div className="tiny" style={{ marginTop: 8, textAlign: 'center', color: 'var(--pencil)' }}>
+          ※ 점선 동그라미 = 기록 없음 — 탭해서 빠르게 감정 추가
+        </div>
+      )}
 
       {monthEntries.length > 0 && (
         <div className="tiny" style={{ marginTop: 4, textAlign: 'center', color: 'var(--accent)' }}>

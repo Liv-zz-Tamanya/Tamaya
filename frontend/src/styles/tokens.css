@@ -36,6 +36,16 @@
   --cream: #fff5e1;          /* 휘핑크림 — 메모 */
   --canvas: #f5f1e8;         /* 페이지(앱 바깥) 배경 — 아트워크 팔레트와 독립 */
 
+  /* ===== MOOD — 감정 색 (STAT.moodPct 색상 승격, store.tsx MOOD_BAR SSOT) ======
+     통계 감정 분포 막대(store.tsx MOOD_BAR)가 쓰던 hex 를 토큰으로 승격 — 무드
+     히트맵·통계가 같은 색을 참조한다. 신규 색 발명 금지, 값은 MOOD_BAR 1:1.
+     낮/밤 공통(항상 밝은 감정 스와치) — 테마 오버라이드 대상 아님. */
+  --mood-calm: #ead0a6;      /* 😌 평온 (= MOOD_BAR['😌']) */
+  --mood-joy: #c9a266;       /* 😊 기쁨 (= MOOD_BAR['😊']) */
+  --mood-tired: #d8a777;     /* 😣 피곤 (= MOOD_BAR['😣']) */
+  --mood-sad: #ffffff;       /* 😢 슬픔 (= MOOD_BAR['😢'] '#fff') */
+  --mood-irritated: #fff5e1; /* 😡 짜증 (= MOOD_BAR['😡']) */
+
   /* ===== SAFE AREA — iOS 노치/홈 인디케이터 (viewport-fit=cover 대응) ======
      하단 고정 요소(.input-row/.tabbar/CTA)는 반드시 --safe-b 만큼 띄운다. */
   --safe-b: env(safe-area-inset-bottom, 0px);
