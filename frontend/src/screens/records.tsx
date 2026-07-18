@@ -272,7 +272,7 @@ export const S14_Calendar = () => {
       )}
 
       {view === 'heat' && (
-        <div className="widget-card" style={{ marginTop: 8 }}>
+        <div className="hbox" style={{ marginTop: 8, padding: 12 }}>
           <MoodHeatmap diaries={monthEntries} month={visibleMonth} onSelect={openDate} overlay={localMoods} />
         </div>
       )}
