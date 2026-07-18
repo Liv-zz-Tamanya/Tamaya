@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
@@ -13,6 +13,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    Time,
     UniqueConstraint,
     text,
 )
@@ -190,6 +191,46 @@ class UserModel(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     nickname: Mapped[str] = mapped_column(String(32), unique=True, nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    night_chat_preference: Mapped["UserPreferenceModel | None"] = relationship(
+        back_populates="user", cascade="all, delete-orphan", uselist=False
+    )
+
+
+class UserPreferenceModel(Base):
+    """닉네임 사용자별 밤 채팅 시작 시간 설정.
+
+    기존 도메인의 device_id 네임스페이스와 독립적으로 users.id를 소유자로 사용한다.
+    """
+
+    __tablename__ = "user_preferences"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    night_chat_open_time: Mapped[time] = mapped_column(
+        Time,
+        nullable=False,
+        default=lambda: time(19, 0),
+        server_default="19:00:00",
+    )
+    timezone: Mapped[str] = mapped_column(
+        String(64), nullable=False, default="Asia/Seoul", server_default="Asia/Seoul"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.now, server_default=text("now()")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        default=datetime.now,
+        onupdate=datetime.now,
+        server_default=text("now()"),
+    )
+
+    user: Mapped[UserModel] = relationship(back_populates="night_chat_preference")
 
 
 class HealthSessionModel(Base):

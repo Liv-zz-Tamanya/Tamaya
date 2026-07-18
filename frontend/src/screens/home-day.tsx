@@ -10,12 +10,15 @@ import {
   useStore,
 } from '../lib/store';
 import { AI_ENABLED, sendAiChat } from '../lib/api';
+import { formatKoreanTime, getTimeUntilNextOpen } from '../lib/nightChat';
 
 // 06-09 · Home Day / Home Night / Daily Check / AI Chat
 
 export const S06_HomeDay = () => {
   const nav = useNav();
   const { state } = useStore();
+  const minutesUntilOpen = getTimeUntilNextOpen(nav.now, nav.nightOpenTime);
+  const remaining = `${Math.floor(minutesUntilOpen / 60)}시간 ${minutesUntilOpen % 60}분`;
   const d = state.daily;
   const dailyDone =
     (d.food.done ? 1 : 0) +
@@ -83,11 +86,11 @@ export const S06_HomeDay = () => {
               이음이는 자는 중
             </div>
             <div className="h-title" style={{ marginTop: 2, fontSize: 20 }}>
-              밤 10시에 깨어나요
+              오늘 밤 {formatKoreanTime(nav.nightOpenTime)}에 깨어나요
             </div>
           </div>
           <div className="chip" style={{ background: '#fff' }}>
-            ⏰ 10:00 PM
+            ⏰ {nav.nightOpenTime}
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 10 }}>
@@ -102,8 +105,16 @@ export const S06_HomeDay = () => {
           <i style={{ width: '55%' }} />
         </div>
         <div className="tiny" style={{ marginTop: 4 }}>
-          휴식중 · 다음 깨어남까지 11시간 18분
+          휴식중 · 다음 깨어남까지 {remaining}
         </div>
+        <button
+          type="button"
+          onClick={() => nav.wakeNightChat()}
+          className="btn"
+          style={{ marginTop: 12, cursor: 'pointer', fontFamily: 'inherit' }}
+        >
+          이음이 깨우기
+        </button>
       </div>
 
       <div
