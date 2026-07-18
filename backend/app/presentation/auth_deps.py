@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.auth.jwt_handler import decode_token
 from app.infrastructure.config.database import get_db
-from app.infrastructure.persistence.models import UserSessionModel
+from app.infrastructure.persistence.models import UserModel, UserSessionModel
 
 
 def _extract_bearer_token(authorization: str | None) -> str:
@@ -62,3 +62,26 @@ async def get_current_device_id(
     session: UserSessionModel = Depends(get_current_session),
 ) -> str:
     return _session_identity(session)
+
+
+async def get_current_nickname_user(
+    session: UserSessionModel = Depends(get_current_session),
+    db: AsyncSession = Depends(get_db),
+) -> UserModel:
+    """현재 Bearer 세션에 연결된 닉네임 사용자를 조회한다.
+
+    JWT subject와 기존 device_id 데이터 네임스페이스는 변경하지 않고,
+    `nick-{nickname}` 세션만 users.id 기반 설정 API에 접근하게 한다.
+    """
+    device_id = session.device_id
+    if not device_id or not device_id.startswith("nick-"):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "닉네임 로그인이 필요합니다.")
+
+    nickname = device_id.removeprefix("nick-")
+    if not nickname:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "유효하지 않은 닉네임 세션입니다.")
+
+    user = await db.scalar(select(UserModel).where(UserModel.nickname == nickname))
+    if user is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "존재하지 않는 닉네임 사용자입니다.")
+    return user
