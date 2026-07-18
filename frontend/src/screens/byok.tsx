@@ -99,7 +99,7 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
           style={{
             width: '100%',
             padding: '12px 14px',
-            border: '1.5px solid #3a2414',
+            border: '1.5px solid var(--ink)',
             borderRadius: 10,
             fontFamily: 'inherit',
             fontSize: 14,
@@ -137,7 +137,7 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
           </div>
         )}
 
-        <div className="tiny" style={{ marginTop: 16, color: '#7a5634' }}>
+        <div className="tiny" style={{ marginTop: 16, color: 'var(--pencil)' }}>
           ※ 키는 마스킹 프리뷰(••••last4)만 device 기준 저장됩니다. 원문 키는 서버에 저장되지 않아요.
         </div>
       </div>

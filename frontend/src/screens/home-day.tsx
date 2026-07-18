@@ -142,8 +142,8 @@ export const S06_HomeDay = () => {
                   width: 44,
                   height: 44,
                   margin: '0 auto',
-                  background: on ? '#3a2414' : '#f5e6cf',
-                  color: on ? '#f5e6cf' : '#3a2414',
+                  background: on ? 'var(--ink)' : 'var(--paper)',
+                  color: on ? 'var(--paper)' : 'var(--ink)',
                 }}
               >
                 {ic}
@@ -214,7 +214,7 @@ export const S07_HomeNight = () => {
   return (
   <div
     className="phone-inner"
-    style={{ background: 'linear-gradient(180deg, #f5e6cf 0%, #ead0a6 70%, #d8a777 100%)' }}
+    style={{ background: 'linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 70%, var(--accent-soft) 100%)' }}
   >
     <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div
@@ -264,10 +264,10 @@ export const S07_HomeNight = () => {
             <circle key={i} cx={x} cy={y} r="1.2" fill="#f5e6cf" />
           ))}
         </svg>
-        <div className="h-section" style={{ color: '#d8a777' }}>
+        <div className="h-section" style={{ color: 'var(--accent-soft)' }}>
           저녁 회고 · 매일 밤
         </div>
-        <div className="h-title" style={{ color: '#f5e6cf', marginTop: 2, fontSize: 22 }}>
+        <div className="h-title" style={{ color: 'var(--paper)', marginTop: 2, fontSize: 22 }}>
           "오늘 하루, 잠깐
           <br />
           같이 돌아볼까?"
@@ -275,10 +275,10 @@ export const S07_HomeNight = () => {
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, marginTop: 14 }}>
           <div
             style={{
-              background: '#f5e6cf',
+              background: 'var(--paper)',
               borderRadius: 12,
               padding: 8,
-              border: '1.5px solid #3a2414',
+              border: '1.5px solid var(--ink)',
             }}
           >
             <CatSketch size={70} mood="wink" />
@@ -324,7 +324,7 @@ export const S07_HomeNight = () => {
                 width: 14,
                 height: 14,
                 background: on ? 'var(--accent-soft)' : '#fff',
-                borderColor: '#3a2414',
+                borderColor: 'var(--ink)',
               }}
             />
           ))}
@@ -351,7 +351,7 @@ export const S07_HomeNight = () => {
               style={{
                 width: 38,
                 height: 38,
-                background: on ? '#ead0a6' : '#fff',
+                background: on ? 'var(--paper-2)' : '#fff',
                 opacity: on ? 1 : 0.4,
               }}
             >
@@ -591,9 +591,9 @@ export const S08_DailyCheck = () => {
                 style={{
                   width: 16,
                   height: 22,
-                  border: '1.5px solid #3a2414',
+                  border: '1.5px solid var(--ink)',
                   borderRadius: 4,
-                  background: i < d.water ? '#8c4a1f' : '#f5e6cf',
+                  background: i < d.water ? 'var(--accent)' : 'var(--paper)',
                   cursor: 'pointer',
                   padding: 0,
                 }}
@@ -748,7 +748,7 @@ export const S09_AIChat = () => {
               type="button"
               onClick={() => send(t)}
               className="chip dashed chip-btn"
-              style={{ background: 'transparent', border: '1.5px dashed #3a2414' }}
+              style={{ background: 'transparent', border: '1.5px dashed var(--ink)' }}
             >
               {t}
             </button>

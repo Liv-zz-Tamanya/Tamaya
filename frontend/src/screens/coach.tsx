@@ -132,7 +132,7 @@ export const S23_Coach = ({ sample = false }: { sample?: boolean } = {}) => {
               type="button"
               onClick={() => send(t)}
               className="chip dashed chip-btn"
-              style={{ background: 'transparent', border: '1.5px dashed #3a2414' }}
+              style={{ background: 'transparent', border: '1.5px dashed var(--ink)' }}
             >
               {t}
             </button>

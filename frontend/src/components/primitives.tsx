@@ -179,10 +179,10 @@ export const ImgPh = ({
       style={{
         fontFamily: 'Pretendard',
         fontSize: 11,
-        color: '#7a5634',
-        background: '#f5e6cf',
+        color: 'var(--pencil)',
+        background: 'var(--paper)',
         padding: '2px 6px',
-        border: '1px dashed #3a2414',
+        border: '1px dashed var(--ink)',
         borderRadius: 4,
       }}
     >

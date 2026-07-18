@@ -17,8 +17,8 @@ export const S01_Splash = () => {
   <div
     className="phone-inner"
     style={{
-      background: 'linear-gradient(180deg, #4a2f1e 0%, #2b1810 100%)',
-      color: '#f5e6cf',
+      background: 'linear-gradient(180deg, #4a2f1e 0%, var(--night) 100%)',
+      color: 'var(--paper)',
     }}
   >
     <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0, opacity: 0.5 }}>
@@ -64,20 +64,20 @@ export const S01_Splash = () => {
           background: 'var(--paper-3)',
           borderRadius: '50%',
           padding: 18,
-          border: '2px solid #3a2414',
+          border: '2px solid var(--ink)',
         }}
       >
         <CatSketch size={120} mood="wink" />
       </div>
       <div style={{ textAlign: 'center' }}>
-        <div className="h-display" style={{ fontSize: 48, color: '#f5e6cf' }}>
+        <div className="h-display" style={{ fontSize: 48, color: 'var(--paper)' }}>
           Tamaya
         </div>
-        <div className="handwriting" style={{ color: '#d8a777', marginTop: 6 }}>
+        <div className="handwriting" style={{ color: 'var(--accent-soft)', marginTop: 6 }}>
           밤이 되면 만나요
         </div>
       </div>
-      <div className="tiny" style={{ color: '#d8a777', position: 'absolute', bottom: 'calc(36px + var(--safe-b, 0px))' }}>
+      <div className="tiny" style={{ color: 'var(--accent-soft)', position: 'absolute', bottom: 'calc(36px + var(--safe-b, 0px))' }}>
         · · ·
       </div>
     </div>
@@ -145,8 +145,8 @@ export const S02_Welcome = () => {
         className="btn block"
         style={{
           background: '#fff9ef',
-          color: '#3a2414',
-          border: '1.5px solid #3a2414',
+          color: 'var(--ink)',
+          border: '1.5px solid var(--ink)',
           cursor: 'pointer',
           fontFamily: 'inherit',
         }}
@@ -231,6 +231,7 @@ export const S04_CreateCat = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
   const [name, setName] = useState(state.character.name);
+  // CatColor = 사용자 선택 데이터(store 영속·타입 리터럴) — 디자인 토큰 아님, hex 리터럴 유지
   const colors: CatColor[] = ['#f5e6cf', '#d8a777', '#a66838', '#6b3e1f', '#3a2414'];
   const allPersonalities: Personality[] = ['차분한', '수다쟁이', '시크', '다정한', '장난꾸러기'];
 
@@ -280,13 +281,13 @@ export const S04_CreateCat = () => {
           maxLength={10}
           placeholder="이름 (최대 10자)"
           style={{
-            border: '1.5px dashed #3a2414',
+            border: '1.5px dashed var(--ink)',
             borderRadius: 8,
             padding: '6px 14px',
             background: 'transparent',
             fontFamily: 'Pretendard',
             fontSize: 22,
-            color: '#3a2414',
+            color: 'var(--ink)',
             textAlign: 'center',
             width: 160,
             outline: 'none',
@@ -310,7 +311,7 @@ export const S04_CreateCat = () => {
                 width: 36,
                 height: 36,
                 background: c,
-                border: selected ? '3px solid #8c4a1f' : '1.5px solid #3a2414',
+                border: selected ? '3px solid var(--accent)' : '1.5px solid var(--ink)',
                 cursor: 'pointer',
                 padding: 0,
               }}
@@ -364,7 +365,7 @@ export const S05_FirstMeet = () => {
     className="phone-inner"
     style={{
       background: 'linear-gradient(180deg, #4a2f1e 0%, #1a0e08 100%)',
-      color: '#f5e6cf',
+      color: 'var(--paper)',
     }}
   >
     <svg width="100%" height="180" style={{ position: 'absolute', top: 40, opacity: 0.4 }}>
@@ -380,10 +381,10 @@ export const S05_FirstMeet = () => {
       ))}
     </svg>
     <div className="phone-scroll" style={{ padding: '60px 24px 100px' }}>
-      <div className="h-section" style={{ color: '#d8a777' }}>
+      <div className="h-section" style={{ color: 'var(--accent-soft)' }}>
         04 / 04 — 첫 만남
       </div>
-      <div className="h-display" style={{ marginTop: 14, color: '#f5e6cf' }}>
+      <div className="h-display" style={{ marginTop: 14, color: 'var(--paper)' }}>
         밤 10시 18분.
         <br />
         나, 이제 깨어났어.
@@ -392,9 +393,9 @@ export const S05_FirstMeet = () => {
       <div style={{ marginTop: 28, display: 'flex', justifyContent: 'center' }}>
         <div
           style={{
-            background: '#f5e6cf',
+            background: 'var(--paper)',
             borderRadius: 16,
-            border: '2px solid #3a2414',
+            border: '2px solid var(--ink)',
             padding: 14,
             transform: 'rotate(-2deg)',
           }}
@@ -408,8 +409,8 @@ export const S05_FirstMeet = () => {
           marginTop: 24,
           padding: '14px 16px',
           background: 'rgba(251,248,243,0.95)',
-          color: '#3a2414',
-          border: '1.5px solid #3a2414',
+          color: 'var(--ink)',
+          border: '1.5px solid var(--ink)',
           borderRadius: 14,
           position: 'relative',
         }}
@@ -442,7 +443,7 @@ export const S05_FirstMeet = () => {
     <div
       style={{ position: 'absolute', bottom: 'calc(8px + var(--safe-b, 0px))', left: 24, right: 24, textAlign: 'center' }}
     >
-      <div className="tiny" style={{ color: '#d8a777' }}>
+      <div className="tiny" style={{ color: 'var(--accent-soft)' }}>
         이제부터 매일 밤 만나요
       </div>
     </div>

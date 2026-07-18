@@ -21,8 +21,8 @@ export const S18_CatRoom = () => {
   <div
     className="phone-inner"
     style={{
-      background: 'linear-gradient(180deg, #2b1810 0%, #4a2f1e 70%, #2b1810 100%)',
-      color: '#f5e6cf',
+      background: 'linear-gradient(180deg, var(--night) 0%, #4a2f1e 70%, var(--night) 100%)',
+      color: 'var(--paper)',
     }}
   >
     <div
@@ -137,8 +137,8 @@ export const S18_CatRoom = () => {
       >
         <div
           style={{
-            background: '#f5e6cf',
-            border: '2px solid #3a2414',
+            background: 'var(--paper)',
+            border: '2px solid var(--ink)',
             borderRadius: 16,
             padding: 8,
           }}
@@ -147,14 +147,14 @@ export const S18_CatRoom = () => {
         </div>
         <div
           className="handwriting"
-          style={{ fontSize: 18, textAlign: 'center', marginTop: 4, color: '#f5e6cf' }}
+          style={{ fontSize: 18, textAlign: 'center', marginTop: 4, color: 'var(--paper)' }}
         >
           "고마워 ♡"
         </div>
       </div>
 
       <div style={{ position: 'absolute', left: 30, top: 200 }}>
-        <span className="chip" style={{ background: '#f5e6cf', color: '#3a2414' }}>
+        <span className="chip" style={{ background: 'var(--paper)', color: 'var(--ink)' }}>
           👕 줄무늬 스카프
         </span>
       </div>
@@ -170,14 +170,14 @@ export const S18_CatRoom = () => {
         justifyContent: 'space-between',
       }}
     >
-      <div className="chip" style={{ background: '#f5e6cf', color: '#3a2414' }}>
+      <div className="chip" style={{ background: 'var(--paper)', color: 'var(--ink)' }}>
         {state.character.name || '이음이'} · Lv.{state.level}
       </div>
       <div style={{ display: 'flex', gap: 6 }}>
-        <span className="chip" style={{ background: '#f5e6cf', color: '#3a2414' }}>
+        <span className="chip" style={{ background: 'var(--paper)', color: 'var(--ink)' }}>
           ◉ {state.points}
         </span>
-        <span className="chip" style={{ background: '#f5e6cf', color: '#3a2414' }}>
+        <span className="chip" style={{ background: 'var(--paper)', color: 'var(--ink)' }}>
           ♡ {Math.round(intimacy / 10)}/10
         </span>
       </div>
@@ -186,15 +186,15 @@ export const S18_CatRoom = () => {
     <div style={{ position: 'absolute', top: 408, left: 18, right: 18 }}>
       <div
         className="hbox r-l"
-        style={{ padding: 12, background: '#f5e6cf', color: '#3a2414' }}
+        style={{ padding: 12, background: 'var(--paper)', color: 'var(--ink)' }}
       >
         <div className="h-section">친밀도 & 컨디션</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
           {(
             [
-              ['♡ 친밀도', `${intimacy}%`, '#8c4a1f'],
+              ['♡ 친밀도', `${intimacy}%`, 'var(--accent)'],
               ['◍ 배부름', `${satiety}%`, '#c9a266'],
-              ['☼ 활력', `${vitality}%`, '#7a5634'],
+              ['☼ 활력', `${vitality}%`, 'var(--pencil)'],
             ] as [string, string, string][]
           ).map(([n, p, c], i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -234,8 +234,8 @@ export const S18_CatRoom = () => {
             style={{
               padding: 10,
               textAlign: 'center',
-              background: '#f5e6cf',
-              color: '#3a2414',
+              background: 'var(--paper)',
+              color: 'var(--ink)',
               cursor: 'pointer',
               fontFamily: 'inherit',
             }}
@@ -248,7 +248,7 @@ export const S18_CatRoom = () => {
         ))}
       </div>
 
-      <div className="sticky" style={{ marginTop: 10, color: '#3a2414' }}>
+      <div className="sticky" style={{ marginTop: 10, color: 'var(--ink)' }}>
         tip — 회고 자주 할수록 친밀도 ↑, 새 옷 잠금해제
       </div>
     </div>
@@ -317,7 +317,7 @@ export const S19_Inventory = () => {
                 background: have ? '#fff' : 'rgba(0,0,0,0.04)',
                 opacity: have ? 1 : 0.6,
                 cursor: have ? 'pointer' : 'default',
-                outline: sel === n ? '2px solid #8c4a1f' : 'none',
+                outline: sel === n ? '2px solid var(--accent)' : 'none',
                 outlineOffset: 1,
               }}
             >
@@ -442,7 +442,7 @@ export const S20_Report = () => {
 
       <div
         className="hbox r-l"
-        style={{ padding: 14, marginTop: 14, background: '#fff5e1' }}
+        style={{ padding: 14, marginTop: 14, background: 'var(--cream)' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <CatSketch size={70} mood="happy" />
@@ -524,7 +524,7 @@ export const S20_Report = () => {
           <div style={{ fontFamily: 'Pretendard', fontWeight: 700, color: '#fff' }}>
             리포트 카드 저장
           </div>
-          <div className="tiny" style={{ color: '#d8a777' }}>
+          <div className="tiny" style={{ color: 'var(--accent-soft)' }}>
             나만 보기 / 이미지로 내보내기
           </div>
         </div>

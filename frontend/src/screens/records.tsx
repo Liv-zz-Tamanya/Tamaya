@@ -172,7 +172,7 @@ export const S14_Calendar = () => {
             className="tiny"
             style={{
               textAlign: 'center',
-              color: i === 0 ? '#8c4a1f' : i === 6 ? '#5a3a22' : '#7a5634',
+              color: i === 0 ? 'var(--accent)' : i === 6 ? 'var(--ink-soft)' : 'var(--pencil)',
             }}
           >
             {d}
@@ -213,12 +213,12 @@ export const S14_Calendar = () => {
                     style={{
                       width: 30,
                       height: 30,
-                      border: today ? '2px solid #8c4a1f' : '1.5px solid #3a2414',
+                      border: today ? '2px solid var(--accent)' : '1.5px solid var(--ink)',
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: today ? '#ead0a6' : '#fff',
+                      background: today ? 'var(--paper-2)' : '#fff',
                       fontSize: 14,
                     }}
                   >
@@ -229,7 +229,7 @@ export const S14_Calendar = () => {
                     style={{
                       width: 30,
                       height: 30,
-                      border: '1px dashed #c9a877',
+                      border: '1px dashed var(--line)',
                       borderRadius: '50%',
                     }}
                   />
@@ -247,13 +247,13 @@ export const S14_Calendar = () => {
       </div>
 
       {loadingDiaries && (
-        <div className="tiny" style={{ marginTop: 10, textAlign: 'center', color: '#7a5634' }}>
+        <div className="tiny" style={{ marginTop: 10, textAlign: 'center', color: 'var(--pencil)' }}>
           서버 일기 불러오는 중...
         </div>
       )}
 
       {loadFailed && (
-        <div className="tiny" style={{ marginTop: 10, textAlign: 'center', color: '#8c4a1f' }}>
+        <div className="tiny" style={{ marginTop: 10, textAlign: 'center', color: 'var(--accent)' }}>
           서버 일기를 불러오지 못해 기기 기록만 표시 중이에요
         </div>
       )}
@@ -325,12 +325,12 @@ export const S14_Calendar = () => {
         </div>
       )}
 
-      <div className="tiny" style={{ marginTop: 8, textAlign: 'center', color: '#7a5634' }}>
+      <div className="tiny" style={{ marginTop: 8, textAlign: 'center', color: 'var(--pencil)' }}>
         ※ 점선 동그라미 = 기록 없음 — 탭해서 빠르게 감정 추가
       </div>
 
       {monthEntries.length > 0 && (
-        <div className="tiny" style={{ marginTop: 4, textAlign: 'center', color: '#8c4a1f' }}>
+        <div className="tiny" style={{ marginTop: 4, textAlign: 'center', color: 'var(--accent)' }}>
           {month}월 기록 {monthEntries.length}건 (전체 {state.diaries.length}건)
         </div>
       )}
@@ -352,8 +352,8 @@ export const S14_Calendar = () => {
         <div
           onClick={(e) => e.stopPropagation()}
           style={{
-            background: '#f5e6cf',
-            border: '2px solid #3a2414',
+            background: 'var(--paper)',
+            border: '2px solid var(--ink)',
             borderRadius: 16,
             padding: 18,
             width: '78%',
@@ -383,7 +383,7 @@ export const S14_Calendar = () => {
                 style={{
                   width: 48,
                   height: 48,
-                  border: '1.5px solid #3a2414',
+                  border: '1.5px solid var(--ink)',
                   borderRadius: '50%',
                   background: '#fff',
                   cursor: 'pointer',
@@ -397,7 +397,7 @@ export const S14_Calendar = () => {
           </div>
           <div
             className="tiny"
-            style={{ marginTop: 14, cursor: 'pointer', color: '#7a5634' }}
+            style={{ marginTop: 14, cursor: 'pointer', color: 'var(--pencil)' }}
             onClick={() => setPicker(null)}
           >
             닫기
@@ -507,7 +507,7 @@ export const S15_DiaryDetail = () => {
                 flex: moodWeights[i],
                 height: 8,
                 background: MOOD_BAR[m],
-                border: '1.5px solid #3a2414',
+                border: '1.5px solid var(--ink)',
               }}
             />
           ))}
@@ -516,7 +516,7 @@ export const S15_DiaryDetail = () => {
 
       <div
         className="hbox r-r"
-        style={{ padding: 16, marginTop: 12, background: '#fff5e1' }}
+        style={{ padding: 16, marginTop: 12, background: 'var(--cream)' }}
       >
         <div className="handwriting" style={{ fontSize: 18, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
           {entry.body}
@@ -552,8 +552,8 @@ export const S15_DiaryDetail = () => {
                   width: 38,
                   height: 38,
                   margin: '0 auto',
-                  background: on ? '#3a2414' : '#f5e6cf',
-                  color: on ? '#f5e6cf' : '#3a2414',
+                  background: on ? 'var(--ink)' : 'var(--paper)',
+                  color: on ? 'var(--paper)' : 'var(--ink)',
                 }}
               >
                 {ic}
@@ -677,8 +677,8 @@ export const S16_Stats = () => {
                   style={{
                     height: Math.max(h, s.weekday[i] > 0 ? 6 : 0),
                     width: 22,
-                    background: s.weekday[i] > 0 ? '#8c4a1f' : '#f5e6cf',
-                    border: '1.5px solid #3a2414',
+                    background: s.weekday[i] > 0 ? 'var(--accent)' : 'var(--paper)',
+                    border: '1.5px solid var(--ink)',
                     borderRadius: 4,
                   }}
                 />
@@ -763,12 +763,12 @@ export const S17_Insights = () => {
       {enough ? (
         <>
       <div className="hbox night r-l" style={{ padding: 16, marginTop: 14 }}>
-        <div className="h-section" style={{ color: '#d8a777' }}>
+        <div className="h-section" style={{ color: 'var(--accent-soft)' }}>
           이번 주 메인 패턴
         </div>
         <div
           className="h-title"
-          style={{ color: '#f5e6cf', fontSize: 22, marginTop: 4 }}
+          style={{ color: 'var(--paper)', fontSize: 22, marginTop: 4 }}
         >
           "5분의 틈"이 있던 날엔
           <br />
@@ -776,7 +776,7 @@ export const S17_Insights = () => {
         </div>
         <div
           className="handwriting"
-          style={{ color: '#d8a777', fontSize: 16, marginTop: 8 }}
+          style={{ color: 'var(--accent-soft)', fontSize: 16, marginTop: 8 }}
         >
           회의 사이 짧은 호흡을 한 화·목요일에는 평온함이
           <br />두 배 많았어요. 같은 패턴, 다음 주에도 ?
@@ -811,7 +811,7 @@ export const S17_Insights = () => {
             <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>{t}</div>
             <div className="tiny">{s}</div>
           </div>
-          <span className="tiny" style={{ color: '#8c4a1f' }}>
+          <span className="tiny" style={{ color: 'var(--accent)' }}>
             ✦
           </span>
         </div>
@@ -839,7 +839,7 @@ export const S17_Insights = () => {
               type="button"
               onClick={() => setRoutine('later')}
               className="chip chip-btn"
-              style={{ background: '#f5e6cf', cursor: 'pointer', fontFamily: 'inherit' }}
+              style={{ background: 'var(--paper)', cursor: 'pointer', fontFamily: 'inherit' }}
             >
               나중에
             </button>

@@ -169,7 +169,7 @@ export const S22_Settings = () => {
         <div style={{ marginTop: 10, textAlign: 'center' }}>
           <span
             className="tiny"
-            style={{ cursor: 'pointer', color: '#7a5634' }}
+            style={{ cursor: 'pointer', color: 'var(--pencil)' }}
             onClick={() => dispatch({ type: 'streak/inc' })}
           >
             (디버그) +1 스트릭

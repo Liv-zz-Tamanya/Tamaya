@@ -49,45 +49,45 @@ const emotionSummary = (emotion?: string): [string, string, string][] => {
   switch (emotion) {
     case 'happy':
       return [
-        ['기쁨', '#ead0a6', '45%'],
-        ['차분', '#d8a777', '30%'],
+        ['기쁨', 'var(--paper-2)', '45%'],
+        ['차분', 'var(--accent-soft)', '30%'],
         ['뿌듯', '#fff', '25%'],
       ];
     case 'sad':
       return [
-        ['슬픔', '#ead0a6', '45%'],
-        ['피곤', '#d8a777', '30%'],
+        ['슬픔', 'var(--paper-2)', '45%'],
+        ['피곤', 'var(--accent-soft)', '30%'],
         ['차분', '#fff', '25%'],
       ];
     case 'angry':
       return [
-        ['답답', '#ead0a6', '40%'],
-        ['피곤', '#d8a777', '35%'],
+        ['답답', 'var(--paper-2)', '40%'],
+        ['피곤', 'var(--accent-soft)', '35%'],
         ['차분', '#fff', '25%'],
       ];
     case 'anxious':
       return [
-        ['불안', '#ead0a6', '45%'],
-        ['피곤', '#d8a777', '30%'],
+        ['불안', 'var(--paper-2)', '45%'],
+        ['피곤', 'var(--accent-soft)', '30%'],
         ['안도', '#fff', '25%'],
       ];
     case 'grateful':
       return [
-        ['고마움', '#ead0a6', '45%'],
-        ['차분', '#d8a777', '30%'],
+        ['고마움', 'var(--paper-2)', '45%'],
+        ['차분', 'var(--accent-soft)', '30%'],
         ['기쁨', '#fff', '25%'],
       ];
     case 'tired':
       return [
-        ['피곤', '#ead0a6', '45%'],
-        ['차분', '#d8a777', '30%'],
+        ['피곤', 'var(--paper-2)', '45%'],
+        ['차분', 'var(--accent-soft)', '30%'],
         ['안도', '#fff', '25%'],
       ];
     case 'calm':
     default:
       return [
-        ['차분', '#ead0a6', '45%'],
-        ['안도', '#d8a777', '30%'],
+        ['차분', 'var(--paper-2)', '45%'],
+        ['안도', 'var(--accent-soft)', '30%'],
         ['뿌듯', '#fff', '25%'],
       ];
   }
@@ -139,8 +139,8 @@ export const S10_RecapStart = () => {
   <div
     className="phone-inner"
     style={{
-      background: 'linear-gradient(180deg, #2b1810 0%, #4a2f1e 100%)',
-      color: '#f5e6cf',
+      background: 'linear-gradient(180deg, var(--night) 0%, #4a2f1e 100%)',
+      color: 'var(--paper)',
     }}
   >
     <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0, opacity: 0.35 }}>
@@ -160,23 +160,23 @@ export const S10_RecapStart = () => {
     <div className="phone-scroll" style={{ padding: '60px 24px calc(100px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
-          style={{ fontFamily: 'Pretendard', fontSize: 22, color: '#d8a777', cursor: 'pointer' }}
+          style={{ fontFamily: 'Pretendard', fontSize: 22, color: 'var(--accent-soft)', cursor: 'pointer' }}
           onClick={() => nav.back()}
         >
           ‹
         </span>
-        <div className="h-section" style={{ color: '#d8a777' }}>
+        <div className="h-section" style={{ color: 'var(--accent-soft)' }}>
           저녁 회고 — 시작 전
         </div>
       </div>
-      <div className="h-display" style={{ marginTop: 14, color: '#f5e6cf' }}>
+      <div className="h-display" style={{ marginTop: 14, color: 'var(--paper)' }}>
         오늘도
         <br />
         고생했어.
       </div>
       <div
         className="handwriting"
-        style={{ color: '#d8a777', marginTop: 10, fontSize: 20 }}
+        style={{ color: 'var(--accent-soft)', marginTop: 10, fontSize: 20 }}
       >
         {isShortMode ? '3번만 나누는 짧은 회고' : '5분이면 충분해 · 5턴 대화'}
       </div>
@@ -184,10 +184,10 @@ export const S10_RecapStart = () => {
       <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
         <div
           style={{
-            background: '#f5e6cf',
+            background: 'var(--paper)',
             borderRadius: 16,
             padding: 14,
-            border: '2px solid #3a2414',
+            border: '2px solid var(--ink)',
             transform: 'rotate(-1.5deg)',
           }}
         >
@@ -199,7 +199,7 @@ export const S10_RecapStart = () => {
         className="hbox"
         style={{
           background: 'rgba(251,248,243,0.95)',
-          color: '#3a2414',
+          color: 'var(--ink)',
           padding: 14,
           marginTop: 20,
         }}
@@ -222,13 +222,13 @@ export const S10_RecapStart = () => {
           )}
         </div>
         {memos.length > 0 && (
-          <div className="tiny" style={{ marginTop: 8, color: '#8c4a1f' }}>
+          <div className="tiny" style={{ marginTop: 8, color: 'var(--accent)' }}>
             ↳ 대화에서 이걸 바탕으로 물어볼게
           </div>
         )}
       </div>
 
-      <div className="h-label" style={{ marginTop: 18, color: '#d8a777' }}>
+      <div className="h-label" style={{ marginTop: 18, color: 'var(--accent-soft)' }}>
         오늘은 어떻게 할까?
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
@@ -238,8 +238,8 @@ export const S10_RecapStart = () => {
             flex: 1,
             padding: 10,
             textAlign: 'center',
-            color: '#3a2414',
-            background: selectedMode === 'full' ? undefined : '#f5e6cf',
+            color: 'var(--ink)',
+            background: selectedMode === 'full' ? undefined : 'var(--paper)',
             cursor: 'pointer',
           }}
           onClick={() => selectMode('full')}
@@ -253,8 +253,8 @@ export const S10_RecapStart = () => {
             flex: 1,
             padding: 10,
             textAlign: 'center',
-            color: '#3a2414',
-            background: selectedMode === 'short' ? undefined : '#f5e6cf',
+            color: 'var(--ink)',
+            background: selectedMode === 'short' ? undefined : 'var(--paper)',
             cursor: 'pointer',
           }}
           onClick={() => selectMode('short')}
@@ -268,8 +268,8 @@ export const S10_RecapStart = () => {
             flex: 1,
             padding: 10,
             textAlign: 'center',
-            color: '#3a2414',
-            background: '#f5e6cf',
+            color: 'var(--ink)',
+            background: 'var(--paper)',
             cursor: 'pointer',
           }}
           onClick={() => setVoiceModalOpen(true)}
@@ -293,7 +293,7 @@ export const S10_RecapStart = () => {
         onClick={() => nav.back()}
         style={{
           textAlign: 'center',
-          color: '#d8a777',
+          color: 'var(--accent-soft)',
           marginTop: 8,
           cursor: 'pointer',
         }}
@@ -321,8 +321,8 @@ export const S10_RecapStart = () => {
             width: '100%',
             maxWidth: 280,
             padding: 18,
-            background: '#f5e6cf',
-            color: '#3a2414',
+            background: 'var(--paper)',
+            color: 'var(--ink)',
             textAlign: 'center',
           }}
           onClick={(e) => e.stopPropagation()}
@@ -499,8 +499,8 @@ export const S11_ChatDiary = () => {
             style={{
               flex: 1,
               height: 6,
-              background: i < turn ? 'var(--ink)' : '#f5e6cf',
-              border: '1.5px solid #3a2414',
+              background: i < turn ? 'var(--ink)' : 'var(--paper)',
+              border: '1.5px solid var(--ink)',
               borderRadius: 3,
             }}
           />
@@ -513,14 +513,14 @@ export const S11_ChatDiary = () => {
             <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
               <div
                 className="ph-circle"
-                style={{ width: 30, height: 30, background: '#ead0a6', overflow: 'hidden', flex: 'none' }}
+                style={{ width: 30, height: 30, background: 'var(--paper-2)', overflow: 'hidden', flex: 'none' }}
               >
                 <CatSketch size={32} mood="wink" />
               </div>
               <div className="bubble bubble-bot">
                 <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
                 {m.hint && (
-                  <div className="tiny" style={{ marginTop: 4, color: '#8c4a1f' }}>{m.hint}</div>
+                  <div className="tiny" style={{ marginTop: 4, color: 'var(--accent)' }}>{m.hint}</div>
                 )}
               </div>
             </div>
@@ -536,7 +536,7 @@ export const S11_ChatDiary = () => {
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
             <div
               className="ph-circle"
-              style={{ width: 30, height: 30, background: '#ead0a6', overflow: 'hidden', flex: 'none' }}
+              style={{ width: 30, height: 30, background: 'var(--paper-2)', overflow: 'hidden', flex: 'none' }}
             >
               <CatSketch size={32} mood="wink" />
             </div>
@@ -748,7 +748,7 @@ export const S12_MoodFinalize = () => {
 
       <div
         className="hbox r-r"
-        style={{ padding: 14, marginTop: 12, background: '#fff5e1' }}
+        style={{ padding: 14, marginTop: 12, background: 'var(--cream)' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <div className="h-section">생성된 일기</div>
@@ -756,7 +756,7 @@ export const S12_MoodFinalize = () => {
             type="button"
             onClick={() => flash('✎ 일기 직접 수정은 곧 지원돼요')}
             className="tiny"
-            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', color: '#7a5634' }}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--pencil)' }}
           >
             ✎ 수정
           </button>
@@ -775,10 +775,10 @@ export const S12_MoodFinalize = () => {
       </div>
 
       <div className="hbox night r-l" style={{ padding: 12, marginTop: 12 }}>
-        <div className="h-section" style={{ color: '#d8a777' }}>
+        <div className="h-section" style={{ color: 'var(--accent-soft)' }}>
           내일 한 가지
         </div>
-        <div className="h-title" style={{ color: '#f5e6cf', fontSize: 18, marginTop: 2 }}>
+        <div className="h-title" style={{ color: 'var(--paper)', fontSize: 18, marginTop: 2 }}>
           {tomorrowLine}
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
@@ -794,7 +794,7 @@ export const S12_MoodFinalize = () => {
             type="button"
             onClick={() => flash('다음에 알려줄게요')}
             className="chip chip-btn"
-            style={{ background: '#f5e6cf', cursor: 'pointer', fontFamily: 'inherit' }}
+            style={{ background: 'var(--paper)', cursor: 'pointer', fontFamily: 'inherit' }}
           >
             나중에
           </button>
@@ -861,8 +861,8 @@ export const S13_Reward = () => {
       style={{
         margin: 'auto 0',
         padding: 24,
-        background: '#f5e6cf',
-        border: '2px solid #3a2414',
+        background: 'var(--paper)',
+        border: '2px solid var(--ink)',
         borderRadius: 20,
         boxShadow: '4px 6px 0 rgba(0,0,0,0.25)',
       }}

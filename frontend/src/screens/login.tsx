@@ -87,7 +87,7 @@ export const S21_Login = () => {
     <div
       className="phone-inner"
       style={{
-        background: 'linear-gradient(180deg, #f5e6cf 0%, #ead0a6 70%, #d8a777 100%)',
+        background: 'linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 70%, var(--accent-soft) 100%)',
       }}
     >
       <div
@@ -102,10 +102,10 @@ export const S21_Login = () => {
       >
         <div
           style={{
-            background: '#f5e6cf',
+            background: 'var(--paper)',
             borderRadius: '50%',
             padding: 16,
-            border: '2px solid #3a2414',
+            border: '2px solid var(--ink)',
             marginTop: 32,
           }}
         >
@@ -114,12 +114,12 @@ export const S21_Login = () => {
         <div className="h-display" style={{ fontSize: 40, marginTop: 14 }}>
           Tamaya
         </div>
-        <div className="handwriting" style={{ fontSize: 19, marginTop: 4, color: '#5a3a22' }}>
+        <div className="handwriting" style={{ fontSize: 19, marginTop: 4, color: 'var(--ink-soft)' }}>
           {isSignup ? '반가워요! 닉네임을 만들어 주세요' : '다시 왔군요! 닉네임을 알려주세요'}
         </div>
 
         <div style={{ marginTop: 'auto', width: '100%' }}>
-          <div className="tiny" style={{ textAlign: 'left', color: '#5a3a22', marginBottom: 6 }}>
+          <div className="tiny" style={{ textAlign: 'left', color: 'var(--ink-soft)', marginBottom: 6 }}>
             {isSignup ? '회원가입 · 사용할 닉네임' : '로그인 · 닉네임'}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -143,9 +143,9 @@ export const S21_Login = () => {
                 minWidth: 0,
                 padding: '12px 14px',
                 borderRadius: 12,
-                border: '1.5px solid #3a2414',
+                border: '1.5px solid var(--ink)',
                 background: '#fff9ef',
-                color: '#3a2414',
+                color: 'var(--ink)',
                 fontFamily: 'inherit',
                 fontSize: 16,
               }}
@@ -159,8 +159,8 @@ export const S21_Login = () => {
                 style={{
                   flexShrink: 0,
                   background: '#fff9ef',
-                  color: '#3a2414',
-                  border: '1.5px solid #3a2414',
+                  color: 'var(--ink)',
+                  border: '1.5px solid var(--ink)',
                   cursor: busy ? 'wait' : 'pointer',
                   fontFamily: 'inherit',
                   padding: '0 14px',
@@ -201,7 +201,7 @@ export const S21_Login = () => {
               marginTop: 12,
               background: 'none',
               border: 'none',
-              color: '#5a3a22',
+              color: 'var(--ink-soft)',
               textDecoration: 'underline',
               cursor: busy ? 'wait' : 'pointer',
               fontFamily: 'inherit',
