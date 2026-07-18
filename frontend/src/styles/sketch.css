@@ -80,6 +80,10 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
 .tiny { font-family: 'Pretendard'; font-size: 11px; color: var(--pencil); letter-spacing: 0.4px; }
 .handwriting { font-family: 'Pretendard'; font-size: 18px; color: var(--ink-soft); }
 
+/* Nav back arrow — 화면 좌상단 ‹ 뒤로가기 (인라인 span 4곳 통합, C6).
+   font-family 는 전역(body·.app-root=Pretendard) 상속 → 인라인 재지정 불필요. */
+.nav-arrow { font-size: 22px; cursor: pointer; }
+
 /* Placeholder shapes */
 .ph-circle { border: 1.5px solid var(--ink); border-radius: 50%; background: var(--paper-2); display: flex; align-items: center; justify-content: center; }
 .ph-square { border: 1.5px solid var(--ink); border-radius: 6px; background: var(--paper-2); display: flex; align-items: center; justify-content: center; }

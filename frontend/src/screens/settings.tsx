@@ -83,7 +83,7 @@ export const S22_Settings = () => {
       <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span
-            style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
+            className="nav-arrow"
             onClick={() => nav.back()}
           >
             ‹
@@ -125,11 +125,11 @@ export const S22_Settings = () => {
               }}
             >
               <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>{r.label}</div>
+                <div style={{ fontWeight: 700 }}>{r.label}</div>
                 <div className="tiny" style={{ marginTop: 2 }}>{r.value}</div>
               </div>
               {r.onClick && (
-                <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>›</span>
+                <span style={{ fontSize: 22 }}>›</span>
               )}
             </div>
           ))}

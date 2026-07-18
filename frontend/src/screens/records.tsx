@@ -343,12 +343,12 @@ export const S14_Calendar = () => {
               <div className="h-section">{formatMonthDay(recent)}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
                 <span style={{ fontSize: 20 }}>{recent.moods[0]}</span>
-                <span style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
+                <span style={{ fontWeight: 700 }}>
                   {recent.moods.map((m) => MOOD_LABEL[m]).join(' · ')}
                 </span>
               </div>
             </div>
-            <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>›</span>
+            <span style={{ fontSize: 22 }}>›</span>
           </div>
           <div className="tiny" style={{ marginTop: 6 }}>
             "{stripDatePrefix(recent).slice(0, 30)}..."
@@ -430,7 +430,7 @@ export const S15_DiaryDetail = () => {
         <div className="phone-scroll" style={{ padding: '46px 18px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span
-              style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
+              className="nav-arrow"
               onClick={() => nav.back()}
             >
               ‹
@@ -477,7 +477,7 @@ export const S15_DiaryDetail = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span
-            style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
+            className="nav-arrow"
             onClick={() => nav.back()}
           >
             ‹
@@ -498,7 +498,7 @@ export const S15_DiaryDetail = () => {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <span style={{ fontSize: 22 }}>{entry.moods[0]}</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
+            <div style={{ fontWeight: 700 }}>
               {entry.moods.map((m) => MOOD_LABEL[m]).join(' · ')}
             </div>
             <div className="tiny">회고 대화로 작성</div>
@@ -581,7 +581,7 @@ export const S15_DiaryDetail = () => {
         >
           <div className="check on">✓</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
+            <div style={{ fontWeight: 700 }}>
               내일 한 가지 — {entry.tomorrow}
             </div>
             <div className="tiny">{tomorrowDate}에 알람으로 추가됨</div>
@@ -637,7 +637,7 @@ export const S16_Stats = () => {
             {s.writeDays}
           </div>
           <div>
-            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
+            <div style={{ fontWeight: 700 }}>
               {period === '전체' ? '일 누적' : `/ ${s.target} 일`}
             </div>
             <div className="tiny squiggle">
@@ -701,7 +701,7 @@ export const S16_Stats = () => {
         >
           {s.moodPct.map((x, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: 'Pretendard', fontSize: 13, width: 64 }}>
+              <span style={{ fontSize: 13, width: 64 }}>
                 {x.mood} {x.label}
               </span>
               <div className="bar" style={{ flex: 1 }}>
@@ -734,7 +734,6 @@ export const S16_Stats = () => {
               <div className="tiny">{t}</div>
               <div
                 style={{
-                  fontFamily: 'Pretendard',
                   fontWeight: 700,
                   fontSize: 20,
                   marginTop: 2,
@@ -813,7 +812,7 @@ export const S17_Insights = () => {
             {ic}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>{t}</div>
+            <div style={{ fontWeight: 700 }}>{t}</div>
             <div className="tiny">{s}</div>
           </div>
           <span className="tiny" style={{ color: 'var(--accent)' }}>
@@ -893,10 +892,10 @@ export const S17_Insights = () => {
           ◇
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>이번 주 리포트 보기</div>
+          <div style={{ fontWeight: 700 }}>이번 주 리포트 보기</div>
           <div className="tiny">매주 월요일 발행 · 한 주 요약 카드</div>
         </div>
-        <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>›</span>
+        <span style={{ fontSize: 22 }}>›</span>
       </div>
 
       <div className="sticky" style={{ marginTop: 14, transform: 'rotate(-1.5deg)' }}>
