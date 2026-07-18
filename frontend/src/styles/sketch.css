@@ -77,7 +77,7 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
 .h-section { font-family: 'Pretendard'; font-weight: 400; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; color: var(--pencil); }
 .h-label { font-family: 'Pretendard'; font-size: 13px; color: var(--pencil); }
 .body { font-family: 'Pretendard'; font-size: 14px; color: var(--ink); }
-.tiny { font-family: 'Pretendard'; font-size: 11px; color: var(--muted); letter-spacing: 0.4px; }
+.tiny { font-family: 'Pretendard'; font-size: 11px; color: var(--pencil); letter-spacing: 0.4px; }
 .handwriting { font-family: 'Pretendard'; font-size: 18px; color: var(--ink-soft); }
 
 /* Placeholder shapes */
@@ -240,6 +240,10 @@ html, body { background: #f5f1e8; }
 }
 .input-row input::placeholder { color: var(--muted, #b39570); }
 .input-row input:focus { border-color: var(--accent, #8c4a1f); box-shadow: 0 0 0 2px rgba(140,74,31,0.15); }
+
+/* a11y: 키보드 포커스 가시화 — 마우스 클릭 시엔 미표시, Tab 탐색 시에만 링 표시 (WCAG 2.4.7).
+   input 은 위 :focus 의 border+shadow 를 유지(높은 specificity)하고, 그 외 버튼/탭/링크에 적용. */
+:focus-visible { outline: 2px solid var(--accent, #8c4a1f); outline-offset: 2px; border-radius: 3px; }
 
 /* Chat bubbles — Section 1 soft style (borderless, filled, asymmetric radius) */
 .bubble { padding: 10px 13px; max-width: 280px; box-shadow: 1px 2px 0 rgba(0,0,0,0.05); border: none; }

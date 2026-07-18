@@ -1,5 +1,6 @@
 import { CSSProperties, ReactNode } from 'react';
 import { Route, useNav } from '../lib/router';
+import { MOOD_LABEL, Mood } from '../lib/store';
 
 // ── Sketch UI primitives — bartender/barista coffee tone ─────────────────────
 
@@ -45,6 +46,8 @@ export const TabBar = ({
           key={t.k}
           type="button"
           onClick={() => onTab(t.k)}
+          aria-label={t.label}
+          aria-current={t.k === active ? 'page' : undefined}
           className={'tab ' + (t.k === active ? 'active' : '') + (t.center ? ' tab-center' : '')}
           style={{
             background: 'transparent',
@@ -55,7 +58,7 @@ export const TabBar = ({
             padding: 0,
           }}
         >
-          <div className={'tab-icon' + (t.center ? ' tab-icon-lg' : '')}>{t.icon}</div>
+          <div className={'tab-icon' + (t.center ? ' tab-icon-lg' : '')} aria-hidden="true">{t.icon}</div>
           <div>{t.label}</div>
         </button>
       ))}
@@ -107,7 +110,7 @@ const MOOD_SRC: Record<string, string> = {
 export const MoodFace = ({ mood, size = 28 }: { mood: string; size?: number }) => (
   <img
     src={MOOD_SRC[mood] ?? MOOD_SRC['\u{1F60C}']}
-    alt={mood}
+    alt={MOOD_LABEL[mood as Mood] ?? '감정'}
     width={size}
     height={size}
     style={{
