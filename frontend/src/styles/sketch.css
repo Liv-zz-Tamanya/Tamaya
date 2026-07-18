@@ -92,6 +92,11 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
 .chip.accent { background: var(--accent); color: #fff; border-color: var(--ink); }
 .chip.dashed { border-style: dashed; background: transparent; }
 
+/* Mood palette chip — .chip 확장(소프트 그라데이션 감정 칩, 탭 1회 선택). MoodPalette 전용. */
+.chip.mood-chip { padding: 8px 14px; min-height: 40px; font-size: 13px; gap: 6px; transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.chip.mood-chip[aria-pressed="true"] { font-weight: 700; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(58, 36, 20, 0.18); }
+.chip.mood-chip.mood-skip { min-height: 40px; }
+
 /* Button */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;

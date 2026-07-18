@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { MoodFace, TabBar } from '../components/primitives';
+import { TabBar } from '../components/primitives';
 import { MoodHeatmap } from '../components/mood-heatmap';
+import { MoodPalette } from '../components/mood-palette';
 import { useNav } from '../lib/router';
 import {
   DiaryEntry,
@@ -395,44 +396,16 @@ export const S14_Calendar = () => {
         >
           <div className="h-section">{month}월 {picker.day}일 감정</div>
           <div className="h-title" style={{ fontSize: 18, marginTop: 2 }}>한 단어로 표현하면?</div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 8,
-              marginTop: 14,
-              fontSize: 28,
-            }}
-          >
-            {['😌', '😊', '😣', '😢', '😡'].map((e) => (
-              <button
-                key={e}
-                type="button"
-                onClick={() => {
-                  setLocalMoods((m) => ({ ...m, [picker.date]: e as Mood }));
-                  setPicker(null);
-                }}
-                style={{
-                  width: 48,
-                  height: 48,
-                  border: '1.5px solid var(--ink)',
-                  borderRadius: '50%',
-                  background: '#fff',
-                  cursor: 'pointer',
-                  fontSize: 22,
-                  fontFamily: 'inherit',
-                }}
-              >
-                <MoodFace mood={e} size={30} />
-              </button>
-            ))}
-          </div>
-          <div
-            className="tiny"
-            style={{ marginTop: 14, cursor: 'pointer', color: 'var(--pencil)' }}
-            onClick={() => setPicker(null)}
-          >
-            닫기
+          <div style={{ marginTop: 14 }}>
+            <MoodPalette
+              value={localMoods[picker.date] ?? null}
+              onChange={(m) => {
+                setLocalMoods((prev) => ({ ...prev, [picker.date]: m }));
+                setPicker(null);
+              }}
+              allowSkip
+              onSkip={() => setPicker(null)}
+            />
           </div>
         </div>
       </div>
