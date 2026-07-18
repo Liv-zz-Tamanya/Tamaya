@@ -26,16 +26,20 @@ type Props = {
   diaries: DiaryEntry[];
   month: Date;
   onSelect: (dateKey: string) => void;
+  // 표시 병합용 오버레이 — emoji 뷰의 세션 quick-add(localMoods)와 정합.
+  // diaries 로직은 불변, 표시 단계에서만 persisted 위에 얹는다.
+  overlay?: Record<string, Mood>;
 };
 
-export const MoodHeatmap = ({ diaries, month, onSelect }: Props) => {
+export const MoodHeatmap = ({ diaries, month, onSelect, overlay }: Props) => {
   const year = month.getFullYear();
   const m = month.getMonth() + 1;
   // 월 그리드 기하 — S14 달력과 동일 규칙(첫 요일 오프셋 + 주 단위 올림).
   const firstWeekday = new Date(year, m - 1, 1).getDay();
   const daysInMonth = new Date(year, m, 0).getDate();
   const cellCount = Math.ceil((firstWeekday + daysInMonth) / 7) * 7;
-  const moods = moodByDate(diaries); // 날짜키 → 대표 감정 (기존 헬퍼)
+  // 날짜키 → 대표 감정. persisted(diaries) 위에 세션 오버레이 병합(표시용).
+  const moods = { ...moodByDate(diaries), ...(overlay ?? {}) };
   const now = new Date();
   const todayKey = formatDateKey(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
@@ -94,18 +98,38 @@ export const MoodHeatmap = ({ diaries, month, onSelect }: Props) => {
             >
               <div
                 style={{
+                  position: 'relative',
                   width: '100%',
                   aspectRatio: 1,
                   borderRadius: 'var(--radius-sm)',
                   // 감정 있으면 색 스와치, 없으면 조용한 중립(투명 + 흐린 테두리).
                   background: mood ? MOOD_TOKEN[mood] : 'transparent',
+                  // 채움 셀 테두리 = ink 30% 파생(근백색 슬픔/짜증도 빈 셀과 확실히 구분).
                   border: today
                     ? '2px solid var(--accent)'
                     : mood
-                      ? '1px solid var(--line)'
+                      ? `1px solid color-mix(in srgb, var(--ink) 30%, ${MOOD_TOKEN[mood]})`
                       : '1px solid color-mix(in srgb, var(--line) 30%, transparent)',
                 }}
-              />
+              >
+                {/* 우하단 마이크로 글리프 — 근백색 2종(😢/😡) 상호 구분 보조(조용한 톤) */}
+                {mood && (
+                  <span
+                    aria-hidden
+                    style={{
+                      position: 'absolute',
+                      right: 1,
+                      bottom: 0,
+                      fontSize: 8,
+                      lineHeight: 1,
+                      opacity: 0.9,
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    {mood}
+                  </span>
+                )}
+              </div>
               {/* 날짜 숫자는 카드 배경(테마 반전) 위 → var(--ink) 자동 정합 */}
               <span
                 style={{
@@ -141,7 +165,8 @@ export const MoodHeatmap = ({ diaries, month, onSelect }: Props) => {
                 height: 12,
                 borderRadius: 3,
                 background: MOOD_TOKEN[mo],
-                border: '1px solid var(--line)',
+                // 셀과 동일한 ink 30% 파생 테두리 — 범례에서도 근백색 스와치 식별.
+                border: `1px solid color-mix(in srgb, var(--ink) 30%, ${MOOD_TOKEN[mo]})`,
                 flex: 'none',
               }}
             />
