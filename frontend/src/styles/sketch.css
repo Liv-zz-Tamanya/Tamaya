@@ -243,7 +243,7 @@ html, body { background: #f5f1e8; }
 
 /* a11y: 키보드 포커스 가시화 — 마우스 클릭 시엔 미표시, Tab 탐색 시에만 링 표시 (WCAG 2.4.7).
    input 은 위 :focus 의 border+shadow 를 유지(높은 specificity)하고, 그 외 버튼/탭/링크에 적용. */
-:focus-visible { outline: 2px solid var(--accent, #8c4a1f); outline-offset: 2px; border-radius: 3px; }
+:focus-visible { outline: 2px solid var(--accent, #8c4a1f); outline-offset: 2px; }
 
 /* Chat bubbles — Section 1 soft style (borderless, filled, asymmetric radius) */
 .bubble { padding: 10px 13px; max-width: 280px; box-shadow: 1px 2px 0 rgba(0,0,0,0.05); border: none; }
