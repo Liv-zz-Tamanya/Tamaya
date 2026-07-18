@@ -14,6 +14,7 @@ export const getToken = (): string | null => {
 export const setToken = (t: string): void => {
   try {
     localStorage.setItem(TOKEN_KEY, t);
+    window.dispatchEvent(new Event('tamaya-auth-changed'));
   } catch {
     // ignore quota/unavailable
   }
@@ -22,6 +23,7 @@ export const setToken = (t: string): void => {
 export const clearToken = (): void => {
   try {
     localStorage.removeItem(TOKEN_KEY);
+    window.dispatchEvent(new Event('tamaya-auth-changed'));
   } catch {
     // ignore
   }
