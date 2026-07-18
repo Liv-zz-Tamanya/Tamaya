@@ -1,4 +1,6 @@
 import asyncio
+import logging
+import time
 from collections.abc import Sequence
 from enum import StrEnum
 from typing import Annotated, Literal, TypedDict
@@ -10,12 +12,22 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 
+from app.application.service.agent_execution_observability import (
+    AgentExecutionRecorder,
+    AgentExecutionTrace,
+    AgentTerminationReason,
+    NullAgentExecutionRecorder,
+    activate_agent_execution_trace,
+    get_active_agent_execution_trace,
+    reset_agent_execution_trace,
+)
 from app.application.service.coaching_prompt import build_coaching_system_prompt
 from app.application.service.diary_chat_prompt import (
     DiaryConversationContext,
     build_diary_chat_system_prompt,
 )
 from app.application.service.health_chat_prompt import build_health_chat_system_prompt
+from app.application.service.model_provider_error import ModelProviderError
 from app.application.service.personal_assistant_timeout import (
     DEFAULT_PERSONAL_ASSISTANT_TIMEOUT_POLICY,
     PersonalAssistantTimeoutError,
@@ -30,6 +42,7 @@ from app.domain.service.medical_guardrail import (
 )
 
 DEFAULT_MAX_TOOL_ROUNDS = 3
+logger = logging.getLogger(__name__)
 ITERATION_LIMIT_MESSAGE = (
     "요청을 처리하는 과정에서 도구 호출이 반복되어 현재 요청을 완료하지 못했어요. "
     "질문을 더 구체적으로 다시 요청해 주세요."
@@ -104,6 +117,7 @@ class PersonalAssistantAgent:
         *,
         max_tool_rounds: int = DEFAULT_MAX_TOOL_ROUNDS,
         timeout_policy: PersonalAssistantTimeoutPolicy = DEFAULT_PERSONAL_ASSISTANT_TIMEOUT_POLICY,
+        execution_recorder: AgentExecutionRecorder = NullAgentExecutionRecorder(),
     ) -> None:
         if max_tool_rounds < 1:
             raise ValueError("max_tool_rounds must be at least 1")
@@ -117,6 +131,7 @@ class PersonalAssistantAgent:
         self._tools = tuple(tools)
         self._max_tool_rounds = max_tool_rounds
         self._timeout_policy = timeout_policy
+        self._execution_recorder = execution_recorder
         self._tool_node = ToolNode(self._tools, handle_tool_errors=False)
         self._graph = self._build_graph()
 
@@ -160,8 +175,12 @@ class PersonalAssistantAgent:
             return {"guardrail_verdict": GuardrailVerdict.SAFE}
 
         latest_user_text = find_latest_human_message_text(state["messages"])
+        verdict = classify_medical_request(latest_user_text)
+        trace = get_active_agent_execution_trace()
+        if trace is not None:
+            trace.record_guardrail_verdict(verdict.value)
         return {
-            "guardrail_verdict": classify_medical_request(latest_user_text),
+            "guardrail_verdict": verdict,
         }
 
     def _route_after_input_guardrail(
@@ -180,10 +199,16 @@ class PersonalAssistantAgent:
         content = build_disclaimer(verdict)
         if not content:
             raise RuntimeError("blocked_response produced empty disclaimer")
+        trace = get_active_agent_execution_trace()
+        if trace is not None:
+            trace.termination_reason = AgentTerminationReason.INPUT_GUARDRAIL_BLOCKED
         return {"messages": [AIMessage(content=content, id="guardrail-blocked-response")]}
 
     async def _agent_node(self, state: PersonalAssistantState) -> dict:
         llm_calls = state.get("llm_calls", 0) + 1
+        trace = get_active_agent_execution_trace()
+        model_attempts_before = trace.llm_calls if trace is not None else 0
+        started_at = time.monotonic()
         try:
             async with asyncio.timeout(self._timeout_policy.model_call_seconds):
                 response = await self._model.ainvoke(
@@ -199,7 +224,14 @@ class PersonalAssistantAgent:
                 )
         except TimeoutError as exc:
             raise PersonalAssistantTimeoutError("model") from exc
+        finally:
+            if trace is not None:
+                trace.add_model_duration(time.monotonic() - started_at)
+                if trace.llm_calls == model_attempts_before:
+                    trace.record_model_attempt()
         _ensure_ai_message_id(response, f"agent-response-{llm_calls}")
+        if trace is not None:
+            trace.record_token_usage(_normalized_token_usage(response))
         return {
             "messages": [response],
             "llm_calls": llm_calls,
@@ -210,17 +242,33 @@ class PersonalAssistantAgent:
         state: PersonalAssistantState,
         config: RunnableConfig,
     ) -> dict:
+        trace = get_active_agent_execution_trace()
+        if trace is not None:
+            trace.start_tool_round(_tool_names_from_state(state))
+        started_at = time.monotonic()
         try:
             async with asyncio.timeout(self._timeout_policy.tool_round_seconds):
                 result = await self._tool_node.ainvoke(state, config=config)
         except TimeoutError as exc:
+            if trace is not None:
+                trace.add_failed_tool_duration(time.monotonic() - started_at)
             raise PersonalAssistantTimeoutError("tool") from exc
+        except Exception:
+            if trace is not None:
+                trace.add_failed_tool_duration(time.monotonic() - started_at)
+            raise
+        else:
+            if trace is not None:
+                trace.complete_tool_round(time.monotonic() - started_at)
         return {
             "messages": result["messages"],
             "tool_rounds": state.get("tool_rounds", 0) + 1,
         }
 
     async def _iteration_limit_node(self, state: PersonalAssistantState) -> dict:
+        trace = get_active_agent_execution_trace()
+        if trace is not None:
+            trace.termination_reason = AgentTerminationReason.ITERATION_LIMIT
         return {"messages": [AIMessage(content=ITERATION_LIMIT_MESSAGE)]}
 
     def _output_guardrail_node(self, state: PersonalAssistantState) -> dict:
@@ -237,6 +285,11 @@ class PersonalAssistantAgent:
         content = build_disclaimer(GuardrailVerdict.ADVICE_BOUNDARY)
         if not content:
             raise RuntimeError("output_guardrail produced empty disclaimer")
+
+        trace = get_active_agent_execution_trace()
+        if trace is not None:
+            trace.record_guardrail_verdict(GuardrailVerdict.ADVICE_BOUNDARY.value)
+            trace.termination_reason = AgentTerminationReason.OUTPUT_GUARDRAIL_BLOCKED
 
         return {
             "messages": [
@@ -293,6 +346,8 @@ class PersonalAssistantAgent:
         diary_context: DiaryConversationContext | None = None,
         coaching_context: CoachingConversationContext | None = None,
     ) -> AIMessage:
+        trace = AgentExecutionTrace(mode=mode.value)
+        context_token = activate_agent_execution_trace(trace)
         try:
             async with asyncio.timeout(self._timeout_policy.execution_seconds):
                 result = await self._ainvoke_state(
@@ -302,13 +357,44 @@ class PersonalAssistantAgent:
                     coaching_context=coaching_context,
                 )
         except TimeoutError as exc:
+            trace.termination_reason = AgentTerminationReason.TIMEOUT
+            trace.record_timeout("execution")
             raise PersonalAssistantTimeoutError("execution") from exc
-        for message in reversed(result["messages"]):
-            if isinstance(message, AIMessage):
-                if message.tool_calls:
-                    break
-                return message
-        raise RuntimeError("personal assistant graph did not produce final AIMessage")
+        except PersonalAssistantTimeoutError as exc:
+            trace.termination_reason = AgentTerminationReason.TIMEOUT
+            trace.record_timeout(exc.stage)
+            raise
+        except ModelProviderError as exc:
+            trace.termination_reason = AgentTerminationReason.PROVIDER_ERROR
+            trace.record_provider_error(exc.category.value)
+            raise
+        except asyncio.CancelledError:
+            trace.termination_reason = AgentTerminationReason.CANCELLED
+            raise
+        except Exception:
+            trace.termination_reason = (
+                AgentTerminationReason.TOOL_ERROR
+                if trace.tool_round_in_progress
+                else AgentTerminationReason.UNEXPECTED_ERROR
+            )
+            raise
+        else:
+            for message in reversed(result["messages"]):
+                if isinstance(message, AIMessage):
+                    if message.tool_calls:
+                        break
+                    return message
+            trace.termination_reason = AgentTerminationReason.UNEXPECTED_ERROR
+            raise RuntimeError("personal assistant graph did not produce final AIMessage")
+        finally:
+            self._record_execution(trace)
+            reset_agent_execution_trace(context_token)
+
+    def _record_execution(self, trace: AgentExecutionTrace) -> None:
+        try:
+            self._execution_recorder.record(trace.to_record())
+        except Exception:
+            logger.warning("personal assistant execution recording failed")
 
 
 def _validate_context_for_mode(
@@ -357,3 +443,34 @@ def _content_block_text(block: str | dict) -> str:
 def _ensure_ai_message_id(message: AIMessage, default_id: str) -> None:
     if message.id is None:
         message.id = default_id
+
+
+def _tool_names_from_state(state: PersonalAssistantState) -> list[str]:
+    last_message = state["messages"][-1]
+    if not isinstance(last_message, AIMessage):
+        raise RuntimeError("tools node requires AIMessage")
+    return [tool_call["name"] for tool_call in last_message.tool_calls]
+
+
+def _normalized_token_usage(message: AIMessage) -> dict[str, int] | None:
+    usage = message.usage_metadata
+    if not isinstance(usage, dict):
+        return None
+
+    input_tokens = usage.get("input_tokens")
+    output_tokens = usage.get("output_tokens")
+    total_tokens = usage.get("total_tokens")
+    if not all(
+        value is None or isinstance(value, int)
+        for value in (input_tokens, output_tokens, total_tokens)
+    ):
+        return None
+    if input_tokens is None and output_tokens is None and total_tokens is None:
+        return None
+    if total_tokens is None and isinstance(input_tokens, int) and isinstance(output_tokens, int):
+        total_tokens = input_tokens + output_tokens
+    return {
+        "input_tokens": input_tokens if isinstance(input_tokens, int) else 0,
+        "output_tokens": output_tokens if isinstance(output_tokens, int) else 0,
+        "total_tokens": total_tokens if isinstance(total_tokens, int) else 0,
+    }

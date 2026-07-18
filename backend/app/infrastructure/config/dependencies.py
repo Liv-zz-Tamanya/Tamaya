@@ -5,6 +5,7 @@ from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.tools import BaseTool
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.service.agent_execution_observability import AgentExecutionRecorder
 from app.application.service.ai_chat_service import AiChatService
 from app.application.service.clova_connection_tester import ClovaConnectionTester
 from app.application.service.diary_memory_query_service import DiaryMemoryQueryService
@@ -37,6 +38,9 @@ from app.infrastructure.external.clova_connection_tester_impl import ClovaConnec
 from app.infrastructure.external.clova_tool_calling import ClovaToolCallingChatModel
 from app.infrastructure.external.embedding_service_impl import SentenceTransformerEmbeddingService
 from app.infrastructure.external.signal_extraction_clova import SignalExtractionClovaClient
+from app.infrastructure.observability.personal_assistant_execution_logger import (
+    StructuredLoggingAgentExecutionRecorder,
+)
 from app.infrastructure.persistence.chat_session_repository_impl import ChatSessionRepositoryImpl
 from app.infrastructure.persistence.clova_setting_repository_impl import (
     ClovaSettingRepositoryImpl,
@@ -228,13 +232,24 @@ def get_personal_assistant_timeout_policy() -> PersonalAssistantTimeoutPolicy:
     )
 
 
+def get_agent_execution_recorder() -> AgentExecutionRecorder:
+    return StructuredLoggingAgentExecutionRecorder()
+
+
 def get_personal_assistant_agent_factory(
     model: ToolCallingChatModel = Depends(get_tool_calling_chat_model),
     diary_query: DiaryMemoryQueryService = Depends(get_diary_memory_query_service),
     health_query: HealthRecordQueryService = Depends(get_health_record_query_service),
     timeout_policy: PersonalAssistantTimeoutPolicy = Depends(get_personal_assistant_timeout_policy),
+    execution_recorder: AgentExecutionRecorder = Depends(get_agent_execution_recorder),
 ) -> PersonalAssistantAgentFactory:
-    return PersonalAssistantAgentFactory(model, diary_query, health_query, timeout_policy)
+    return PersonalAssistantAgentFactory(
+        model,
+        diary_query,
+        health_query,
+        timeout_policy,
+        execution_recorder,
+    )
 
 
 def get_coaching_personal_assistant_agent_factory(
@@ -242,8 +257,15 @@ def get_coaching_personal_assistant_agent_factory(
     diary_query: DiaryMemoryQueryService = Depends(get_diary_memory_query_service),
     health_query: HealthRecordQueryService = Depends(get_health_record_query_service),
     timeout_policy: PersonalAssistantTimeoutPolicy = Depends(get_personal_assistant_timeout_policy),
+    execution_recorder: AgentExecutionRecorder = Depends(get_agent_execution_recorder),
 ) -> PersonalAssistantAgentFactory:
-    return PersonalAssistantAgentFactory(model, diary_query, health_query, timeout_policy)
+    return PersonalAssistantAgentFactory(
+        model,
+        diary_query,
+        health_query,
+        timeout_policy,
+        execution_recorder,
+    )
 
 
 def get_health_session_repo(db: AsyncSession = Depends(get_db)) -> HealthSessionRepository:
