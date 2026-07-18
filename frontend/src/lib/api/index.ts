@@ -41,3 +41,8 @@ export {
 } from './clova';
 export { sendHealthChat } from './healthchat';
 export { purgeMyData, type PurgeResult } from './me';
+export {
+  getNightChatPreference,
+  updateNightChatPreference,
+  type NightChatPreference,
+} from './preferences';
