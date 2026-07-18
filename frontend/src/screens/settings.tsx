@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { useStore } from '../lib/store';
-import { purgeMyData } from '../lib/api';
+import { purgeMyData, updateNightChatPreference } from '../lib/api';
 
 // 22 · Settings — character name, notifications, data, logout
 
@@ -10,6 +10,32 @@ export const S22_Settings = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
   const [purging, setPurging] = useState(false);
+  const [openTime, setOpenTime] = useState(nav.nightOpenTime);
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+
+  const saveNightChatTime = async () => {
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(openTime) || openTime < '18:00') {
+      setSaveStatus('밤 채팅 시작 시간은 18:00~23:59 사이여야 해요.');
+      return;
+    }
+    setSaving(true);
+    setSaveStatus(null);
+    try {
+      const saved = await updateNightChatPreference({
+        open_time: openTime,
+        timezone: nav.nightTimezone,
+      });
+      setOpenTime(saved.open_time);
+      nav.setNightOpenTime(saved.open_time, saved.timezone);
+      setSaveStatus('저장했어요.');
+    } catch {
+      setOpenTime(nav.nightOpenTime);
+      setSaveStatus('저장하지 못했어요. 기존 설정을 유지합니다.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // 완전 삭제(liv-I1): 서버 device 데이터 purge(best-effort) + 로컬 store/세션 clear → 리로드.
   const purgeAll = async () => {
@@ -42,7 +68,6 @@ export const S22_Settings = () => {
     danger?: boolean;
   }[] = [
     { label: '이음이 이름', value: state.character.name, onClick: () => nav.go('create-cat') },
-    { label: '알림 — 회고 시간', value: '매일 22:00' },
     { label: '알림 — 주간 리포트', value: '월요일 09:00' },
     { label: '데이터 — 로컬 저장', value: `일기 ${state.diaries.length}건` },
     { label: '데이터 — 백업', value: '직접 내보내기' },
@@ -67,6 +92,25 @@ export const S22_Settings = () => {
         </div>
 
         <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="hbox r-r" style={{ padding: '12px 14px' }}>
+            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>밤 채팅 시작 시간</div>
+            <div className="tiny" style={{ marginTop: 2 }}>매일 설정한 시간부터 다음 날 06:00까지</div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+              <input
+                aria-label="밤 채팅 시작 시간"
+                type="time"
+                min="18:00"
+                max="23:59"
+                value={openTime}
+                onChange={(event) => setOpenTime(event.target.value)}
+                disabled={saving}
+              />
+              <button type="button" className="btn" onClick={() => void saveNightChatTime()} disabled={saving} style={{ cursor: saving ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
+                {saving ? '저장 중…' : '저장'}
+              </button>
+            </div>
+            {saveStatus && <div className="tiny" style={{ marginTop: 6 }}>{saveStatus}</div>}
+          </div>
           {rows.map((r, i) => (
             <div
               key={i}
