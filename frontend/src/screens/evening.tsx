@@ -137,7 +137,7 @@ export const S10_RecapStart = () => {
 
   return (
   <div
-    className="phone-inner"
+    className="screen"
     style={{
       background: 'linear-gradient(180deg, var(--night) 0%, #4a2f1e 100%)',
       color: 'var(--paper)',
@@ -157,7 +157,7 @@ export const S10_RecapStart = () => {
         <circle key={i} cx={x} cy={y} r="1.4" fill="#f5e6cf" />
       ))}
     </svg>
-    <div className="phone-scroll" style={{ padding: '60px 24px calc(100px + var(--safe-b, 0px))' }}>
+    <div className="screen-scroll" style={{ padding: '60px 24px calc(100px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
           style={{ fontFamily: 'Pretendard', fontSize: 22, color: 'var(--accent-soft)', cursor: 'pointer' }}
@@ -457,10 +457,10 @@ export const S11_ChatDiary = () => {
   };
 
   return (
-  <div className="phone-inner">
+  <div className="screen">
     <div
       ref={scrollRef}
-      className="phone-scroll"
+      className="screen-scroll"
       style={{ padding: '46px 14px calc(96px + var(--safe-b, 0px))' }}
     >
       <div
@@ -659,8 +659,8 @@ export const S12_MoodFinalize = () => {
   };
 
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px calc(80px + var(--safe-b, 0px))' }}>
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: '46px 18px calc(80px + var(--safe-b, 0px))' }}>
       <div className="h-section">{state.chatDiaryMaxTurns}턴 완료 — 일기로 마무리</div>
       <div className="h-display" style={{ marginTop: 8 }}>
         오늘은 이런
@@ -844,7 +844,7 @@ export const S13_Reward = () => {
   const nav = useNav();
   const { state } = useStore();
   return (
-  <div className="phone-inner">
+  <div className="screen">
     <div
       style={{ position: 'absolute', inset: 0, background: 'rgba(26,26,26,0.55)' }}
     />
@@ -854,7 +854,7 @@ export const S13_Reward = () => {
     </div>
 
     <div
-      className="phone-scroll"
+      className="screen-scroll"
       style={{ display: 'flex', flexDirection: 'column', padding: 24 }}
     >
     <div

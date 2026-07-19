@@ -5,6 +5,7 @@ import {
   DailyKey,
   MOOD_LABEL,
   TODAY_DAY,
+  WEEKDAY_KR,
   latestEntry,
   simulateAiReply,
   useStore,
@@ -44,8 +45,8 @@ export const S06_HomeDay = () => {
     ['키우기', state.unlockedItems.length ? `아이템 ${state.unlockedItems.length}` : '시작하기', '보러가기 ›'],
   ];
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div
         style={{
           display: 'flex',
@@ -55,7 +56,7 @@ export const S06_HomeDay = () => {
         }}
       >
         <div>
-          <div className="tiny">5월 27일 · 수요일</div>
+          <div className="tiny">{nav.now.getMonth() + 1}월 {nav.now.getDate()}일 · {WEEKDAY_KR[nav.now.getDay()]}요일</div>
           <div className="h-title" style={{ marginTop: 2 }}>
             좋은 아침,
             <br />
@@ -213,10 +214,10 @@ export const S07_HomeNight = () => {
   const { state } = useStore();
   return (
   <div
-    className="phone-inner"
+    className="screen"
     style={{ background: 'linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 70%, var(--accent-soft) 100%)' }}
   >
-    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+    <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div
         style={{
           display: 'flex',
@@ -226,7 +227,7 @@ export const S07_HomeNight = () => {
         }}
       >
         <div>
-          <div className="tiny">5월 27일 · 수요일 밤</div>
+          <div className="tiny">{nav.now.getMonth() + 1}월 {nav.now.getDate()}일 · {WEEKDAY_KR[nav.now.getDay()]}요일 밤</div>
           <div className="h-title" style={{ marginTop: 2 }}>
             이음이가
             <br />
@@ -461,8 +462,8 @@ export const S08_DailyCheck = () => {
   };
 
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <span
           style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
@@ -692,10 +693,10 @@ export const S09_AIChat = () => {
   const quick = ['잠이 안 와요', '집이 너무 조용해', '오늘 기분 그저 그래', '루틴 추천'];
 
   return (
-    <div className="phone-inner">
+    <div className="screen">
       <div
         ref={scrollRef}
-        className="phone-scroll"
+        className="screen-scroll"
         style={{ padding: '46px 14px calc(140px + var(--safe-b, 0px))' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>

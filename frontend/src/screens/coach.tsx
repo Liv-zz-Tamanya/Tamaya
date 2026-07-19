@@ -80,8 +80,8 @@ export const S23_Coach = ({ sample = false }: { sample?: boolean } = {}) => {
   const quick = ['잠이 안 와요', '오늘 끼니를 걸렀어요', '운동을 못 했어요', '약 먹는 걸 자꾸 잊어요'];
 
   return (
-    <div className="phone-inner">
-      <div ref={scrollRef} className="phone-scroll" style={{ padding: '46px 14px calc(140px + var(--safe-b, 0px))' }}>
+    <div className="screen">
+      <div ref={scrollRef} className="screen-scroll" style={{ padding: '46px 14px calc(140px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span
             style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}

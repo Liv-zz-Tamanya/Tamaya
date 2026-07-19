@@ -8,12 +8,12 @@
 
 html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif; color: var(--ink); }
 
-/* App viewport — mobile-first column, centered on wide screens (no phone frame).
-   화면 컴포넌트(.phone-inner)가 이 컨테이너를 채운다. */
+/* App viewport — 유동 폭 웹앱 (폰 목업 캡 없음).
+   화면 컴포넌트(.screen)가 이 컨테이너를 채우고, 본문 콘텐츠(.screen-scroll)와
+   탭바 내부는 --app-fluid(responsive.css 티어)로 중앙 정렬·확장된다. */
 .app-root {
   position: relative;
   width: 100%;
-  max-width: 480px;
   height: 100vh;
   height: 100dvh;
   margin: 0 auto;
@@ -21,13 +21,16 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
   overflow: hidden;
   font-family: 'Pretendard', sans-serif;
 }
-.phone-inner { position: absolute; inset: 0; }
+.screen { position: absolute; inset: 0; }
+/* 캔버스형 화면(절대 px 앵커 연출 — 이음이 방 등): 무한정 늘리지 않고 스테이지 폭으로 센터 */
+.screen--stage { max-width: var(--stage-max, 560px); margin-inline: auto; }
 
-/* Tab bar */
+/* Tab bar — 바는 전폭, 버튼 행은 --app-fluid 컬럼에 맞춰 중앙 정렬 */
 .tabbar {
   position: absolute; left: 0; right: 0; bottom: 0;
   height: var(--tabbar-h, 64px);
   padding-bottom: var(--safe-b, 0px); /* 홈 인디케이터 위로 아이콘을 올린다 */
+  padding-inline: max(0px, calc((100% - var(--app-fluid, 100%)) / 2));
   border-top: 2px solid var(--ink);
   background: var(--paper-2);
   display: grid; grid-template-columns: repeat(5, 1fr);
@@ -294,13 +297,15 @@ html, body { background: #f5f1e8; }
 button.chip, button.btn { font-family: inherit; cursor: pointer; }
 button.chip:disabled, button.btn:disabled { cursor: not-allowed; opacity: 0.55; }
 
-/* Scrollable inner area */
-.phone-scroll {
+/* Scrollable inner area — 유동 폭 컬럼(--app-fluid)으로 중앙 정렬, 모바일은 full-bleed */
+.screen-scroll {
   position: absolute; inset: 0;
+  max-width: var(--app-fluid, none);
+  margin-inline: auto;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
 }
-.phone-scroll::-webkit-scrollbar { width: 4px; }
-.phone-scroll::-webkit-scrollbar-thumb { background: rgba(58,36,20,0.18); border-radius: 2px; }
+.screen-scroll::-webkit-scrollbar { width: 4px; }
+.screen-scroll::-webkit-scrollbar-thumb { background: rgba(58,36,20,0.18); border-radius: 2px; }
 

@@ -66,8 +66,8 @@ export const S24_Wellbeing = ({ sample = false }: { sample?: boolean } = {}) => 
   const maxTrend = Math.max(1, ...(data?.trend ?? []).map((t) => t.score));
 
   return (
-    <div className="phone-inner">
-      <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+    <div className="screen">
+      <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className="nav-arrow" onClick={() => nav.back()}>‹</span>
           <div className="h-title">웰빙 인사이트</div>

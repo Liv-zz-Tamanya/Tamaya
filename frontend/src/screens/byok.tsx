@@ -69,8 +69,8 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
   };
 
   return (
-    <div className="phone-inner">
-      <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+    <div className="screen">
+      <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }} onClick={() => nav.back()}>‹</span>
           <div className="h-title">CLOVA 키 (BYOK)</div>

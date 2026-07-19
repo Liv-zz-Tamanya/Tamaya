@@ -136,8 +136,8 @@ export const S14_Calendar = () => {
   })).filter((x) => x.n > 0);
   const recent = latestEntry(monthEntries);
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div className="h-title">달력</div>
       <div className="tiny">감정의 흐름을 한 눈에</div>
 
@@ -426,8 +426,8 @@ export const S15_DiaryDetail = () => {
 
   if (!entry) {
     return (
-      <div className="phone-inner">
-        <div className="phone-scroll" style={{ padding: '46px 18px 24px' }}>
+      <div className="screen">
+        <div className="screen-scroll" style={{ padding: '46px 18px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span
               className="nav-arrow"
@@ -466,8 +466,8 @@ export const S15_DiaryDetail = () => {
     entry.moods.length >= 3 ? [45, 30, 25] : entry.moods.length === 2 ? [60, 40] : [100];
 
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px 24px' }}>
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: '46px 18px 24px' }}>
       <div
         style={{
           display: 'flex',
@@ -605,8 +605,8 @@ export const S16_Stats = () => {
     ['🚶 운동', `${s.life.movement}/${s.writeDays}`, s.life.movement >= s.writeDays * 0.5 ? '활발' : '보통'],
   ];
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div className="h-title">통계</div>
       <div className="tiny">기록의 모양을 봐요</div>
 
@@ -759,8 +759,8 @@ export const S17_Insights = () => {
   // 데이터 부족(<5건) 시 인사이트 대신 안내 (feature-spec §F7: 7일 미만 안내).
   const enough = state.diaries.length >= 5;
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div className="h-title">인사이트</div>
       <div className="tiny">이음이가 정리해준 이번 주</div>
 

@@ -15,7 +15,7 @@ export const S01_Splash = () => {
   }, [nav]);
   return (
   <div
-    className="phone-inner"
+    className="screen"
     style={{
       background: 'linear-gradient(180deg, #4a2f1e 0%, var(--night) 100%)',
       color: 'var(--paper)',
@@ -88,8 +88,8 @@ export const S01_Splash = () => {
 export const S02_Welcome = () => {
   const nav = useNav();
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '60px 24px 100px' }}>
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: '60px 24px 100px' }}>
       <div className="h-section">01 / 04 — Welcome</div>
       <div className="h-display" style={{ marginTop: 14, fontSize: 38 }}>
         혼자여도
@@ -161,8 +161,8 @@ export const S02_Welcome = () => {
 export const S03_Privacy = () => {
   const nav = useNav();
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '52px 24px 100px' }}>
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: '52px 24px 100px' }}>
       <div className="h-section">02 / 04 — 약속</div>
       <div className="h-display" style={{ marginTop: 12, fontSize: 30 }}>
         네 마음은
@@ -249,8 +249,8 @@ export const S04_CreateCat = () => {
   };
 
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '52px 24px 100px' }}>
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: '52px 24px 100px' }}>
       <div className="h-section">03 / 04 — 캐릭터 만들기</div>
       <div className="h-display" style={{ marginTop: 12, fontSize: 30 }}>
         너만의 집사를
@@ -362,7 +362,7 @@ export const S05_FirstMeet = () => {
   const { state } = useStore();
   return (
   <div
-    className="phone-inner"
+    className="screen"
     style={{
       background: 'linear-gradient(180deg, #4a2f1e 0%, #1a0e08 100%)',
       color: 'var(--paper)',
@@ -380,7 +380,7 @@ export const S05_FirstMeet = () => {
         <circle key={i} cx={x} cy={y} r="1.5" fill="#f5e6cf" />
       ))}
     </svg>
-    <div className="phone-scroll" style={{ padding: '60px 24px 100px' }}>
+    <div className="screen-scroll" style={{ padding: '60px 24px 100px' }}>
       <div className="h-section" style={{ color: 'var(--accent-soft)' }}>
         04 / 04 — 첫 만남
       </div>

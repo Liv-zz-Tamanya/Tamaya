@@ -19,7 +19,7 @@ export const S18_CatRoom = () => {
   };
   return (
   <div
-    className="phone-inner"
+    className="screen screen--stage"
     style={{
       background: 'linear-gradient(180deg, var(--night) 0%, #4a2f1e 70%, var(--night) 100%)',
       color: 'var(--paper)',
@@ -268,8 +268,8 @@ export const S19_Inventory = () => {
     setTimeout(() => setToast(null), 1400);
   };
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px calc(140px + var(--safe-b, 0px))' }}>
+  <div className="screen screen--stage">
+    <div className="screen-scroll" style={{ padding: '46px 18px calc(140px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
           style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
@@ -420,8 +420,8 @@ export const S20_Report = () => {
   const moodCell = recent ? recent.moods[0] : '🌙';
   const moodLabel = recent ? MOOD_LABEL[recent.moods[0]] : '기록 전';
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+  <div className="screen screen--stage">
+    <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
           style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}

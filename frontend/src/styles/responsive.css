@@ -64,13 +64,23 @@
 
 /* ── 7. 브레이크포인트 (리터럴 = tokens.css --bp-* 와 동기화) ─────────────── */
 
+/* --app-fluid: 화면 본문 컬럼의 유동 폭 — 모바일 full-bleed → 웹에서 비율 확장.
+   .screen-scroll·.tabbar(sketch.css)가 소비한다. */
+:root { --app-fluid: 100%; }
+
 /* ≥ tablet (480px) — 앱 본문 중앙 정렬, full-bleed 해제 */
 @media (min-width: 480px) {
   .container--app { padding-inline: clamp(20px, 5vw, 48px); }
 }
 
+/* ≥ 768px — 본문 컬럼 유동 확장 시작 */
+@media (min-width: 768px) {
+  :root { --app-fluid: min(88vw, 700px); }
+}
+
 /* ≥ desktop (1024px) — 사이드 네비 + 콘텐츠 reflow */
 @media (min-width: 1024px) {
+  :root { --app-fluid: min(76vw, 840px); --stage-max: 600px; }
   .show-desktop { display: revert; }
   .hide-desktop { display: none; }
 
@@ -94,6 +104,7 @@
 
 /* ≥ wide (1440px) — 콘텐츠 여백 확대 */
 @media (min-width: 1440px) {
+  :root { --app-fluid: 900px; }
   .container { padding-inline: clamp(40px, 6vw, 96px); }
 }
 

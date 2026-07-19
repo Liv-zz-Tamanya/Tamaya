@@ -75,8 +75,8 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
   const quick = ['요즘 수면 어때?', '이번 주 운동량은?', '식사 패턴 알려줘', '복약 잘 지켰어?'];
 
   return (
-    <div className="phone-inner">
-      <div ref={scrollRef} className="phone-scroll" style={{ padding: '46px 14px calc(140px + var(--safe-b, 0px))' }}>
+    <div className="screen">
+      <div ref={scrollRef} className="screen-scroll" style={{ padding: '46px 14px calc(140px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span
             style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
