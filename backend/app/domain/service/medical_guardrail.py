@@ -9,6 +9,7 @@ LLM·외부 API 의존이 없는 순수 도메인 서비스. 코칭 생성 **전
 
 from __future__ import annotations
 
+import re
 from enum import StrEnum
 
 
@@ -20,44 +21,35 @@ class GuardrailVerdict(StrEnum):
     EMERGENCY = "emergency"
 
 
-# 응급 신호 — 즉시 119 안내 (의료 경계보다 우선 판정)
-# 미검출이 치명적이므로 과검출을 선호 — 흉통은 '아프/아파' 활용형·통증 표현을 함께 커버한다.
-_EMERGENCY_KEYWORDS: tuple[str, ...] = (
-    "가슴이 아프",
-    "가슴이 아파",
-    "가슴이 너무 아프",
-    "가슴이 너무 아파",
-    "가슴 통증",
-    "숨이 안 쉬",
-    "숨이 막",
-    "의식이 없",
-    "쓰러졌",
-    "쓰러질",
-    "자해",
-    "죽고 싶",
-    "피를 토",
-    "응급",
+# 응급 신호는 실제 신체 위급 표현 또는 응급 도움 요청으로만 판정한다. 단어 "응급"만으로는
+# 회의·업무 같은 일반 문맥을 구분할 수 없으므로 충분한 phrase 조합을 요구한다.
+_EMERGENCY_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"가슴\s*(?:통증|이?\s*(?:너무\s*)?아(?:프|파)\w*)"),
+    re.compile(r"숨\s*(?:이\s*)?(?:막히|막혀|안\s*쉬|못\s*쉬|쉬어지)"),
+    re.compile(r"의식\s*(?:이\s*)?(?:없|잃)"),
+    re.compile(r"쓰러(?:졌|져|질|질\s*것)"),
+    re.compile(r"자해\s*(?:하|하고|했|하고\s*싶)"),
+    re.compile(r"죽고\s*싶"),
+    re.compile(r"피\s*(?:를\s*)?토"),
+    re.compile(r"(?:응급실|119)\s*(?:에?\s*)?(?:가|필요|불러|연락)"),
 )
 
-# 의료행위(진단·처방·약물·증상상담) 요구 신호
-_MEDICAL_KEYWORDS: tuple[str, ...] = (
-    "약",
-    "처방",
-    "진단",
-    "무슨 병",
-    "병이야",
-    "암",
-    "항생제",
-    "인슐린",
-    "용량",
-    "수면제",
-    "복용",
-    "증상",
-    "타이레놀",
-    "혈압약",
-    "몇 알",
-    "먹어도 돼",
-    "끊어도",
+# 진단은 병명 판단을 요청하는 경우에만 차단한다. "암기" 같은 일반 낱말과 단순 증상 서술은
+# 여기서 매치되지 않는다.
+_DIAGNOSTIC_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"무슨\s*병(?:이야|인가|인지|일까|인\s*것\s*같)"),
+    re.compile(r"병명\s*(?:이|을|은)?\s*(?:알려|말해|추측|진단|뭐)"),
+    re.compile(r"진단\s*(?:좀\s*)?(?:해|해줘|받|부탁|필요)"),
+    re.compile(r"암\s*(?:이|일)\s*(?:야|까|가|지|것\s*같)"),
+)
+
+# 약/약물 대상어와 복용·용량·추천 등 행동 요청이 함께 있어야 의약품 조언으로 판정한다.
+# `약속`은 대상어가 아니며, "증상이 나아졌다"처럼 의도가 없는 상태 서술도 통과한다.
+_MEDICATION_TARGET = re.compile(
+    r"(?:[가-힣]+약|(?<![가-힣])약(?:을|은|이|도|만)?(?![가-힣])|약물|항생제|인슐린|수면제|타이레놀)"
+)
+_MEDICATION_ACTION = re.compile(
+    r"(?:복용|용량|몇\s*알|추천|처방|중단|끊어도|먹어도\s*돼|먹(?:어|을|는)|마셔도\s*돼|좋(?:아|을까)|알려줘)"
 )
 
 # 면책 문구(고정·결정론) — 진단/처방 '지시'를 담지 않는다.
@@ -76,9 +68,11 @@ _EMERGENCY_DISCLAIMER = (
 def classify_medical_request(text: str) -> GuardrailVerdict:
     """메시지를 결정론적으로 분류한다. 응급 > 의료경계 > 안전 순으로 판정."""
     normalized = text.strip()
-    if any(keyword in normalized for keyword in _EMERGENCY_KEYWORDS):
+    if any(pattern.search(normalized) for pattern in _EMERGENCY_PATTERNS):
         return GuardrailVerdict.EMERGENCY
-    if any(keyword in normalized for keyword in _MEDICAL_KEYWORDS):
+    if any(pattern.search(normalized) for pattern in _DIAGNOSTIC_PATTERNS):
+        return GuardrailVerdict.ADVICE_BOUNDARY
+    if _MEDICATION_TARGET.search(normalized) and _MEDICATION_ACTION.search(normalized):
         return GuardrailVerdict.ADVICE_BOUNDARY
     return GuardrailVerdict.SAFE
 
