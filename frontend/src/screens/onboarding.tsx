@@ -1,10 +1,41 @@
-import { useEffect, useState } from 'react';
+import { CSSProperties, useEffect, useState } from 'react';
 import { CatSketch } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { CatColor, Personality, useStore } from '../lib/store';
 import { setInitialAuthMode } from './login';
 
-// 01-05 · Onboarding sequence (5 screens, 375×812)
+// 01-05 · Onboarding sequence (5 screens) — v4 Figma Section1 시각 언어 적용
+// 로직(핸들러·nav·store)은 불변. 마크업/스타일/정적 문구만 v4로 번역.
+
+// v4 온보딩 4단계 진행 인디케이터 (S02~S05 공용). 순수 표현 요소.
+const OnbProgress = ({
+  step,
+  dark = false,
+  style,
+}: {
+  step: number;
+  dark?: boolean;
+  style?: CSSProperties;
+}) => (
+  <div style={{ display: 'flex', gap: 6, width: '100%', maxWidth: 240, ...style }} aria-hidden="true">
+    {[1, 2, 3, 4].map((i) => {
+      const on = i <= step;
+      const line = dark ? 'var(--accent-soft)' : 'var(--ink)';
+      return (
+        <div
+          key={i}
+          style={{
+            flex: 1,
+            height: 6,
+            borderRadius: 999,
+            border: '0.5px solid ' + (on ? line : dark ? 'var(--pencil)' : 'var(--muted)'),
+            background: on ? line : 'transparent',
+          }}
+        />
+      );
+    })}
+  </div>
+);
 
 export const S01_Splash = () => {
   const nav = useNav();
@@ -14,13 +45,7 @@ export const S01_Splash = () => {
     return () => clearTimeout(t);
   }, [nav]);
   return (
-  <div
-    className="screen"
-    style={{
-      background: 'linear-gradient(180deg, #4a2f1e 0%, var(--night) 100%)',
-      color: 'var(--paper)',
-    }}
-  >
+  <div className="screen" style={{ background: 'var(--night)', color: 'var(--paper)' }}>
     <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0, opacity: 0.5 }}>
       {[
         [40, 90],
@@ -56,7 +81,7 @@ export const S01_Splash = () => {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 24,
+        gap: 26,
       }}
     >
       <div
@@ -67,13 +92,13 @@ export const S01_Splash = () => {
           border: '2px solid var(--ink)',
         }}
       >
-        <CatSketch size={120} mood="wink" />
+        <CatSketch size={128} mood="wink" />
       </div>
       <div style={{ textAlign: 'center' }}>
-        <div className="h-display" style={{ fontSize: 48, color: 'var(--paper)' }}>
+        <div className="h-display" style={{ fontSize: 52, color: 'var(--paper)' }}>
           Tamaya
         </div>
-        <div className="handwriting" style={{ color: 'var(--accent-soft)', marginTop: 6 }}>
+        <div className="handwriting" style={{ color: 'var(--accent-soft)', marginTop: 8 }}>
           밤이 되면 만나요
         </div>
       </div>
@@ -89,37 +114,40 @@ export const S02_Welcome = () => {
   const nav = useNav();
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '60px 24px 100px' }}>
-      <div className="h-section">01 / 04 — Welcome</div>
-      <div className="h-display" style={{ marginTop: 14, fontSize: 38 }}>
-        혼자여도
-        <br />
-        외롭지 않게.
+    <div className="screen-scroll" style={{ padding: '56px 24px 120px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="h-section">01 / 04 · 인사</div>
+        <OnbProgress step={1} />
+        <div className="h-display" style={{ fontSize: 28, lineHeight: 1.15 }}>
+          혼자여도
+          <br />
+          외롭지 않게.
+        </div>
+        <div className="body" style={{ color: 'var(--ink)', lineHeight: 1.55 }}>
+          하루를 더 잘 준비하고
+          <br />
+          마무리할 수 있도록
+          <br />
+          이음이가 매일 밤 곁에 있어줘요.
+        </div>
       </div>
-      <div className="body" style={{ marginTop: 18, color: '#3a342c', lineHeight: 1.5 }}>
-        1인 가구의 하루를 더 잘 준비하고
-        <br />
-        마무리할 수 있도록 — 작은 고양이가
-        <br />
-        매일 밤 곁에 있어줘요.
-      </div>
-      <div style={{ marginTop: 32, display: 'flex', justifyContent: 'center' }}>
+      <div style={{ marginTop: 28, display: 'flex', justifyContent: 'center' }}>
         <div
           className="hbox"
           style={{
             width: 260,
-            height: 300,
-            padding: 16,
+            padding: 20,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
             gap: 14,
           }}
         >
-          <CatSketch size={160} />
-          <div className="handwriting" style={{ whiteSpace: 'nowrap', fontSize: 22 }}>
-            "안녕, 친구 ☾"
+          <CatSketch size={150} />
+          <div className="handwriting" style={{ textAlign: 'center', fontSize: 20, color: 'var(--ink)' }}>
+            "안녕, 나는 이음이야
+            <br />
+            만나서 반가워"
           </div>
         </div>
       </div>
@@ -132,9 +160,9 @@ export const S02_Welcome = () => {
           nav.go('login');
         }}
         className="btn primary block"
-        style={{ cursor: 'pointer', fontFamily: 'inherit', marginBottom: 10 }}
+        style={{ cursor: 'pointer', fontFamily: 'inherit' }}
       >
-        회원가입
+        시작하기
       </button>
       <button
         type="button"
@@ -142,16 +170,18 @@ export const S02_Welcome = () => {
           setInitialAuthMode('login');
           nav.go('login');
         }}
-        className="btn block"
+        className="btn ghost block"
         style={{
-          background: '#fff9ef',
-          color: 'var(--ink)',
-          border: '1.5px solid var(--ink)',
+          marginTop: 8,
+          fontSize: 12,
+          color: 'var(--pencil)',
+          boxShadow: 'none',
+          border: 'none',
           cursor: 'pointer',
           fontFamily: 'inherit',
         }}
       >
-        로그인
+        이미 계정이 있어요 → 로그인
       </button>
     </div>
   </div>
@@ -162,19 +192,22 @@ export const S03_Privacy = () => {
   const nav = useNav();
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '52px 24px 100px' }}>
-      <div className="h-section">02 / 04 — 약속</div>
-      <div className="h-display" style={{ marginTop: 12, fontSize: 30 }}>
-        네 마음은
-        <br />
-        너만의 것이야.
+    <div className="screen-scroll" style={{ padding: '52px 24px 120px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="h-section">02 / 04 · 약속</div>
+        <OnbProgress step={2} />
+        <div className="h-display" style={{ fontSize: 28, lineHeight: 1.15 }}>
+          네 마음은
+          <br />
+          너만의 것이야.
+        </div>
+        <div className="body" style={{ color: 'var(--ink)', lineHeight: 1.5 }}>
+          일기와 감정 기록은 기기 안에 머물러요.
+          <br />
+          네가 원할 때만 백업할 수 있어요.
+        </div>
       </div>
-      <div className="body" style={{ marginTop: 14, color: '#3a342c' }}>
-        일기와 감정 기록은 기기 안에 머물러요.
-        <br />
-        네가 원할 때만 백업할 수 있어요.
-      </div>
-      <div style={{ marginTop: 22, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {(
           [
             ['◐', '로컬 우선 저장', '일기·감정은 기기 안에'],
@@ -184,20 +217,21 @@ export const S03_Privacy = () => {
         ).map(([ic, t, s], i) => (
           <div
             key={i}
-            className={'hbox r-' + (i % 2 ? 'r' : 'l')}
-            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}
+            className="hbox"
+            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px' }}
           >
             <div
               className="ph-circle"
-              style={{ width: 36, height: 36, flex: 'none', fontFamily: 'Pretendard' }}
+              style={{ width: 40, height: 40, flex: 'none', fontFamily: 'Pretendard', fontSize: 18 }}
             >
               {ic}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>{t}</div>
+              <div style={{ fontFamily: 'Pretendard', fontSize: 15, fontWeight: 600 }}>{t}</div>
               <div
                 className="tiny"
                 style={{
+                  color: 'var(--muted)',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -209,7 +243,17 @@ export const S03_Privacy = () => {
           </div>
         ))}
       </div>
-      <div className="sticky" style={{ marginTop: 18, transform: 'rotate(-1.5deg)' }}>
+      <div
+        className="hbox"
+        style={{
+          marginTop: 16,
+          background: 'var(--cream)',
+          textAlign: 'center',
+          padding: '10px 14px',
+          fontFamily: 'Pretendard',
+          fontSize: 12,
+        }}
+      >
         ※ 기기 분실 시 복구 불가 — 백업 권장
       </div>
     </div>
@@ -250,50 +294,47 @@ export const S04_CreateCat = () => {
 
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '52px 24px 100px' }}>
-      <div className="h-section">03 / 04 — 캐릭터 만들기</div>
-      <div className="h-display" style={{ marginTop: 12, fontSize: 30 }}>
-        너만의 집사를
-        <br />
-        지어줘.
+    <div className="screen-scroll" style={{ padding: '48px 24px 120px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="h-section">03 / 04 · 캐릭터</div>
+        <OnbProgress step={3} />
+        <div className="h-display" style={{ fontSize: 28, lineHeight: 1.15 }}>
+          너만의 이음이를
+          <br />
+          만들어 봐.
+        </div>
       </div>
 
       <div
-        className="hbox r-l"
+        className="hbox"
         style={{
           marginTop: 18,
           padding: 18,
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 8,
+          justifyContent: 'center',
         }}
       >
-        <CatSketch
-          size={120}
-          mood="happy"
-          color="#3a2414"
-          accent={state.character.color}
-        />
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={10}
-          placeholder="이름 (최대 10자)"
-          style={{
-            border: '1.5px dashed var(--ink)',
-            borderRadius: 8,
-            padding: '6px 14px',
-            background: 'transparent',
-            fontFamily: 'Pretendard',
-            fontSize: 22,
-            color: 'var(--ink)',
-            textAlign: 'center',
-            width: 160,
-            outline: 'none',
-          }}
-        />
+        <CatSketch size={130} mood="happy" color="#3a2414" accent={state.character.color} />
       </div>
+
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        maxLength={10}
+        placeholder="이음이에게 이름을 지어 주세요..."
+        style={{
+          marginTop: 12,
+          width: '100%',
+          border: '1.5px solid var(--ink)',
+          borderRadius: 999,
+          padding: '11px 16px',
+          background: 'var(--paper)',
+          fontFamily: 'Pretendard',
+          fontSize: 15,
+          color: 'var(--ink)',
+          outline: 'none',
+        }}
+      />
 
       <div className="h-label" style={{ marginTop: 18, marginBottom: 8 }}>
         털 색 고르기
@@ -339,7 +380,7 @@ export const S04_CreateCat = () => {
         })}
       </div>
 
-      <div className="tiny" style={{ marginTop: 14 }}>
+      <div className="tiny" style={{ marginTop: 14, color: 'var(--muted)' }}>
         나중에 [설정]에서 언제든 바꿀 수 있어요.
       </div>
     </div>
@@ -360,14 +401,9 @@ export const S04_CreateCat = () => {
 export const S05_FirstMeet = () => {
   const nav = useNav();
   const { state } = useStore();
+  const name = state.character.name || '이음이';
   return (
-  <div
-    className="screen"
-    style={{
-      background: 'linear-gradient(180deg, #4a2f1e 0%, #1a0e08 100%)',
-      color: 'var(--paper)',
-    }}
-  >
+  <div className="screen" style={{ background: 'var(--night)', color: 'var(--paper)' }}>
     <svg width="100%" height="180" style={{ position: 'absolute', top: 40, opacity: 0.4 }}>
       {[
         [60, 40],
@@ -380,54 +416,38 @@ export const S05_FirstMeet = () => {
         <circle key={i} cx={x} cy={y} r="1.5" fill="#f5e6cf" />
       ))}
     </svg>
-    <div className="screen-scroll" style={{ padding: '60px 24px 100px' }}>
-      <div className="h-section" style={{ color: 'var(--accent-soft)' }}>
-        04 / 04 — 첫 만남
-      </div>
-      <div className="h-display" style={{ marginTop: 14, color: 'var(--paper)' }}>
-        밤 10시 18분.
-        <br />
-        나, 이제 깨어났어.
+    <div className="screen-scroll" style={{ padding: '56px 24px 120px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', textAlign: 'center' }}>
+        <div className="h-section" style={{ color: 'var(--accent-soft)' }}>
+          04 / 04 · 첫 만남
+        </div>
+        <OnbProgress step={4} dark style={{ marginInline: 'auto' }} />
+        <div className="h-display" style={{ fontSize: 28, lineHeight: 1.15, color: 'var(--paper)' }}>
+          이제 만났네,
+          <br />
+          {name}!
+        </div>
       </div>
 
-      <div style={{ marginTop: 28, display: 'flex', justifyContent: 'center' }}>
+      <div style={{ marginTop: 30, display: 'flex', justifyContent: 'center' }}>
         <div
           style={{
             background: 'var(--paper)',
-            borderRadius: 16,
-            border: '2px solid var(--ink)',
+            borderRadius: 14,
+            border: '1.5px solid var(--ink)',
             padding: 14,
-            transform: 'rotate(-2deg)',
+            display: 'flex',
           }}
         >
-          <CatSketch size={140} mood="wink" />
+          <CatSketch size={150} mood="wink" />
         </div>
       </div>
 
       <div
-        style={{
-          marginTop: 24,
-          padding: '14px 16px',
-          background: 'rgba(251,248,243,0.95)',
-          color: 'var(--ink)',
-          border: '1.5px solid var(--ink)',
-          borderRadius: 14,
-          position: 'relative',
-        }}
+        className="handwriting"
+        style={{ marginTop: 22, textAlign: 'center', fontSize: 18, color: 'var(--accent-soft)' }}
       >
-        <div className="handwriting" style={{ fontSize: 20 }}>
-          "안녕. 난 {state.character.name || '이음이'}, 너의 밤 친구야.
-          <br />
-          낮엔 자고 — 밤이 되면 같이 오늘을 정리해."
-        </div>
-        <svg
-          style={{ position: 'absolute', left: 30, bottom: -10 }}
-          width="20"
-          height="14"
-          viewBox="0 0 20 14"
-        >
-          <path d="M0 0 L 10 12 L 20 0 Z" fill="#f5e6cf" stroke="#3a2414" strokeWidth="1.5" />
-        </svg>
+        "안녕, 난 {name}. 너의 밤 친구야."
       </div>
     </div>
     <div style={{ position: 'absolute', bottom: 'calc(28px + var(--safe-b, 0px))', left: 24, right: 24 }}>
