@@ -40,7 +40,7 @@ export const S06_HomeDay = () => {
   const weekCount = state.diaries.filter((e) => e.day > TODAY_DAY - 7 && e.day <= TODAY_DAY).length;
   const summary: [string, string, string][] = [
     ['오늘 컨디션', cond, latest ? '최근 회고 기준' : '첫 회고를 해봐요'],
-    ['이번 주', `${weekCount} / 7 일`, weekCount >= 3 ? '목표 달성 ✓' : `+${Math.max(0, 3 - weekCount)}회로 목표`],
+    ['이번 주', `${weekCount} / 7 일`, weekCount >= 3 ? '목표 달성 ✓' : `이번 주 ${weekCount}일 함께했어요`],
     ['포인트', `◉ ${state.points}`, `보상 ${state.unlockedItems.length}개`],
     ['키우기', state.unlockedItems.length ? `아이템 ${state.unlockedItems.length}` : '시작하기', '보러가기 ›'],
   ];
@@ -83,30 +83,33 @@ export const S06_HomeDay = () => {
       <div className="hbox day r-l" style={{ padding: 16, marginTop: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div className="h-section" style={{ color: '#7a5a18' }}>
+            <div className="h-section" style={{ color: 'var(--accent)' }}>
               이음이는 자는 중
             </div>
-            <div className="h-title" style={{ marginTop: 2, fontSize: 20 }}>
-              오늘 밤 {formatKoreanTime(nav.nightOpenTime)}에 깨어나요
+            <div className="tiny" style={{ marginTop: 4 }}>
+              깨어나기까지 남은 시간
+            </div>
+            <div className="h-title" style={{ marginTop: 2, fontSize: 24 }}>
+              {remaining}
             </div>
           </div>
-          <div className="chip" style={{ background: '#fff' }}>
+          <div className="chip" style={{ background: 'var(--paper)' }}>
             ⏰ {nav.nightOpenTime}
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 10 }}>
           <CatSketch size={86} sleeping />
-          <div className="handwriting" style={{ color: '#5a4a20' }}>
+          <div className="handwriting" style={{ color: 'var(--ink-soft)' }}>
             "쿠울… 쿠울…
             <br />
             이따 만나, 친구"
           </div>
         </div>
-        <div className="bar" style={{ marginTop: 12 }}>
-          <i style={{ width: '55%' }} />
+        <div className="bar" style={{ marginTop: 12, background: 'var(--paper-2)' }}>
+          <i style={{ width: '55%', background: 'var(--ink)', borderRightColor: 'var(--ink)' }} />
         </div>
         <div className="tiny" style={{ marginTop: 4 }}>
-          휴식중 · 다음 깨어남까지 {remaining}
+          오늘 밤 {formatKoreanTime(nav.nightOpenTime)}에 깨어나요
         </div>
         <button
           type="button"
@@ -138,11 +141,15 @@ export const S06_HomeDay = () => {
           {checks.map(([ic, l, on], i) => (
             <div key={i} style={{ textAlign: 'center' }}>
               <div
-                className="ph-square"
                 style={{
                   width: 44,
                   height: 44,
                   margin: '0 auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 14,
+                  border: '0.5px solid var(--ink)',
                   background: on ? 'var(--ink)' : 'var(--paper)',
                   color: on ? 'var(--paper)' : 'var(--ink)',
                 }}
@@ -158,7 +165,7 @@ export const S06_HomeDay = () => {
       </div>
 
       <div
-        className="hbox accent r-l"
+        className="hbox r-l"
         onClick={() => nav.go('ai-chat')}
         style={{
           padding: 14,
@@ -167,18 +174,20 @@ export const S06_HomeDay = () => {
           alignItems: 'center',
           gap: 12,
           cursor: 'pointer',
+          background: 'var(--banner)',
+          color: 'var(--paper)',
         }}
       >
-        <div className="ph-circle" style={{ width: 40, height: 40, background: '#fff' }}>
+        <div className="ph-circle" style={{ width: 40, height: 40, background: 'var(--paper)', color: 'var(--ink)' }}>
           ✦
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700, color: 'var(--paper)' }}>
             AI 코칭에게 물어봐요
           </div>
-          <div className="tiny">"점심 뭐 먹지?" "잠이 안 와요"</div>
+          <div className="tiny" style={{ color: 'var(--paper-2)' }}>"점심 뭐 먹지?" "잠이 안 와요"</div>
         </div>
-        <span className="handwriting" style={{ fontSize: 24 }}>
+        <span className="handwriting" style={{ fontSize: 24, color: 'var(--paper)' }}>
           ›
         </span>
       </div>
@@ -191,9 +200,26 @@ export const S06_HomeDay = () => {
             key={i}
             className={'hbox r-' + (i % 2 ? 'l' : 'r')}
             onClick={i === 3 ? () => nav.go('cat-room') : undefined}
-            style={{ padding: 12, cursor: i === 3 ? 'pointer' : 'default' }}
+            style={{ padding: 12, cursor: i === 3 ? 'pointer' : 'default', position: 'relative' }}
           >
-            <div className="tiny">{t}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div className="tiny">{t}</div>
+              {i === 3 && state.unlockedItems.length > 0 && (
+                <span
+                  className="tiny"
+                  style={{
+                    background: 'var(--accent-soft)',
+                    color: 'var(--ink)',
+                    borderRadius: 999,
+                    padding: '1px 7px',
+                    fontWeight: 700,
+                    letterSpacing: 0,
+                  }}
+                >
+                  NEW!
+                </span>
+              )}
+            </div>
             <div className="h-title" style={{ fontSize: 18, marginTop: 2 }}>
               {big}
             </div>
@@ -215,7 +241,7 @@ export const S07_HomeNight = () => {
   return (
   <div
     className="screen"
-    style={{ background: 'linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 70%, var(--accent-soft) 100%)' }}
+    style={{ background: 'var(--night)', color: 'var(--paper)' }}
   >
     <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div
@@ -227,8 +253,8 @@ export const S07_HomeNight = () => {
         }}
       >
         <div>
-          <div className="tiny">{nav.now.getMonth() + 1}월 {nav.now.getDate()}일 · {WEEKDAY_KR[nav.now.getDay()]}요일 밤</div>
-          <div className="h-title" style={{ marginTop: 2 }}>
+          <div className="tiny" style={{ color: 'var(--muted)' }}>{nav.now.getMonth() + 1}월 {nav.now.getDate()}일 · {WEEKDAY_KR[nav.now.getDay()]}요일 밤</div>
+          <div className="h-title" style={{ marginTop: 2, color: 'var(--paper)' }}>
             이음이가
             <br />
             깨어났어요 ☾
@@ -253,7 +279,7 @@ export const S07_HomeNight = () => {
 
       <div
         className="hbox night r-l"
-        style={{ padding: 16, marginTop: 6, position: 'relative', overflow: 'hidden' }}
+        style={{ padding: 16, marginTop: 6, position: 'relative', overflow: 'hidden', borderColor: 'var(--accent-soft)' }}
       >
         <svg width="100%" height="40" style={{ position: 'absolute', top: 6, left: 0, opacity: 0.4 }}>
           {[
@@ -465,21 +491,29 @@ export const S08_DailyCheck = () => {
   <div className="screen">
     <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <span
-          style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
-          onClick={() => nav.back()}
-        >
+        <span className="nav-arrow" onClick={() => nav.back()}>
           ‹
         </span>
-        <div className="h-title">데일리 체크</div>
+        <div className="h-title" style={{ fontSize: 22 }}>데일리 체크</div>
       </div>
       <div className="tiny">하루 5가지 — 가볍게 톡톡</div>
 
-      <div className="bar" style={{ marginTop: 14 }}>
-        <i style={{ width: (doneCount / 5) * 100 + '%' }} />
+      <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              flex: 1,
+              height: 6,
+              borderRadius: 999,
+              border: '1.5px solid var(--ink)',
+              background: i < doneCount ? 'var(--night)' : 'var(--paper)',
+            }}
+          />
+        ))}
       </div>
-      <div className="tiny" style={{ marginTop: 4 }}>
-        {doneCount} / 5 완료 · 오늘 누적 포인트 {state.points} ◉
+      <div className="tiny" style={{ marginTop: 6 }}>
+        {doneCount} / 5 완료 · 오늘 +{state.points} 포인트 ◉
       </div>
 
       {doneCount === 5 && (
@@ -535,7 +569,7 @@ export const S08_DailyCheck = () => {
               key={t}
               type="button"
               onClick={() => setSleep(t)}
-              className={'chip chip-btn ' + (d.sleep.quality === t ? 'accent' : '')}
+              className={'chip chip-btn ' + (d.sleep.quality === t ? 'solid' : '')}
             >
               {t}
             </button>
@@ -563,7 +597,7 @@ export const S08_DailyCheck = () => {
               key={t}
               type="button"
               onClick={() => setMove(t)}
-              className={'chip chip-btn ' + (d.movement.bucket === t ? 'accent' : 'dashed')}
+              className={'chip chip-btn ' + (d.movement.bucket === t ? 'solid' : 'dashed')}
               style={{ background: d.movement.bucket === t ? undefined : 'transparent' }}
             >
               {t}
@@ -594,7 +628,7 @@ export const S08_DailyCheck = () => {
                   height: 22,
                   border: '1.5px solid var(--ink)',
                   borderRadius: 4,
-                  background: i < d.water ? 'var(--accent)' : 'var(--paper)',
+                  background: i < d.water ? 'var(--ink)' : 'var(--paper)',
                   cursor: 'pointer',
                   padding: 0,
                 }}
@@ -618,7 +652,7 @@ export const S08_DailyCheck = () => {
                 key={t}
                 type="button"
                 onClick={() => setSun(t)}
-                className={'chip chip-btn ' + (d.sun.level === t ? 'accent' : 'dashed')}
+                className={'chip chip-btn ' + (d.sun.level === t ? 'solid' : 'dashed')}
                 style={{ background: d.sun.level === t ? undefined : 'transparent' }}
               >
                 {t}
@@ -700,13 +734,10 @@ export const S09_AIChat = () => {
         style={{ padding: '46px 14px calc(140px + var(--safe-b, 0px))' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span
-            style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
-            onClick={() => nav.back()}
-          >
+          <span className="nav-arrow" onClick={() => nav.back()}>
             ‹
           </span>
-          <div className="h-title">AI 코칭 (낮 모드)</div>
+          <div className="h-title" style={{ fontSize: 22 }}>AI 코칭 (낮 모드)</div>
         </div>
         <div className="tiny" style={{ marginBottom: 14 }}>
           이음이는 자는 중 — 작은 비서가 답해줘요
@@ -748,8 +779,8 @@ export const S09_AIChat = () => {
               key={i}
               type="button"
               onClick={() => send(t)}
-              className="chip dashed chip-btn"
-              style={{ background: 'transparent', border: '1.5px dashed var(--ink)' }}
+              className="chip chip-btn"
+              style={{ background: 'var(--paper)', borderWidth: '0.5px' }}
             >
               {t}
             </button>
