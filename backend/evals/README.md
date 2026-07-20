@@ -1,9 +1,8 @@
 # PersonalAssistantAgent 오프라인 평가 데이터셋 (초안)
 
-이 디렉터리는 실제 LLM API를 호출하지 않는 첫 번째 평가 데이터셋 초안이다. 실행기나
-점수 계산기는 아직 포함하지 않으며, 현재 Agent의 mode, 도구 범위, 가드레일 계약을
-검토 가능한 JSONL로 고정한다. **모든 행은 가상 사례이며, 평가 실행에 사용하기 전에
-반드시 사람이 검수해야 한다.**
+이 디렉터리는 PersonalAssistantAgent의 Tool routing과 Guardrail만 측정하는 오프라인
+평가 도구다. 최종 답변 품질과 RAG 정확도는 평가하지 않는다. 모든 입력은 합성 사례이며
+실행기는 production DB나 사용자 데이터에 접근하지 않는다.
 
 ## 현재 코드 기준 계약
 
@@ -37,8 +36,8 @@ expected_guardrail, expected_document_ids, category, note
 ```
 
 `mode`에는 현재 enum의 실제 값(`diary`, `health`, `coaching`)을 사용한다.
-`expected_document_ids`는 이 초안에서 가상의 fixture 식별자다. 실제 실행기를 만들 때
-동일한 ID를 갖는 비식별 fixture corpus를 별도로 제공해야 한다.
+`expected_document_ids`는 보고서에 보존하지만 현재 상태는 항상 `not_evaluated`다. 다음
+단계에서 비식별 fixture corpus와 RAG 검색 평가를 추가한다.
 
 ## 작성과 검수
 
@@ -62,3 +61,19 @@ uv run pytest tests/evals/test_validate_dataset.py
 validator는 JSONL 파싱, 전역 ID 중복, mode/스키마, 빈 input, expected/forbidden 도구
 중복, 현재 등록되지 않은 도구 이름, mode에서 사용할 수 없는 expected 도구를 검사한다.
 현재 등록 도구 이름은 도구 생성 함수에서 직접 읽어 검사하므로 문서만 보고 추측하지 않는다.
+
+## 실행
+
+실행기는 실제 CLOVA Tool Calling 모델을 호출하므로 비용이 발생할 수 있다. `CLOVA_MOCK_MODE=false`와
+`CLOVA_API_KEY`가 필요하며, mock model은 실제 도구 선택을 평가할 수 없어 CLI에서 거부한다.
+
+```bash
+uv run python -m evals.run_evaluation
+uv run python -m evals.run_evaluation --dataset health --limit 3
+uv run python -m evals.run_evaluation --case-id diary-001
+uv run python -m evals.run_evaluation --fail-on-mismatch
+```
+
+결과는 기본적으로 `evals/reports/`에 UTF-8 JSON으로 저장된다. baseline mismatch는 Agent나
+데이터셋을 개선하기 전 자연스럽게 발생할 수 있으며 기본 exit code를 실패시키지 않는다.
+테스트는 scripted fake model과 빈 fake query service를 사용하므로 외부 API를 호출하지 않는다.
