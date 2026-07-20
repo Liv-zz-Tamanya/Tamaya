@@ -144,7 +144,7 @@ export const S21_Login = () => {
                 padding: '12px 14px',
                 borderRadius: 12,
                 border: '1.5px solid var(--ink)',
-                background: '#fff9ef',
+                background: 'var(--bg)',
                 color: 'var(--ink)',
                 fontFamily: 'inherit',
                 fontSize: 16,
@@ -158,7 +158,7 @@ export const S21_Login = () => {
                 className="btn"
                 style={{
                   flexShrink: 0,
-                  background: '#fff9ef',
+                  background: 'var(--bg)',
                   color: 'var(--ink)',
                   border: '1.5px solid var(--ink)',
                   cursor: busy ? 'wait' : 'pointer',
