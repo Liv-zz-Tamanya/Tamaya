@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CatSketch, ImgPh, MoodFace } from '../components/primitives';
+import { CatSketch, MoodFace } from '../components/primitives';
 import { useNav } from '../lib/router';
 import {
   AI_ENABLED,
@@ -169,14 +169,12 @@ export const S10_RecapStart = () => {
           저녁 회고 — 시작 전
         </div>
       </div>
-      <div className="h-display" style={{ marginTop: 14, color: 'var(--paper)' }}>
-        오늘도
-        <br />
-        고생했어.
+      <div className="h-display" style={{ marginTop: 14, color: 'var(--paper)', fontSize: 36 }}>
+        오늘도 고생했어.
       </div>
       <div
         className="handwriting"
-        style={{ color: 'var(--accent-soft)', marginTop: 10, fontSize: 20 }}
+        style={{ color: 'var(--accent-soft)', marginTop: 10, fontSize: 18, fontWeight: 700 }}
       >
         {isShortMode ? '3번만 나누는 짧은 회고' : '5분이면 충분해 · 5턴 대화'}
       </div>
@@ -198,13 +196,14 @@ export const S10_RecapStart = () => {
       <div
         className="hbox"
         style={{
-          background: 'rgba(251,248,243,0.95)',
+          background: 'var(--paper)',
           color: 'var(--ink)',
+          border: '1.5px solid var(--ink)',
           padding: 14,
           marginTop: 20,
         }}
       >
-        <div className="h-section">낮 동안 메모해둔 것</div>
+        <div className="tiny" style={{ color: 'var(--pencil)' }}>낮 동안 메모 요약</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
           {memos.length > 0 ? (
             memos.map((t, i) => (
@@ -233,34 +232,20 @@ export const S10_RecapStart = () => {
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
         <div
-          className={`hbox${selectedMode === 'full' ? ' accent' : ''}`}
+          className="hbox"
           style={{
             flex: 1,
             padding: 10,
             textAlign: 'center',
-            color: 'var(--ink)',
-            background: selectedMode === 'full' ? undefined : 'var(--paper)',
+            border: '1.5px solid var(--ink)',
+            color: selectedMode === 'full' ? 'var(--paper)' : 'var(--ink)',
+            background: selectedMode === 'full' ? 'var(--accent)' : 'var(--paper)',
             cursor: 'pointer',
           }}
           onClick={() => selectMode('full')}
         >
           <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>✦ 대화</div>
-          <div className="tiny">5턴 챗</div>
-        </div>
-        <div
-          className={`hbox${selectedMode === 'short' ? ' accent' : ''}`}
-          style={{
-            flex: 1,
-            padding: 10,
-            textAlign: 'center',
-            color: 'var(--ink)',
-            background: selectedMode === 'short' ? undefined : 'var(--paper)',
-            cursor: 'pointer',
-          }}
-          onClick={() => selectMode('short')}
-        >
-          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>✎ 짧게</div>
-          <div className="tiny">3줄 일기</div>
+          <div className="tiny" style={{ color: 'inherit' }}>5턴 챗</div>
         </div>
         <div
           className="hbox"
@@ -268,14 +253,31 @@ export const S10_RecapStart = () => {
             flex: 1,
             padding: 10,
             textAlign: 'center',
+            border: '1.5px solid var(--ink)',
+            color: selectedMode === 'short' ? 'var(--paper)' : 'var(--ink)',
+            background: selectedMode === 'short' ? 'var(--accent)' : 'var(--paper)',
+            cursor: 'pointer',
+          }}
+          onClick={() => selectMode('short')}
+        >
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>줄글 기록</div>
+          <div className="tiny" style={{ color: 'inherit' }}>3줄 일기</div>
+        </div>
+        <div
+          className="hbox"
+          style={{
+            flex: 1,
+            padding: 10,
+            textAlign: 'center',
+            border: '1.5px solid var(--ink)',
             color: 'var(--ink)',
             background: 'var(--paper)',
             cursor: 'pointer',
           }}
           onClick={() => setVoiceModalOpen(true)}
         >
-          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>🎙 보이스</div>
-          <div className="tiny">곧 출시</div>
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>보이스 기록</div>
+          <div className="tiny" style={{ color: 'var(--pencil)' }}>곧 출시</div>
         </div>
       </div>
     </div>
@@ -499,9 +501,9 @@ export const S11_ChatDiary = () => {
             style={{
               flex: 1,
               height: 6,
-              background: i < turn ? 'var(--ink)' : 'var(--paper)',
+              background: i < turn ? 'var(--night)' : 'var(--paper)',
               border: '1.5px solid var(--ink)',
-              borderRadius: 3,
+              borderRadius: 999,
             }}
           />
         ))}
@@ -661,19 +663,19 @@ export const S12_MoodFinalize = () => {
   return (
   <div className="screen">
     <div className="screen-scroll" style={{ padding: '46px 18px calc(80px + var(--safe-b, 0px))' }}>
-      <div className="h-section">{state.chatDiaryMaxTurns}턴 완료 — 일기로 마무리</div>
-      <div className="h-display" style={{ marginTop: 8 }}>
-        오늘은 이런
+      <div className="tiny" style={{ color: 'var(--pencil)' }}>{state.chatDiaryMaxTurns}턴 완료 — 일기로 마무리</div>
+      <div className="h-display" style={{ marginTop: 8, fontSize: 32 }}>
+        오늘은 어떤
         <br />
-        하루였어 ⌇
+        하루였어?
       </div>
 
       {analyzing ? (
-        <div className="hbox r-l" style={{ padding: 22, marginTop: 18, textAlign: 'center' }}>
+        <div className="hbox r-l" style={{ padding: 22, marginTop: 18, textAlign: 'center', border: '1.5px solid var(--ink)' }}>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <CatSketch size={78} mood="wink" />
           </div>
-          <div className="h-section" style={{ marginTop: 10 }}>이음이가 일기를 정리하는 중…</div>
+          <div className="tiny" style={{ marginTop: 10, color: 'var(--pencil)' }}>이음이가 일기를 정리하는 중…</div>
           <div style={{ display: 'flex', gap: 5, justifyContent: 'center', marginTop: 10 }}>
             <span className="typing-dot" />
             <span className="typing-dot" />
@@ -682,64 +684,39 @@ export const S12_MoodFinalize = () => {
         </div>
       ) : (
         <>
-      <div className="hbox r-l" style={{ padding: 14, marginTop: 14 }}>
-        <div className="h-section">이음이가 읽은 오늘 감정</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
-          <div style={{ position: 'relative', width: 90, height: 90 }}>
-            <svg width="90" height="90" viewBox="0 0 90 90">
-              <circle cx="45" cy="45" r="38" stroke="#3a2414" strokeWidth="1.5" fill="#fff" />
-              <path
-                d="M45 7 A 38 38 0 0 1 76 60 L 45 45 Z"
-                fill="#ead0a6"
-                stroke="#3a2414"
-                strokeWidth="1.5"
-              />
-              <path
-                d="M45 7 A 38 38 0 0 0 14 30 L 45 45 Z"
-                fill="#d8a777"
-                stroke="#3a2414"
-                strokeWidth="1.5"
-              />
-              <path
-                d="M45 45 L 76 60 A 38 38 0 0 1 14 30 Z"
-                fill="#fff"
-                stroke="#3a2414"
-                strokeWidth="1.5"
-              />
-            </svg>
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <MoodFace mood={diaryMoods[0]} size={24} />
-            </div>
+      <div className="hbox r-l" style={{ padding: 14, marginTop: 14, border: '1.5px solid var(--ink)' }}>
+        <div className="tiny" style={{ color: 'var(--pencil)' }}>이음이가 읽은 오늘 감정</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 10 }}>
+          <div
+            className="ph-circle"
+            style={{ width: 56, height: 56, background: 'var(--paper-2)', overflow: 'hidden', flex: 'none' }}
+          >
+            <MoodFace mood={diaryMoods[0]} size={48} />
           </div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {summaryRows.map(([n, c, p], i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div
-                  className="ph-circle"
-                  style={{ width: 12, height: 12, background: c }}
-                />
-                <span className="tiny" style={{ flex: 1 }}>
-                  {n}
-                </span>
-                <span className="tiny" style={{ fontWeight: 700 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {summaryRows.map(([n, , p], i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="tiny" style={{ width: 32, flex: 'none' }}>{n}</span>
+                <div className="bar" style={{ flex: 1, height: 8, background: 'var(--paper-2)' }}>
+                  <i
+                    style={{
+                      width: p,
+                      background: i === 0 ? 'rgba(168,86,75,0.75)' : 'rgba(43,24,16,0.39)',
+                      borderRight: 'none',
+                    }}
+                  />
+                </div>
+                <span className="tiny" style={{ width: 30, flex: 'none', textAlign: 'right', fontWeight: 700 }}>
                   {p}
                 </span>
               </div>
             ))}
           </div>
         </div>
-        <div className="tiny" style={{ marginTop: 8 }}>
+        <div className="tiny" style={{ marginTop: 10 }}>
           키워드:{' '}
           {keywords.map((k, i) => (
-            <span key={i} className="chip dashed" style={{ marginRight: 4 }}>
+            <span key={i} className="chip" style={{ marginRight: 4, borderWidth: '0.5px', background: 'var(--paper)' }}>
               {k}
             </span>
           ))}
@@ -748,15 +725,15 @@ export const S12_MoodFinalize = () => {
 
       <div
         className="hbox r-r"
-        style={{ padding: 14, marginTop: 12, background: 'var(--cream)' }}
+        style={{ padding: 14, marginTop: 12, background: 'var(--cream)', border: '1.5px solid var(--ink)' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <div className="h-section">생성된 일기</div>
+            <div className="tiny" style={{ color: 'var(--pencil)' }}>생성된 일기</div>
           <button
             type="button"
             onClick={() => flash('✎ 일기 직접 수정은 곧 지원돼요')}
             className="tiny"
-            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--pencil)' }}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--muted)' }}
           >
             ✎ 수정
           </button>
@@ -774,19 +751,19 @@ export const S12_MoodFinalize = () => {
         </div>
       </div>
 
-      <div className="hbox night r-l" style={{ padding: 12, marginTop: 12 }}>
-        <div className="h-section" style={{ color: 'var(--accent-soft)' }}>
+      <div className="hbox night r-l" style={{ padding: 12, marginTop: 12, border: '1.5px solid var(--ink)' }}>
+        <div className="tiny" style={{ color: 'var(--cream)' }}>
           내일 한 가지
         </div>
-        <div className="h-title" style={{ color: 'var(--paper)', fontSize: 18, marginTop: 2 }}>
+        <div className="h-title" style={{ color: 'var(--paper)', fontSize: 18, marginTop: 4 }}>
           {tomorrowLine}
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
           <button
             type="button"
             onClick={() => flash('⏰ 내일 알람으로 추가했어요')}
-            className="chip chip-btn accent"
-            style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+            className="chip chip-btn"
+            style={{ background: 'var(--banner)', color: 'var(--paper)', borderWidth: '1.5px', cursor: 'pointer', fontFamily: 'inherit' }}
           >
             설정
           </button>
@@ -794,7 +771,7 @@ export const S12_MoodFinalize = () => {
             type="button"
             onClick={() => flash('다음에 알려줄게요')}
             className="chip chip-btn"
-            style={{ background: 'var(--paper)', cursor: 'pointer', fontFamily: 'inherit' }}
+            style={{ background: 'var(--paper)', borderWidth: '1.5px', cursor: 'pointer', fontFamily: 'inherit' }}
           >
             나중에
           </button>
@@ -848,10 +825,6 @@ export const S13_Reward = () => {
     <div
       style={{ position: 'absolute', inset: 0, background: 'rgba(26,26,26,0.55)' }}
     />
-    <div style={{ position: 'absolute', inset: 0, padding: 18, opacity: 0.3 }}>
-      <div className="hbox" style={{ height: 100, marginTop: 50 }} />
-      <div className="hbox" style={{ height: 140, marginTop: 10 }} />
-    </div>
 
     <div
       className="screen-scroll"
@@ -862,66 +835,66 @@ export const S13_Reward = () => {
         margin: 'auto 0',
         padding: 24,
         background: 'var(--paper)',
-        border: '2px solid var(--ink)',
-        borderRadius: 20,
+        border: '1.5px solid var(--ink)',
+        borderRadius: 14,
         boxShadow: '4px 6px 0 rgba(0,0,0,0.25)',
       }}
     >
-      <div className="tiny" style={{ textAlign: 'center' }}>
+      <div className="tiny" style={{ textAlign: 'center', color: 'var(--pencil)' }}>
         오늘 회고 완료 — 보상 도착
       </div>
-      <div className="h-display" style={{ marginTop: 6, textAlign: 'center' }}>
-        🎉
-      </div>
 
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
         <div
-          className="hbox accent"
           style={{
-            padding: '6px 14px',
+            padding: '5px 18px',
             borderRadius: 999,
-            transform: 'rotate(-1.5deg)',
+            background: 'var(--accent-2)',
+            color: 'var(--paper)',
           }}
         >
-          <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>+80 포인트</span>
+          <span style={{ fontFamily: 'Pretendard', fontWeight: 700, fontSize: 22 }}>+80 포인트</span>
         </div>
       </div>
 
       <div
-        className="hbox dashed"
         style={{
           marginTop: 16,
-          padding: 18,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           gap: 6,
         }}
       >
-        <ImgPh w={120} h={100} label="아이템 일러스트" />
-        <div className="h-title" style={{ fontSize: 20 }}>
+        <div
+          className="ph-square"
+          style={{ width: 130, height: 90, borderWidth: '0.5px', background: 'var(--paper-2)', overflow: 'hidden' }}
+        >
+          <CatSketch size={78} mood="happy" />
+        </div>
+        <div className="h-title" style={{ fontSize: 20, marginTop: 4 }}>
           참치 츄르 🐟
         </div>
-        <div className="tiny">이음이가 제일 좋아하는 간식</div>
+        <div className="tiny" style={{ color: 'var(--pencil)' }}>이음이가 제일 좋아하는 간식</div>
       </div>
 
       <div
         style={{
-          marginTop: 14,
+          marginTop: 16,
           display: 'flex',
           alignItems: 'center',
           gap: 10,
           justifyContent: 'center',
         }}
       >
-        <span style={{ fontFamily: 'Pretendard', fontWeight: 700, fontSize: 22, color: 'var(--accent-soft)' }}>
-          {state.streak - 1} → {state.streak}일 연속
+        <span style={{ fontFamily: 'Pretendard', fontWeight: 700, fontSize: 20, color: 'var(--night)' }}>
+          {state.streak - 1} → {state.streak}일
         </span>
       </div>
-      <div className="bar" style={{ marginTop: 10 }}>
-        <i style={{ width: Math.min(100, (state.streak / 14) * 100) + '%' }} />
+      <div className="bar" style={{ marginTop: 10, background: 'var(--paper-2)' }}>
+        <i style={{ width: Math.min(100, (state.streak / 14) * 100) + '%', background: 'var(--night)', borderRightColor: 'var(--night)' }} />
       </div>
-      <div className="tiny" style={{ textAlign: 'center', marginTop: 4 }}>
+      <div className="tiny" style={{ textAlign: 'center', marginTop: 6, color: 'var(--pencil)' }}>
         14일 달성 시 → 새 옷 잠금해제 ({Math.max(0, 14 - state.streak)}일 남음)
       </div>
       <div className="tiny" style={{ textAlign: 'center', marginTop: 4 }}>
