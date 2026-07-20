@@ -21,7 +21,7 @@ export const S18_CatRoom = () => {
   <div
     className="screen screen--stage"
     style={{
-      background: 'linear-gradient(180deg, var(--night) 0%, #4a2f1e 70%, var(--night) 100%)',
+      background: 'linear-gradient(180deg, var(--night) 0%, var(--night-2) 68%, var(--night) 100%)',
       color: 'var(--paper)',
     }}
   >
@@ -41,46 +41,46 @@ export const S18_CatRoom = () => {
           y="40"
           width="120"
           height="100"
-          fill="#1a0e08"
-          stroke="#f5e6cf"
-          strokeWidth="2"
+          rx="14"
+          fill="var(--night-2)"
+          stroke="var(--paper)"
+          strokeWidth="1.5"
         />
-        <line x1="94" y1="40" x2="94" y2="140" stroke="#f5e6cf" strokeWidth="1.5" />
-        <line x1="34" y1="90" x2="154" y2="90" stroke="#f5e6cf" strokeWidth="1.5" />
         {[
           [60, 60],
           [120, 72],
           [80, 108],
           [130, 118],
         ].map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r="1.5" fill="#f5e6cf" />
+          <circle key={i} cx={x} cy={y} r="1.5" fill="var(--paper)" />
         ))}
-        <text x="40" y="160" fontFamily="Pretendard" fontSize="10" fill="#d8a777">
+        <text x="40" y="160" fontFamily="Pretendard" fontSize="10" fill="var(--accent-soft)">
           창문 (밤)
         </text>
 
-        <line x1="180" y1="120" x2="345" y2="120" stroke="#f5e6cf" strokeWidth="2" />
+        <line x1="180" y1="120" x2="345" y2="120" stroke="var(--paper)" strokeWidth="2" strokeLinecap="round" />
         <rect
           x="200"
           y="100"
           width="20"
           height="20"
-          fill="none"
-          stroke="#f5e6cf"
+          rx="4"
+          fill="var(--night-2)"
+          stroke="var(--paper)"
           strokeWidth="1.5"
         />
-        <circle cx="240" cy="110" r="10" fill="none" stroke="#f5e6cf" strokeWidth="1.5" />
+        <circle cx="240" cy="110" r="10" fill="none" stroke="var(--paper)" strokeWidth="1.5" />
         <path
           d="M270 120 L 270 100 L 290 100 L 290 120 Z"
-          fill="none"
-          stroke="#f5e6cf"
+          fill="var(--night-2)"
+          stroke="var(--paper)"
           strokeWidth="1.5"
         />
-        <text x="200" y="138" fontFamily="Pretendard" fontSize="10" fill="#d8a777">
+        <text x="200" y="138" fontFamily="Pretendard" fontSize="10" fill="var(--accent-soft)">
           선반 · 모은 아이템
         </text>
 
-        <line x1="0" y1="280" x2="375" y2="280" stroke="#f5e6cf" strokeWidth="2" />
+        <line x1="0" y1="280" x2="375" y2="280" stroke="var(--paper)" strokeWidth="2" />
 
         <ellipse
           cx="160"
@@ -88,7 +88,7 @@ export const S18_CatRoom = () => {
           rx="120"
           ry="14"
           fill="none"
-          stroke="#8c4a1f"
+          stroke="var(--accent)"
           strokeWidth="1.5"
           strokeDasharray="3 3"
         />
@@ -98,18 +98,18 @@ export const S18_CatRoom = () => {
           cy="282"
           rx="22"
           ry="8"
-          fill="#f5e6cf"
-          stroke="#3a2414"
-          strokeWidth="2"
+          fill="var(--paper)"
+          stroke="var(--ink)"
+          strokeWidth="1.5"
         />
         <path
           d="M60 282 Q 80 274 100 282"
-          stroke="#3a2414"
+          stroke="var(--ink)"
           strokeWidth="1.5"
           fill="none"
         />
-        <text x="50" y="300" fontFamily="Pretendard" fontSize="10" fill="#d8a777">
-          밥그릇
+        <text x="50" y="300" fontFamily="Pretendard" fontSize="10" fill="var(--accent-soft)">
+          밥 주기
         </text>
 
         <rect
@@ -118,11 +118,11 @@ export const S18_CatRoom = () => {
           width="100"
           height="30"
           rx="14"
-          fill="#f5e6cf"
-          stroke="#3a2414"
-          strokeWidth="2"
+          fill="var(--paper)"
+          stroke="var(--ink)"
+          strokeWidth="1.5"
         />
-        <text x="270" y="310" fontFamily="Pretendard" fontSize="10" fill="#d8a777">
+        <text x="285" y="310" fontFamily="Pretendard" fontSize="10" fill="var(--accent-soft)">
           방석
         </text>
       </svg>
@@ -138,7 +138,7 @@ export const S18_CatRoom = () => {
         <div
           style={{
             background: 'var(--paper)',
-            border: '2px solid var(--ink)',
+            border: '1.5px solid var(--ink)',
             borderRadius: 16,
             padding: 8,
           }}
@@ -146,8 +146,14 @@ export const S18_CatRoom = () => {
           <CatSketch size={110} mood="wink" />
         </div>
         <div
-          className="handwriting"
-          style={{ fontSize: 18, textAlign: 'center', marginTop: 4, color: 'var(--paper)' }}
+          style={{
+            fontFamily: 'Pretendard',
+            fontWeight: 700,
+            fontSize: 18,
+            textAlign: 'center',
+            marginTop: 6,
+            color: 'var(--paper)',
+          }}
         >
           "고마워 ♡"
         </div>
@@ -185,20 +191,20 @@ export const S18_CatRoom = () => {
 
     <div style={{ position: 'absolute', top: 408, left: 18, right: 18 }}>
       <div
-        className="hbox r-l"
-        style={{ padding: 12, background: 'var(--paper)', color: 'var(--ink)' }}
+        className="hbox"
+        style={{ padding: 14, background: 'var(--paper)', color: 'var(--ink)' }}
       >
-        <div className="h-section">친밀도 & 컨디션</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+        <div className="h-label">친밀도 &amp; 컨디션</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
           {(
             [
-              ['♡ 친밀도', `${intimacy}%`, 'var(--accent)'],
-              ['◍ 배부름', `${satiety}%`, '#c9a266'],
-              ['☼ 활력', `${vitality}%`, 'var(--pencil)'],
+              ['친밀도', `${intimacy}%`, 'var(--night)'],
+              ['배부름', `${satiety}%`, 'var(--accent-2)'],
+              ['활력', `${vitality}%`, 'var(--accent)'],
             ] as [string, string, string][]
           ).map(([n, p, c], i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: 'Pretendard', fontSize: 12, width: 70 }}>{n}</span>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontFamily: 'Pretendard', fontSize: 12, width: 48 }}>{n}</span>
               <div className="bar" style={{ flex: 1 }}>
                 <i style={{ width: p, background: c }} />
               </div>
@@ -232,7 +238,7 @@ export const S18_CatRoom = () => {
             className="hbox"
             onClick={onAct}
             style={{
-              padding: 10,
+              padding: '12px 6px',
               textAlign: 'center',
               background: 'var(--paper)',
               color: 'var(--ink)',
@@ -241,15 +247,20 @@ export const S18_CatRoom = () => {
             }}
           >
             <div style={{ fontSize: 22 }}>{ic}</div>
-            <div className="tiny" style={{ marginTop: 2 }}>
+            <div className="tiny" style={{ marginTop: 4 }}>
               {t}
             </div>
           </button>
         ))}
       </div>
 
-      <div className="sticky" style={{ marginTop: 10, color: 'var(--ink)' }}>
-        tip — 회고 자주 할수록 친밀도 ↑, 새 옷 잠금해제
+      <div
+        className="hbox"
+        style={{ marginTop: 10, padding: '12px 16px', background: 'var(--cream)', color: 'var(--ink)' }}
+      >
+        <div className="tiny" style={{ color: 'var(--ink)' }}>
+          tip — 회고를 많이 할수록 이음이와 친밀도가 높아져요
+        </div>
       </div>
     </div>
     {toast && <div className="toast">{toast}</div>}
@@ -270,18 +281,17 @@ export const S19_Inventory = () => {
   return (
   <div className="screen screen--stage">
     <div className="screen-scroll" style={{ padding: '46px 18px calc(140px + var(--safe-b, 0px))' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span
-          style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
-          onClick={() => nav.back()}
-        >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span className="nav-arrow" style={{ color: 'var(--ink)' }} onClick={() => nav.back()}>
           ‹
         </span>
         <div className="h-title">인벤토리 / 옷장</div>
       </div>
-      <div className="tiny">보유 아이템 {state.unlockedItems.length}개 · {state.points} 포인트</div>
+      <div className="h-label" style={{ marginTop: 4 }}>
+        모은 아이템 · {state.unlockedItems.length}개 · {state.points} 포인트
+      </div>
 
-      <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+      <div style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}>
         {['전체', '👕 옷', '🎩 모자', '🍖 먹이', '◰ 방', '🎁 보상'].map((t, i) => (
           <span key={i} className={'chip ' + (i === 1 ? 'solid' : '')}>
             {t}
@@ -289,12 +299,12 @@ export const S19_Inventory = () => {
         ))}
       </div>
 
-      <div className="hbox r-l" style={{ padding: 12, marginTop: 12 }}>
+      <div className="hbox" style={{ padding: 12, marginTop: 12 }}>
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 8,
+            gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))',
+            gap: 10,
           }}
         >
           {(
@@ -314,10 +324,10 @@ export const S19_Inventory = () => {
               style={{
                 padding: 10,
                 position: 'relative',
-                background: have ? '#fff' : 'rgba(0,0,0,0.04)',
+                background: have ? 'var(--paper)' : 'var(--paper-2)',
                 opacity: have ? 1 : 0.6,
                 cursor: have ? 'pointer' : 'default',
-                outline: sel === n ? '2px solid var(--accent)' : 'none',
+                outline: sel === n ? '1.5px solid var(--accent)' : 'none',
                 outlineOffset: 1,
               }}
             >
@@ -327,12 +337,13 @@ export const S19_Inventory = () => {
                   fontFamily: 'Pretendard',
                   fontWeight: 700,
                   fontSize: 13,
-                  marginTop: 6,
+                  marginTop: 8,
+                  textAlign: 'center',
                 }}
               >
                 {n}
               </div>
-              <div className="tiny">{sub}</div>
+              <div className="tiny" style={{ textAlign: 'center' }}>{sub}</div>
               {state.equippedItem === n && (
                 <span
                   className="chip accent"
@@ -358,10 +369,16 @@ export const S19_Inventory = () => {
         </div>
       </div>
 
-      <div className="h-label" style={{ marginTop: 14, marginBottom: 6 }}>
+      <div className="h-label" style={{ marginTop: 16, marginBottom: 8 }}>
         먹이 · 7개
       </div>
-      <div style={{ display: 'flex', gap: 8, overflowX: 'hidden' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))',
+          gap: 8,
+        }}
+      >
         {(
           [
             ['🐟 츄르 (참치)', 5],
@@ -373,11 +390,11 @@ export const S19_Inventory = () => {
           <div
             key={i}
             className="hbox"
-            style={{ padding: 8, minWidth: 92, textAlign: 'center', flex: 'none' }}
+            style={{ padding: 10, textAlign: 'center' }}
           >
             <div style={{ fontSize: 22 }}>{n.split(' ')[0]}</div>
-            <div className="tiny">{n.split(' ').slice(1).join(' ')}</div>
-            <div style={{ fontFamily: 'Pretendard', fontWeight: 700, fontSize: 13 }}>
+            <div className="tiny" style={{ marginTop: 2 }}>{n.split(' ').slice(1).join(' ')}</div>
+            <div style={{ fontFamily: 'Pretendard', fontWeight: 700, fontSize: 13, marginTop: 2 }}>
               × {c}
             </div>
           </div>
@@ -422,33 +439,38 @@ export const S20_Report = () => {
   return (
   <div className="screen screen--stage">
     <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span
-          style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
-          onClick={() => nav.back()}
-        >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span className="nav-arrow" style={{ color: 'var(--pencil)' }} onClick={() => nav.back()}>
           ‹
         </span>
-        <div className="h-section">주간 리포트 — 매주 월요일</div>
+        <div className="h-label">주간 리포트 — 매주 월요일</div>
       </div>
-      <div className="h-display" style={{ marginTop: 6, fontSize: 30 }}>
+      <div className="h-display" style={{ marginTop: 8, fontSize: 28 }}>
         5월 4째주
         <br />
         너의 일주일.
       </div>
-      <div className="tiny" style={{ marginTop: 4 }}>
+      <div className="h-label" style={{ marginTop: 6 }}>
         5/19 — 5/25 · 6일 기록 · 1일 휴식
       </div>
 
       <div
-        className="hbox r-l"
+        className="hbox"
         style={{ padding: 14, marginTop: 14, background: 'var(--cream)' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <CatSketch size={70} mood="happy" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <CatSketch size={64} mood="happy" />
           <div>
-            <div className="h-section">한 줄 요약</div>
-            <div className="handwriting" style={{ fontSize: 18 }}>
+            <div className="tiny">한 줄 요약</div>
+            <div
+              style={{
+                fontFamily: 'Pretendard',
+                fontWeight: 700,
+                fontSize: 18,
+                marginTop: 4,
+                color: 'var(--ink-soft)',
+              }}
+            >
               "피곤한 주, 그래도 잘 버텼어"
             </div>
           </div>
@@ -475,28 +497,28 @@ export const S20_Report = () => {
         ).map(([t, n, u], i) => (
           <div
             key={i}
-            className={'hbox ' + (i % 2 ? 'r-r' : 'r-l')}
-            style={{ padding: 10, textAlign: 'center' }}
+            className="hbox"
+            style={{ padding: '12px 8px', textAlign: 'center' }}
           >
             <div className="tiny">{t}</div>
             <div
               style={{
                 fontFamily: 'Pretendard',
                 fontWeight: 700,
-                fontSize: 26,
-                marginTop: 2,
+                fontSize: 24,
+                marginTop: 4,
               }}
             >
               {n}
             </div>
-            <div className="tiny">{u}</div>
+            <div className="tiny" style={{ marginTop: 2 }}>{u}</div>
           </div>
         ))}
       </div>
 
-      <div className="hbox r-r" style={{ padding: 14, marginTop: 12 }}>
-        <div className="h-section">이번 주 이야기</div>
-        <div className="body" style={{ marginTop: 6, lineHeight: 1.6 }}>
+      <div className="hbox" style={{ padding: 14, marginTop: 12 }}>
+        <div className="tiny">이번 주 이야기</div>
+        <div className="body" style={{ marginTop: 8, lineHeight: 1.6 }}>
           월·화에 회의가 길어 피곤이 컸어요.
           <br />
           수요일에 산책을 다시 시작한 뒤로
@@ -506,29 +528,29 @@ export const S20_Report = () => {
       </div>
 
       <div
-        className="hbox night r-l"
+        className="hbox night"
         onClick={() => flash('🖼 리포트 카드 이미지 저장은 곧 지원돼요')}
         style={{
           padding: 12,
           marginTop: 12,
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
+          gap: 12,
           cursor: 'pointer',
         }}
       >
-        <div className="ph-circle" style={{ width: 36, height: 36, background: '#fff' }}>
+        <div className="ph-circle" style={{ width: 36, height: 36, background: 'var(--paper)' }}>
           ◇
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: 'Pretendard', fontWeight: 700, color: '#fff' }}>
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 500, color: 'var(--paper)' }}>
             리포트 카드 저장
           </div>
           <div className="tiny" style={{ color: 'var(--accent-soft)' }}>
-            나만 보기 / 이미지로 내보내기
+            이미지로 내보내기
           </div>
         </div>
-        <span style={{ fontFamily: 'Pretendard', fontSize: 22, color: '#fff' }}>›</span>
+        <span style={{ fontFamily: 'Pretendard', fontSize: 22, color: 'var(--paper)' }}>›</span>
       </div>
     </div>
     {toast && <div className="toast">{toast}</div>}
