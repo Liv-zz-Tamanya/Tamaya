@@ -4,6 +4,8 @@
 위험(의료행위 요구) 메시지를 코칭 생성 전에 단락시킨다.
 """
 
+import pytest
+
 from app.domain.service.medical_guardrail import (
     GuardrailVerdict,
     build_disclaimer,
@@ -64,3 +66,30 @@ def test_emergency_disclaimer_mentions_119():
 def test_safe_verdict_has_no_disclaimer():
     # safe는 면책이 아니라 정상 코칭으로 흘러야 하므로 빈 문자열
     assert build_disclaimer(GuardrailVerdict.SAFE) == ""
+
+
+@pytest.mark.parametrize(
+    ("medical_request", "general_context"),
+    [
+        ("이 약 먹어도 돼?", "친구랑 약속이 취소돼서 속상해"),
+        ("이거 암일까?", "암기 시험이 걱정돼"),
+        ("응급실에 가야 할까?", "응급 회의라 정신없었어"),
+        ("내 증상이 무슨 병이야?", "내 증상이 나아졌어"),
+        ("타이레놀을 몇 알 먹어야 해?", "오늘 너무 피곤해"),
+        ("인슐린 용량 알려줘", "오늘 산책 못 했어"),
+    ],
+)
+def test_medical_intent_is_blocked_but_similar_general_context_is_safe(
+    medical_request: str,
+    general_context: str,
+):
+    assert classify_medical_request(medical_request) != GuardrailVerdict.SAFE
+    assert classify_medical_request(general_context) == GuardrailVerdict.SAFE
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    ["가슴 통증이 있어", "숨이 막혀", "자해하고 싶어", "피를 토했어", "죽고 싶어"],
+)
+def test_clear_emergency_expressions_take_priority(prompt: str):
+    assert classify_medical_request(prompt) == GuardrailVerdict.EMERGENCY
