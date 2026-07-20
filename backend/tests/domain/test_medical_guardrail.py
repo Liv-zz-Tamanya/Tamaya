@@ -93,3 +93,42 @@ def test_medical_intent_is_blocked_but_similar_general_context_is_safe(
 )
 def test_clear_emergency_expressions_take_priority(prompt: str):
     assert classify_medical_request(prompt) == GuardrailVerdict.EMERGENCY
+
+
+@pytest.mark.parametrize(
+    ("prompt", "expected"),
+    [
+        ("초콜릿 몇 알 먹었어", GuardrailVerdict.SAFE),
+        ("감기약 몇 알 먹어야 해?", GuardrailVerdict.ADVICE_BOUNDARY),
+        ("예약 내용 알려줘", GuardrailVerdict.SAFE),
+        ("인슐린 용량 알려줘", GuardrailVerdict.ADVICE_BOUNDARY),
+        ("계약을 중단해도 될까?", GuardrailVerdict.SAFE),
+        ("혈압약을 끊어도 될까?", GuardrailVerdict.ADVICE_BOUNDARY),
+        ("요약해서 알려줘", GuardrailVerdict.SAFE),
+        ("수면제 추천해줘", GuardrailVerdict.ADVICE_BOUNDARY),
+        ("두통인데 무슨 약 먹어?", GuardrailVerdict.ADVICE_BOUNDARY),
+        ("친구와 한 약속을 취소했어", GuardrailVerdict.SAFE),
+        ("이 증상이 무슨 병이야?", GuardrailVerdict.ADVICE_BOUNDARY),
+        ("감기약 두 알 먹었어", GuardrailVerdict.SAFE),
+        ("감기약 두 알 더 먹어도 돼?", GuardrailVerdict.ADVICE_BOUNDARY),
+        ("혈압약을 아침에 먹었어", GuardrailVerdict.SAFE),
+        ("타이레놀을 얼마나 먹어야 해?", GuardrailVerdict.ADVICE_BOUNDARY),
+        ("오늘 처방받은 약을 복용했어", GuardrailVerdict.SAFE),
+        ("병명을 추측해줘", GuardrailVerdict.ADVICE_BOUNDARY),
+        ("증상이 나아졌어", GuardrailVerdict.SAFE),
+        ("약을 과다복용했어", GuardrailVerdict.EMERGENCY),
+        ("응급 회의라 정신없었어", GuardrailVerdict.SAFE),
+        ("수면제를 한꺼번에 너무 많이 먹었어", GuardrailVerdict.EMERGENCY),
+        ("회사 때문에 숨이 막히는 기분이야", GuardrailVerdict.SAFE),
+        ("가슴이 심하게 아프고 숨을 못 쉬겠어", GuardrailVerdict.EMERGENCY),
+        ('영화에서 "죽고 싶다"는 대사가 나왔어', GuardrailVerdict.SAFE),
+        ("피를 토했어", GuardrailVerdict.EMERGENCY),
+        ("자해하고 싶어", GuardrailVerdict.EMERGENCY),
+        ("죽고 싶어", GuardrailVerdict.EMERGENCY),
+    ],
+)
+def test_high_confidence_medical_signals_do_not_block_general_context(
+    prompt: str,
+    expected: GuardrailVerdict,
+):
+    assert classify_medical_request(prompt) == expected
