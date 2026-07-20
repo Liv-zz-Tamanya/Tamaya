@@ -139,7 +139,7 @@ export const S14_Calendar = () => {
   <div className="screen">
     <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div className="h-title">달력</div>
-      <div className="tiny">감정의 흐름을 한 눈에</div>
+      <div className="tiny" style={{ marginTop: 2 }}>감정의 흐름을 한 눈에</div>
 
       <div
         style={{
@@ -153,16 +153,18 @@ export const S14_Calendar = () => {
           type="button"
           onClick={() => moveMonth(-1)}
           aria-label="이전 달"
-          style={{ border: 0, background: 'transparent', fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
+          style={{ border: 0, background: 'transparent', fontFamily: 'Pretendard', fontWeight: 700, fontSize: 22, color: 'var(--ink)', cursor: 'pointer' }}
         >
           ‹
         </button>
-        <div className="h-section">{year} · {month}월</div>
+        <div style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: 15, color: 'var(--pencil)' }}>
+          {year} · {month}월
+        </div>
         <button
           type="button"
           onClick={() => moveMonth(1)}
           aria-label="다음 달"
-          style={{ border: 0, background: 'transparent', fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
+          style={{ border: 0, background: 'transparent', fontFamily: 'Pretendard', fontWeight: 700, fontSize: 22, color: 'var(--ink)', cursor: 'pointer' }}
         >
           ›
         </button>
@@ -314,9 +316,9 @@ export const S14_Calendar = () => {
         }}
       >
         {moodCounts.map((x, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div key={i} className="chip" style={{ background: 'var(--paper)' }}>
             <span>{x.m}</span>
-            <span className="tiny">
+            <span style={{ fontSize: 11, color: 'var(--pencil)' }}>
               {x.label} ×{x.n}
             </span>
           </div>
@@ -475,22 +477,23 @@ export const S15_DiaryDetail = () => {
           alignItems: 'center',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span
             className="nav-arrow"
+            style={{ color: 'var(--pencil)' }}
             onClick={() => nav.back()}
           >
             ‹
           </span>
-          <div className="h-section">달력 / {displayDate}</div>
+          <div className="tiny">달력 / {displayDate}</div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <span className="tiny">✎</span>
-          <span className="tiny">⋮</span>
+        <div style={{ display: 'flex', gap: 10, color: 'var(--ink)', fontSize: 16 }}>
+          <span>✎</span>
+          <span>⋮</span>
         </div>
       </div>
 
-      <div className="h-display" style={{ marginTop: 8, fontSize: 32 }}>
+      <div className="h-display" style={{ marginTop: 8, fontSize: 28 }}>
         {weekday}요일 · {displayDate}
       </div>
 
@@ -501,7 +504,7 @@ export const S15_DiaryDetail = () => {
             <div style={{ fontWeight: 700 }}>
               {entry.moods.map((m) => MOOD_LABEL[m]).join(' · ')}
             </div>
-            <div className="tiny">회고 대화로 작성</div>
+            <div className="tiny" style={{ color: 'var(--muted)' }}>회고 대화로 작성</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
@@ -540,7 +543,7 @@ export const S15_DiaryDetail = () => {
       </div>
 
       <div className="hbox r-l" style={{ padding: 12, marginTop: 14 }}>
-        <div className="h-section">그날의 체크</div>
+        <div className="h-label">그날의 체크</div>
         <div
           style={{
             display: 'grid',
@@ -608,7 +611,7 @@ export const S16_Stats = () => {
   <div className="screen">
     <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div className="h-title">통계</div>
-      <div className="tiny">기록의 모양을 봐요</div>
+      <div className="tiny" style={{ marginTop: 2 }}>한 주를 한 눈에 봐요</div>
 
       <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
         {(['주', '월', '전체'] as const).map((p) => (
@@ -654,8 +657,10 @@ export const S16_Stats = () => {
         </div>
       </div>
 
-      <div className="hbox r-r" style={{ padding: 14, marginTop: 12 }}>
-        <div className="h-section">요일별 작성</div>
+      {/* 통계 카드 — 넓은 폭서 reflow-grid 로 2열 자연 확장(로직·데이터 불변) */}
+      <div className="reflow-grid" style={{ marginTop: 12 }}>
+      <div className="hbox r-r" style={{ padding: 14 }}>
+        <div className="h-label">요일별 작성</div>
         <div
           style={{
             display: 'flex',
@@ -694,8 +699,8 @@ export const S16_Stats = () => {
         </div>
       </div>
 
-      <div className="hbox r-l" style={{ padding: 14, marginTop: 12 }}>
-        <div className="h-section">감정 분포</div>
+      <div className="hbox r-l" style={{ padding: 14 }}>
+        <div className="h-label">감정 분포</div>
         <div
           style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}
         >
@@ -715,8 +720,8 @@ export const S16_Stats = () => {
         </div>
       </div>
 
-      <div className="hbox r-r" style={{ padding: 14, marginTop: 12 }}>
-        <div className="h-section">라이프스타일</div>
+      <div className="hbox r-r" style={{ padding: 14 }}>
+        <div className="h-label">라이프스타일</div>
         <div
           style={{
             display: 'grid',
@@ -746,6 +751,7 @@ export const S16_Stats = () => {
           ))}
         </div>
       </div>
+      </div>
     </div>
     <TabBar active="stat" />
   </div>
@@ -762,12 +768,12 @@ export const S17_Insights = () => {
   <div className="screen">
     <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
       <div className="h-title">인사이트</div>
-      <div className="tiny">이음이가 정리해준 이번 주</div>
+      <div className="tiny" style={{ marginTop: 2 }}>이음이가 정리해준 이번 주</div>
 
       {enough ? (
         <>
       <div className="hbox night r-l" style={{ padding: 16, marginTop: 14 }}>
-        <div className="h-section" style={{ color: 'var(--accent-soft)' }}>
+        <div className="h-label" style={{ color: 'var(--accent-soft)' }}>
           이번 주 메인 패턴
         </div>
         <div
@@ -790,6 +796,8 @@ export const S17_Insights = () => {
       <div className="h-label" style={{ marginTop: 14, marginBottom: 6 }}>
         이번 주 발견
       </div>
+      {/* 발견 카드 — 넓은 폭서 reflow-grid 로 다열 자연 확장(데이터·문구 불변) */}
+      <div className="reflow-grid">
       {(
         [
           ['☼', '햇볕 쐰 날 = 잠 더 푹', '3일 중 3일 "푹잠"으로 기록'],
@@ -802,7 +810,6 @@ export const S17_Insights = () => {
           className={'hbox ' + (i % 2 ? 'r-l' : 'r-r')}
           style={{
             padding: 12,
-            marginTop: 8,
             display: 'flex',
             alignItems: 'flex-start',
             gap: 10,
@@ -812,17 +819,18 @@ export const S17_Insights = () => {
             {ic}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700 }}>{t}</div>
-            <div className="tiny">{s}</div>
+            <div style={{ fontWeight: 500 }}>{t}</div>
+            <div className="tiny" style={{ color: 'var(--muted)' }}>{s}</div>
           </div>
           <span className="tiny" style={{ color: 'var(--accent)' }}>
             ✦
           </span>
         </div>
       ))}
+      </div>
 
       <div className="hbox accent r-l" style={{ padding: 14, marginTop: 14 }}>
-        <div className="h-section">이번 주 추천 루틴</div>
+        <div className="h-label">이번 주 추천 루틴</div>
         <div className="h-title" style={{ fontSize: 18, marginTop: 4 }}>
           회의 끝 · 3분 호흡 알람
         </div>
