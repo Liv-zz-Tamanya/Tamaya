@@ -22,6 +22,8 @@
   --ink-soft: #5a3a22;
   --pencil: #7a5634;
   --muted: #b39570;
+  --bg: #fff9ee;         /* v4 화면 배경(카드보다 밝은 크림-화이트) */
+  --banner: #b5a28a;     /* v4 AI 코칭 배너(그레이-탄) */
   --line: #c9a877;
   --accent: #8c4a1f;         /* 리치 커피 브라운 — CTA(포인트 1) */
   --accent-soft: #d8a777;    /* 카페오레 */

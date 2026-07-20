@@ -17,7 +17,7 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
   height: 100vh;
   height: 100dvh;
   margin: 0 auto;
-  background: var(--paper);
+  background: var(--bg, var(--paper));
   overflow: hidden;
   font-family: 'Pretendard', sans-serif;
 }
@@ -31,13 +31,13 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
   height: var(--tabbar-h, 64px);
   padding-bottom: var(--safe-b, 0px); /* 홈 인디케이터 위로 아이콘을 올린다 */
   padding-inline: max(0px, calc((100% - var(--app-fluid, 100%)) / 2));
-  border-top: 2px solid var(--ink);
-  background: var(--paper-2);
+  border-top: 0.5px solid var(--ink);
+  background: var(--paper);
   display: grid; grid-template-columns: repeat(5, 1fr);
 }
 .tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   font-family: 'Pretendard'; font-size: 11px; color: var(--pencil); position: relative; }
-.tab .tab-icon { width: 26px; height: 26px; border: 1.5px solid var(--ink); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--paper); }
+.tab .tab-icon { width: 32px; height: 32px; border: 0.5px solid var(--ink); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--paper); }
 .tab.active { color: var(--ink); font-weight: 700; }
 .tab.active .tab-icon { background: var(--accent); color: #fff; border-color: var(--ink); }
 .tab.active::before { content: ''; position: absolute; top: -2px; left: 14%; right: 14%; height: 3px; background: var(--accent); }
@@ -46,18 +46,18 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
 .tab-center { position: relative; }
 .tab-center .tab-icon-lg {
   width: 52px; height: 52px; border-radius: 50%; font-size: 22px;
-  background: var(--accent); color: #fff; border: 2px solid var(--ink);
-  box-shadow: 2px 3px 0 var(--ink);
-  position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+  background: var(--paper); color: var(--ink); border: 1.5px solid var(--ink);
+  box-shadow: 0 2px 6px rgba(58, 36, 20, 0.15);
+  position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
 }
 .tab-center > div:last-child { margin-top: 32px; font-weight: 700; }
 .tab.tab-center.active::before { display: none; }
 
 /* Hand-drawn box */
 .hbox {
-  border: 1.5px solid var(--ink);
+  border: 0.5px solid var(--ink);
   border-radius: 14px;
-  background: #fff;
+  background: var(--paper);
   position: relative;
 }
 .hbox.dashed { border-style: dashed; background: transparent; }
