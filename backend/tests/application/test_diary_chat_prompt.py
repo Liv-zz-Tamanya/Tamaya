@@ -23,6 +23,8 @@ def test_diary_chat_prompt_includes_turn_policy_without_finalize_hint():
     assert "절대 대화를 끝내거나 작별" in prompt
     assert "search_diary_memories" in prompt
     assert "Tool 결과에 없는 날짜, 인물, 장소, 사건을 만들지 마" in prompt
+    assert "Tool을 호출하지 말고 직접 답해" in prompt
+    assert "NO_TOOL" in prompt
 
 
 def test_diary_chat_prompt_includes_finalize_policy():
