@@ -56,6 +56,8 @@ class EvaluationCaseResult(BaseModel):
     expected_decision: ExpectedDecision | None = None
     actual_decision: ExpectedDecision | None = None
     decision_check_passed: bool | None = None
+    decision_evaluable: bool = False
+    decision_skip_reason: str | None = None
     actual_tools: list[str] = Field(default_factory=list)
     missing_expected_tools: list[str] = Field(default_factory=list)
     called_forbidden_tools: list[str] = Field(default_factory=list)
@@ -102,6 +104,10 @@ class EvaluationSummary(BaseModel):
     tool_call_cases: int
     tool_call_accuracy: float | None
     unnecessary_tool_call_cases: int
+    decision_skipped_cases: int
+    decision_skipped_input_guardrail_blocked_cases: int
+    decision_skipped_execution_error_cases: int
+    decision_skipped_agent_not_invoked_cases: int
 
 
 class CaseStabilityResult(BaseModel):
@@ -270,12 +276,20 @@ def evaluate_record(
     )
     guardrail_passed = actual_guardrail == case.expected_guardrail.value and execution_error is None
     expected_decision = _expected_decision(case)
-    actual_decision = ExpectedDecision.TOOL_CALL if actual_tools else ExpectedDecision.NO_TOOL
-    decision_check = actual_decision == expected_decision if expected_decision and execution_error is None else None
+    decision_evaluable, decision_skip_reason = _decision_evaluation_state(
+        expected_decision,
+        record,
+        execution_error,
+    )
+    actual_decision = (
+        ExpectedDecision.TOOL_CALL if actual_tools else ExpectedDecision.NO_TOOL
+    ) if decision_evaluable else None
+    decision_check = actual_decision == expected_decision if decision_evaluable else None
     return EvaluationCaseResult(
         run_number=run_number, case_id=case.id, dataset_name=dataset_name, mode=case.mode, category=case.category, input=case.input,
         expected_tools=case.expected_tools, forbidden_tools=case.forbidden_tools, expected_decision=expected_decision,
-        actual_decision=actual_decision, decision_check_passed=decision_check, actual_tools=actual_tools,
+        actual_decision=actual_decision, decision_check_passed=decision_check, decision_evaluable=decision_evaluable,
+        decision_skip_reason=decision_skip_reason, actual_tools=actual_tools,
         missing_expected_tools=missing, called_forbidden_tools=forbidden, expected_guardrail=case.expected_guardrail,
         actual_guardrail=actual_guardrail, guardrail_verdict=record.guardrail_verdict if record else None,
         termination_reason=reason.value if reason else None, tool_check_passed=not missing and not forbidden,
@@ -300,6 +314,7 @@ def summarize(results: Sequence[EvaluationCaseResult]) -> EvaluationSummary:
     decision_results = [result for result in results if result.decision_check_passed is not None]
     no_tool = [result for result in decision_results if result.expected_decision == ExpectedDecision.NO_TOOL]
     tool_call = [result for result in decision_results if result.expected_decision == ExpectedDecision.TOOL_CALL]
+    skipped = [result for result in results if result.expected_decision and not result.decision_evaluable]
     return EvaluationSummary(total_cases=total, completed_cases=completed, execution_error_cases=errors,
         tool_check_passed_cases=tool, tool_check_rate=_rate(tool, completed), guardrail_check_passed_cases=guardrail,
         guardrail_check_rate=_rate(guardrail, completed), combined_passed_cases=combined, combined_rate=_rate(combined, completed),
@@ -308,7 +323,11 @@ def summarize(results: Sequence[EvaluationCaseResult]) -> EvaluationSummary:
         decision_check_rate=_nullable_rate(sum(result.decision_check_passed for result in decision_results), len(decision_results)),
         no_tool_cases=len(no_tool), no_tool_accuracy=_nullable_rate(sum(result.decision_check_passed for result in no_tool), len(no_tool)),
         tool_call_cases=len(tool_call), tool_call_accuracy=_nullable_rate(sum(result.decision_check_passed for result in tool_call), len(tool_call)),
-        unnecessary_tool_call_cases=sum(result.expected_decision == ExpectedDecision.NO_TOOL and result.actual_decision == ExpectedDecision.TOOL_CALL for result in results))
+        unnecessary_tool_call_cases=sum(result.expected_decision == ExpectedDecision.NO_TOOL and result.actual_decision == ExpectedDecision.TOOL_CALL for result in results),
+        decision_skipped_cases=len(skipped),
+        decision_skipped_input_guardrail_blocked_cases=sum(result.decision_skip_reason == "input_guardrail_blocked" for result in skipped),
+        decision_skipped_execution_error_cases=sum(result.decision_skip_reason == "execution_error" for result in skipped),
+        decision_skipped_agent_not_invoked_cases=sum(result.decision_skip_reason == "agent_not_invoked" for result in skipped))
 
 
 def _rate(numerator: int, denominator: int) -> float:
@@ -327,6 +346,22 @@ def _expected_decision(case: PersonalAssistantEvalCase) -> ExpectedDecision | No
     if case.forbidden_tools:
         return ExpectedDecision.NO_TOOL
     return None
+
+
+def _decision_evaluation_state(
+    expected_decision: ExpectedDecision | None,
+    record: AgentExecutionRecord | None,
+    execution_error: str | None,
+) -> tuple[bool, str | None]:
+    if expected_decision is None:
+        return False, "expected_decision_missing"
+    if execution_error is not None:
+        return False, "execution_error"
+    if record is None or record.llm_calls == 0:
+        if record and record.termination_reason == AgentTerminationReason.INPUT_GUARDRAIL_BLOCKED:
+            return False, "input_guardrail_blocked"
+        return False, "agent_not_invoked"
+    return True, None
 
 
 async def run_cases(cases: Sequence[tuple[str, PersonalAssistantEvalCase]], model=None, fail_fast: bool = False) -> list[EvaluationCaseResult]:
@@ -525,6 +560,11 @@ def print_summary(report: EvaluationRunReport) -> None:
         print(f"NO_TOOL accuracy: {summary.no_tool_accuracy}% ({summary.no_tool_cases} cases)")
         print(f"TOOL_CALL accuracy: {summary.tool_call_accuracy}% ({summary.tool_call_cases} cases)")
         print(f"Unnecessary tool calls: {summary.unnecessary_tool_call_cases}")
+    if summary.decision_skipped_cases:
+        print(f"Decision skipped: {summary.decision_skipped_cases}")
+        print(f"- input guardrail blocked: {summary.decision_skipped_input_guardrail_blocked_cases}")
+        print(f"- execution error: {summary.decision_skipped_execution_error_cases}")
+        print(f"- agent not invoked: {summary.decision_skipped_agent_not_invoked_cases}")
     print(f"Stable pass cases: {stability.stable_passed_cases}\nFlaky cases: {stability.flaky_cases}\nStable fail cases: {stability.stable_failed_cases}")
     if stability.flaky_cases:
         print("\nFlaky cases:")

@@ -42,12 +42,15 @@ expected_guardrail, expected_document_ids, category, note
 ## Tool decision 평가
 
 `expected_decision`은 선택 필드이며 `NO_TOOL` 또는 `TOOL_CALL` 값을 사용한다. `NO_TOOL`은
-별도 Tool이 아니라 모델 응답에 `tool_calls`가 없는 직접 응답을 뜻한다. Runner는 명시된 값이
+별도 Tool이 아니라 Agent가 실제 실행된 뒤 모델 응답에 `tool_calls`가 없는 직접 응답을 뜻한다. Runner는 명시된 값이
 없어도 `expected_tools`가 있으면 `TOOL_CALL`, expected tool 없이 forbidden tool만 있으면
 `NO_TOOL`로 측정용 추론을 한다. 기존 Tool/Guardrail/Combined 판정은 이 지표로 바뀌지 않는다.
 
 보고서는 Decision checks, NO_TOOL accuracy, TOOL_CALL accuracy, unnecessary tool call count를
 별도로 저장한다. unnecessary tool call은 NO_TOOL 기대 실행에서 하나 이상 Tool이 호출된 경우다.
+Decision 지표는 Agent가 실제로 실행되어 직접 응답 또는 Tool Call을 선택한 경우만 평가한다.
+입력 Guardrail이 Agent 실행 전에 차단한 요청과 실행 오류는 NO_TOOL/TOOL_CALL 정확도에서 제외하고
+`Decision skipped` 및 사유별 건수로 별도 보고한다. Guardrail 평가와 기존 Combined 판정에는 영향을 주지 않는다.
 
 ## 작성과 검수
 

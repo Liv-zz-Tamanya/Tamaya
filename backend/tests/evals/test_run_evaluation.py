@@ -40,8 +40,12 @@ def _case(**overrides: object) -> PersonalAssistantEvalCase:
     })
 
 
-def _record(*tools: str, reason: AgentTerminationReason = AgentTerminationReason.COMPLETED) -> AgentExecutionRecord:
-    return AgentExecutionRecord("trace", "diary", reason, "safe", 1, 1, tools, 1, 2, 3, 0, None, None, 0, 0, 0, 1, 2, 3)
+def _record(
+    *tools: str,
+    reason: AgentTerminationReason = AgentTerminationReason.COMPLETED,
+    llm_calls: int = 1,
+) -> AgentExecutionRecord:
+    return AgentExecutionRecord("trace", "diary", reason, "safe", llm_calls, 1, tools, 1, 2, 3, 0, None, None, 0, 0, 0, 1, 2, 3)
 
 
 def test_messages_for_case_and_invalid_role():
@@ -78,6 +82,34 @@ def test_decision_checks_distinguish_no_tool_and_tool_call():
     assert summary.no_tool_accuracy == 50
     assert summary.tool_call_accuracy == 50
     assert summary.unnecessary_tool_call_cases == 1
+
+
+def test_input_guardrail_block_is_skipped_from_decision_metrics():
+    blocked_case = _case(expected_tools=[], forbidden_tools=["search_diary_memories"], expected_guardrail="BLOCK")
+    blocked = evaluate_record(
+        blocked_case,
+        "diary",
+        _record(reason=AgentTerminationReason.INPUT_GUARDRAIL_BLOCKED, llm_calls=0),
+        None,
+    )
+    direct = evaluate_record(_case(expected_tools=[], forbidden_tools=["search_diary_memories"]), "diary", _record(), None)
+    summary = summarize([blocked, direct])
+    assert blocked.guardrail_check_passed
+    assert blocked.actual_decision is None
+    assert blocked.decision_check_passed is None
+    assert blocked.decision_skip_reason == "input_guardrail_blocked"
+    assert summary.no_tool_cases == 1
+    assert summary.decision_skipped_cases == 1
+    assert summary.decision_skipped_input_guardrail_blocked_cases == 1
+
+
+def test_execution_error_and_missing_expected_decision_are_not_evaluable():
+    errored = evaluate_record(_case(), "diary", _record(reason=AgentTerminationReason.TIMEOUT), RuntimeError("timeout"))
+    unlabeled = evaluate_record(_case(expected_tools=[], forbidden_tools=[]), "diary", _record(), None)
+    assert errored.decision_check_passed is None
+    assert errored.decision_skip_reason == "execution_error"
+    assert unlabeled.decision_check_passed is None
+    assert unlabeled.decision_skip_reason == "expected_decision_missing"
 
 
 def test_recorder_requires_one_record():
