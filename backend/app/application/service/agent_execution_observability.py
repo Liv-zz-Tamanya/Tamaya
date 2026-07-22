@@ -2,7 +2,7 @@ import contextvars
 import time
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import uuid4
 
 
@@ -16,6 +16,32 @@ class AgentTerminationReason(StrEnum):
     TOOL_ERROR = "tool_error"
     CANCELLED = "cancelled"
     UNEXPECTED_ERROR = "unexpected_error"
+
+
+class AgentTraceDetail(StrEnum):
+    BASIC = "basic"
+    FULL = "full"
+
+
+@dataclass(frozen=True)
+class ToolCallTraceRecord:
+    round: int
+    name: str
+    call_id: str | None = None
+    arguments: dict[str, Any] | None = None
+    arguments_parse_error: str | None = None
+
+
+@dataclass(frozen=True)
+class LlmCallTraceRecord:
+    call_number: int
+    finish_reason: str | None
+    response_content: str | None
+    tool_calls: tuple[ToolCallTraceRecord, ...]
+    input_tokens: int | None
+    output_tokens: int | None
+    total_tokens: int | None
+    duration_ms: int | None
 
 
 @dataclass(frozen=True)
@@ -39,6 +65,11 @@ class AgentExecutionRecord:
     input_tokens: int | None
     output_tokens: int | None
     total_tokens: int | None
+    tool_calls: tuple[ToolCallTraceRecord, ...] = ()
+    llm_call_traces: tuple[LlmCallTraceRecord, ...] = ()
+    first_finish_reason: str | None = None
+    first_response_content: str | None = None
+    final_response_content: str | None = None
 
 
 class AgentExecutionRecorder(Protocol):
@@ -53,6 +84,7 @@ class NullAgentExecutionRecorder:
 @dataclass
 class AgentExecutionTrace:
     mode: str
+    trace_detail: AgentTraceDetail = AgentTraceDetail.BASIC
     trace_id: str = field(default_factory=lambda: str(uuid4()))
     guardrail_verdict: str | None = None
     termination_reason: AgentTerminationReason = AgentTerminationReason.COMPLETED
@@ -69,6 +101,11 @@ class AgentExecutionTrace:
     input_tokens: int | None = None
     output_tokens: int | None = None
     total_tokens: int | None = None
+    tool_calls: list[ToolCallTraceRecord] = field(default_factory=list)
+    llm_call_traces: list[LlmCallTraceRecord] = field(default_factory=list)
+    first_finish_reason: str | None = None
+    first_response_content: str | None = None
+    final_response_content: str | None = None
     _tool_round_in_progress: bool = False
     _started_at: float = field(default_factory=time.monotonic)
 
@@ -119,6 +156,44 @@ class AgentExecutionTrace:
         self.output_tokens = (self.output_tokens or 0) + usage.get("output_tokens", 0)
         self.total_tokens = (self.total_tokens or 0) + usage.get("total_tokens", 0)
 
+    def record_llm_call(
+        self,
+        *,
+        finish_reason: str | None,
+        response_content: str | None,
+        tool_calls: list[ToolCallTraceRecord],
+        usage: dict[str, int] | None,
+        duration_seconds: float,
+    ) -> None:
+        sanitized_tool_calls = [
+            call if self.trace_detail == AgentTraceDetail.FULL
+            else ToolCallTraceRecord(round=call.round, call_id=call.call_id, name=call.name)
+            for call in tool_calls
+        ]
+        content = response_content if self.trace_detail == AgentTraceDetail.FULL else None
+        if self.first_finish_reason is None and not self.llm_call_traces:
+            self.first_finish_reason = finish_reason
+            self.first_response_content = content
+        if content:
+            self.final_response_content = content
+        self.tool_calls.extend(sanitized_tool_calls)
+        self.llm_call_traces.append(
+            LlmCallTraceRecord(
+                call_number=len(self.llm_call_traces) + 1,
+                finish_reason=finish_reason,
+                response_content=content,
+                tool_calls=tuple(sanitized_tool_calls),
+                input_tokens=usage.get("input_tokens") if usage else None,
+                output_tokens=usage.get("output_tokens") if usage else None,
+                total_tokens=usage.get("total_tokens") if usage else None,
+                duration_ms=_duration_ms(duration_seconds),
+            )
+        )
+
+    def record_final_response(self, response_content: str | None) -> None:
+        if self.trace_detail == AgentTraceDetail.FULL:
+            self.final_response_content = response_content
+
     def to_record(self) -> AgentExecutionRecord:
         return AgentExecutionRecord(
             trace_id=self.trace_id,
@@ -143,6 +218,11 @@ class AgentExecutionTrace:
             input_tokens=self.input_tokens,
             output_tokens=self.output_tokens,
             total_tokens=self.total_tokens,
+            tool_calls=tuple(self.tool_calls),
+            llm_call_traces=tuple(self.llm_call_traces),
+            first_finish_reason=self.first_finish_reason,
+            first_response_content=self.first_response_content,
+            final_response_content=self.final_response_content,
         )
 
 

@@ -6,7 +6,7 @@ import { maskPII, MaskResult } from './masking';
 
 const SESSION_KEY_PREFIX = 'tamaya-chat-session';
 
-export type ChatSessionMaxTurns = 3 | 5;
+export type ChatSessionMaxTurns = 3 | 5 | 50;
 export type GeneratedDiaryResponse = {
   id?: string;
   diary_date?: string;

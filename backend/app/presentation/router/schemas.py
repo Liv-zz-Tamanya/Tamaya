@@ -44,7 +44,7 @@ class ChatSessionResponse(BaseModel):
 
 
 class StartChatSessionRequest(BaseModel):
-    max_turns: Literal[3, 5] = Field(default=ChatSession.DEFAULT_MAX_TURNS)
+    max_turns: Literal[3, 5, 50] = Field(default=ChatSession.DEFAULT_MAX_TURNS)
     reset: bool = False
 
 

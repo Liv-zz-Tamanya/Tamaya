@@ -100,15 +100,23 @@ class SearchHealthRecordsResult(BaseModel):
 
 
 SEARCH_DIARY_MEMORIES_DESCRIPTION = (
-    "Search the user's past diary memories for prior reflections, events, emotions, "
-    "people, or places. Do not use for health records, general knowledge, or facts "
-    "not present in the returned results."
+    "Purpose: search the user's saved diary memories for past events, emotions, people, or places "
+    "that are not in the current conversation. Use when: an answer needs a prior diary event or "
+    "pattern because the user explicitly asks to find, verify, recall, or compare saved past records. Do not use "
+    "when: the user is discussing a current event or emotion; the current conversation can continue "
+    "with reflection or a follow-up question; past or repetition is only implied; the information is "
+    "already in the conversation; the request is about health records; or saved memories would only be "
+    "helpful rather than required; never infer a saved-record lookup from uncertainty alone. Input: a semantic query and optional limit. Output: matching diary "
+    "memories only."
 )
 
 SEARCH_HEALTH_RECORDS_DESCRIPTION = (
-    "Search the user's past health records for prior activity or health-state entries. "
-    "Do not use for diary memories, general conversation search, diagnosis, prescription, "
-    "or facts not present in the returned results."
+    "Purpose: search the user's saved health records for prior activity or health-state history "
+    "that is not in the current conversation. Use when: an answer needs stored sleep, symptom, "
+    "medication, or other health history as evidence. Do not use when: general health support or "
+    "empathy is enough; the information is already in the conversation; the request is about diary "
+    "memories; or the same-quality answer does not require stored records. Input: a semantic query "
+    "and optional limit. Output: matching health records only; never diagnose or prescribe."
 )
 
 

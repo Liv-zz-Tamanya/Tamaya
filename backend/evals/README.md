@@ -18,12 +18,13 @@
 `safe`는 통과하고, `advice_boundary` 또는 `emergency`는 LLM/도구 호출 전에 고정
 면책 응답으로 차단한다. `diary` mode에는 현재 의료 가드레일이 적용되지 않는다.
 
-실제 실행 결과에서 도구 호출은 `AgentExecutionRecord.tool_names`로 확인할 수 있다.
-이는 Agent trace가 AI message의 `tool_calls`에서 수집한 이름이다.
+실제 실행 결과에서 도구 호출 이름은 하위 호환 필드인 `actual_tools`로 확인할 수 있다.
+상세 분석이 필요하면 `tool_calls`와 `llm_call_traces`에서 모델이 생성한 Tool Call arguments,
+finish reason, 호출별 token/duration, 최종 응답을 확인한다.
 
 ## 파일과 데이터 수
 
-- `datasets/diary_cases.jsonl`: 10개
+- `datasets/diary_cases.jsonl`: 14개
 - `datasets/health_cases.jsonl`: 10개
 - `datasets/coaching_cases.jsonl`: 10개
 - `datasets/guardrail_cases.jsonl`: 20개
@@ -38,6 +39,33 @@ expected_guardrail, expected_document_ids, category, note
 `mode`에는 현재 enum의 실제 값(`diary`, `health`, `coaching`)을 사용한다.
 `expected_document_ids`는 보고서에 보존하지만 현재 상태는 항상 `not_evaluated`다. 다음
 단계에서 비식별 fixture corpus와 RAG 검색 평가를 추가한다.
+
+## Tool decision 평가
+
+`expected_decision`은 선택 필드이며 `NO_TOOL` 또는 `TOOL_CALL` 값을 사용한다. `NO_TOOL`은
+별도 Tool이 아니라 Agent가 실제 실행된 뒤 모델 응답에 `tool_calls`가 없는 직접 응답을 뜻한다. Runner는 명시된 값이
+없어도 `expected_tools`가 있으면 `TOOL_CALL`, expected tool 없이 forbidden tool만 있으면
+`NO_TOOL`로 측정용 추론을 한다. 기존 Tool/Guardrail/Combined 판정은 이 지표로 바뀌지 않는다.
+
+보고서는 Decision checks, NO_TOOL accuracy, TOOL_CALL accuracy, unnecessary tool call count를
+별도로 저장한다. unnecessary tool call은 NO_TOOL 기대 실행에서 하나 이상 Tool이 호출된 경우다.
+Decision 지표는 Agent가 실제로 실행되어 직접 응답 또는 Tool Call을 선택한 경우만 평가한다.
+입력 Guardrail이 Agent 실행 전에 차단한 요청과 실행 오류는 NO_TOOL/TOOL_CALL 정확도에서 제외하고
+`Decision skipped` 및 사유별 건수로 별도 보고한다. Guardrail 평가와 기존 Combined 판정에는 영향을 주지 않는다.
+
+## Observability fields
+
+평가 runner는 Agent 실행 recorder를 `full` trace mode로 사용한다. JSON report의 기존 필드는 유지하며
+case 실행마다 다음 상세 필드를 추가로 저장한다.
+
+- `tool_calls`: LLM이 생성한 Tool Call의 `round`, `call_id`, `name`, 정규화된 JSON `arguments`.
+- `llm_call_traces`: LLM 호출 순번별 `finish_reason`, 응답 content, 호출에 포함된 Tool Call, token usage, duration.
+- `first_finish_reason`, `first_response_content`, `final_response_content`: 첫 모델 응답과 최종 응답을 빠르게 확인하기 위한 요약.
+- `model_config`: provider, model, temperature, max tokens, timeout, 그리고 지원하지 않는 `top_p`, `seed`, `parallel_tool_calls`의 `null` 값.
+- `prompt_metadata`: system prompt와 tool schema의 canonical JSON 기반 sha256 hash, git commit, dirty 여부.
+
+Tool 결과 본문은 report에 저장하지 않는다. 기본 production recorder는 `basic` trace mode라 Tool arguments와
+LLM response content를 비워 민감한 Diary/Health 원문이 운영 로그에 남지 않게 한다.
 
 ## 작성과 검수
 

@@ -27,6 +27,8 @@ def test_health_chat_prompt_includes_tool_rules_when_tool_calling_enabled():
     assert "동일한 query와 limit" in prompt
     assert "Tool 이름, 내부 ID, JSON 원문" in prompt
     assert "일기 기억 검색 Tool은 Health Chat에서 사용할 수 없다고 가정" in prompt
+    assert "Tool을 호출하지 말고 직접 답해" in prompt
+    assert "NO_TOOL" in prompt
     assert "[건강 데이터 기록]" not in prompt
 
 

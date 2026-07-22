@@ -111,6 +111,13 @@ def test_search_diary_memories_tool_contract_and_input_schema():
 
     assert tool.name == "search_diary_memories"
     assert tool.description
+    assert "Purpose:" in tool.description
+    assert "Use when:" in tool.description
+    assert "Do not use when:" in tool.description
+    assert "current event or emotion" in tool.description
+    assert "past or repetition is only implied" in tool.description
+    assert "find, verify, recall, or compare" in tool.description
+    assert "explicitly asks" in tool.description
     assert tool.return_direct is False
     assert set(tool.args_schema.model_json_schema()["properties"]) == {"query", "limit"}
     assert "device_id" not in tool.args_schema.model_json_schema()["properties"]
@@ -210,6 +217,9 @@ def test_search_health_records_tool_contract_and_input_schema():
 
     assert tool.name == "search_health_records"
     assert tool.description
+    assert "Purpose:" in tool.description
+    assert "Use when:" in tool.description
+    assert "Do not use when:" in tool.description
     assert tool.return_direct is False
     assert set(tool.args_schema.model_json_schema()["properties"]) == {"query", "limit"}
     assert "device_id" not in tool.args_schema.model_json_schema()["properties"]

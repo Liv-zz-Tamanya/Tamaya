@@ -16,7 +16,9 @@ from app.application.service.agent_execution_observability import (
     AgentExecutionRecorder,
     AgentExecutionTrace,
     AgentTerminationReason,
+    AgentTraceDetail,
     NullAgentExecutionRecorder,
+    ToolCallTraceRecord,
     activate_agent_execution_trace,
     get_active_agent_execution_trace,
     reset_agent_execution_trace,
@@ -118,6 +120,7 @@ class PersonalAssistantAgent:
         max_tool_rounds: int = DEFAULT_MAX_TOOL_ROUNDS,
         timeout_policy: PersonalAssistantTimeoutPolicy = DEFAULT_PERSONAL_ASSISTANT_TIMEOUT_POLICY,
         execution_recorder: AgentExecutionRecorder = NullAgentExecutionRecorder(),
+        trace_detail: AgentTraceDetail = AgentTraceDetail.BASIC,
     ) -> None:
         if max_tool_rounds < 1:
             raise ValueError("max_tool_rounds must be at least 1")
@@ -132,6 +135,7 @@ class PersonalAssistantAgent:
         self._max_tool_rounds = max_tool_rounds
         self._timeout_policy = timeout_policy
         self._execution_recorder = execution_recorder
+        self._trace_detail = trace_detail
         self._tool_node = ToolNode(self._tools, handle_tool_errors=False)
         self._graph = self._build_graph()
 
@@ -209,6 +213,7 @@ class PersonalAssistantAgent:
         trace = get_active_agent_execution_trace()
         model_attempts_before = trace.llm_calls if trace is not None else 0
         started_at = time.monotonic()
+        duration_seconds = 0.0
         try:
             async with asyncio.timeout(self._timeout_policy.model_call_seconds):
                 response = await self._model.ainvoke(
@@ -225,13 +230,22 @@ class PersonalAssistantAgent:
         except TimeoutError as exc:
             raise PersonalAssistantTimeoutError("model") from exc
         finally:
+            duration_seconds = time.monotonic() - started_at
             if trace is not None:
-                trace.add_model_duration(time.monotonic() - started_at)
+                trace.add_model_duration(duration_seconds)
                 if trace.llm_calls == model_attempts_before:
                     trace.record_model_attempt()
         _ensure_ai_message_id(response, f"agent-response-{llm_calls}")
         if trace is not None:
-            trace.record_token_usage(_normalized_token_usage(response))
+            usage = _normalized_token_usage(response)
+            trace.record_token_usage(usage)
+            trace.record_llm_call(
+                finish_reason=_finish_reason(response),
+                response_content=_optional_ai_message_text(response),
+                tool_calls=_tool_call_traces(response, state.get("tool_rounds", 0) + 1),
+                usage=usage,
+                duration_seconds=duration_seconds,
+            )
         return {
             "messages": [response],
             "llm_calls": llm_calls,
@@ -346,7 +360,7 @@ class PersonalAssistantAgent:
         diary_context: DiaryConversationContext | None = None,
         coaching_context: CoachingConversationContext | None = None,
     ) -> AIMessage:
-        trace = AgentExecutionTrace(mode=mode.value)
+        trace = AgentExecutionTrace(mode=mode.value, trace_detail=self._trace_detail)
         context_token = activate_agent_execution_trace(trace)
         try:
             async with asyncio.timeout(self._timeout_policy.execution_seconds):
@@ -383,6 +397,7 @@ class PersonalAssistantAgent:
                 if isinstance(message, AIMessage):
                     if message.tool_calls:
                         break
+                    trace.record_final_response(_optional_ai_message_text(message))
                     return message
             trace.termination_reason = AgentTerminationReason.UNEXPECTED_ERROR
             raise RuntimeError("personal assistant graph did not produce final AIMessage")
@@ -450,6 +465,61 @@ def _tool_names_from_state(state: PersonalAssistantState) -> list[str]:
     if not isinstance(last_message, AIMessage):
         raise RuntimeError("tools node requires AIMessage")
     return [tool_call["name"] for tool_call in last_message.tool_calls]
+
+
+def _tool_call_traces(message: AIMessage, round_number: int) -> list[ToolCallTraceRecord]:
+    traces: list[ToolCallTraceRecord] = []
+    for tool_call in message.tool_calls:
+        traces.append(
+            ToolCallTraceRecord(
+                round=round_number,
+                call_id=tool_call.get("id"),
+                name=tool_call["name"],
+                arguments=_tool_call_arguments(tool_call.get("args")),
+            )
+        )
+    for invalid_call in getattr(message, "invalid_tool_calls", []) or []:
+        raw_args = invalid_call.get("args") if isinstance(invalid_call, dict) else None
+        traces.append(
+            ToolCallTraceRecord(
+                round=round_number,
+                call_id=invalid_call.get("id") if isinstance(invalid_call, dict) else None,
+                name=invalid_call.get("name") if isinstance(invalid_call, dict) else "unknown",
+                arguments=None,
+                arguments_parse_error=(
+                    invalid_call.get("error")
+                    if isinstance(invalid_call, dict) and isinstance(invalid_call.get("error"), str)
+                    else f"could not parse tool arguments: {_short_text(raw_args)}"
+                ),
+            )
+        )
+    return traces
+
+
+def _tool_call_arguments(value: object) -> dict | None:
+    return value if isinstance(value, dict) else None
+
+
+def _finish_reason(message: AIMessage) -> str | None:
+    metadata = message.response_metadata
+    for key in ("finish_reason", "stop_reason", "done_reason"):
+        value = metadata.get(key)
+        if isinstance(value, str):
+            return value
+    return None
+
+
+def _optional_ai_message_text(message: AIMessage) -> str | None:
+    try:
+        content = _ai_message_text(message)
+    except ValueError:
+        return None
+    return content or None
+
+
+def _short_text(value: object, limit: int = 160) -> str:
+    text = str(value)
+    return text if len(text) <= limit else text[: limit - 3] + "..."
 
 
 def _normalized_token_usage(message: AIMessage) -> dict[str, int] | None:

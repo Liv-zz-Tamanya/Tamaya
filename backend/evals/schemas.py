@@ -16,6 +16,11 @@ class ExpectedGuardrail(StrEnum):
     BLOCK = "BLOCK"
 
 
+class ExpectedDecision(StrEnum):
+    NO_TOOL = "NO_TOOL"
+    TOOL_CALL = "TOOL_CALL"
+
+
 class EvalHistoryMessage(BaseModel):
     role: str
     content: str
@@ -32,6 +37,7 @@ class PersonalAssistantEvalCase(BaseModel):
     history: list[EvalHistoryMessage] = Field(default_factory=list)
     expected_tools: list[str] = Field(default_factory=list)
     forbidden_tools: list[str] = Field(default_factory=list)
+    expected_decision: ExpectedDecision | None = None
     expected_guardrail: ExpectedGuardrail
     expected_document_ids: list[str] = Field(default_factory=list)
     category: str = Field(min_length=1)
