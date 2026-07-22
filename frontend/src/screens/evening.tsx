@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CatSketch, MoodFace } from '../components/primitives';
+import { BackButton, CatSketch, MoodFace } from '../components/primitives';
 import { useNav } from '../lib/router';
 import {
   AI_ENABLED,
@@ -109,9 +109,21 @@ export const S10_RecapStart = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
+  const voiceDialogRef = useRef<HTMLDivElement>(null);
   const selectedMode = state.chatDiaryMode;
   const selectedMaxTurns = state.chatDiaryMaxTurns;
   const isShortMode = selectedMode === 'short';
+
+  // 보이스 모달 — 열릴 때 첫 버튼 focus + Esc 로 닫기(A11Y-08, 로직 불변·포커스 관리만 추가).
+  useEffect(() => {
+    if (!voiceModalOpen) return;
+    voiceDialogRef.current?.querySelector<HTMLElement>('button')?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setVoiceModalOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [voiceModalOpen]);
   // 낮 동안의 기록(AI 채팅·데일리체크)을 회고 입력으로 인계 — 없으면 빈상태. (C)경계: 로컬 유지.
   const d = state.daily;
   const memos: string[] = [
@@ -165,12 +177,7 @@ export const S10_RecapStart = () => {
     </svg>
     <div className="screen-scroll" style={{ padding: 'calc(60px + var(--safe-t)) 24px calc(100px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span
-          style={{ fontFamily: 'Pretendard', fontSize: 22, color: 'var(--accent-soft)', cursor: 'pointer' }}
-          onClick={() => nav.back()}
-        >
-          ‹
-        </span>
+        <BackButton onClick={() => nav.back()} tone="var(--accent-soft)" />
         <div className="h-section" style={{ color: 'var(--accent-soft)' }}>
           저녁 회고 — 시작 전
         </div>
@@ -237,8 +244,10 @@ export const S10_RecapStart = () => {
         오늘은 어떻게 할까?
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-        <div
-          className="hbox"
+        <button
+          type="button"
+          className="hbox as-button"
+          aria-pressed={selectedMode === 'full'}
           style={{
             flex: 1,
             padding: 10,
@@ -252,9 +261,11 @@ export const S10_RecapStart = () => {
         >
           <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>✦ 대화</div>
           <div className="tiny" style={{ color: 'inherit' }}>5턴 챗</div>
-        </div>
-        <div
-          className="hbox"
+        </button>
+        <button
+          type="button"
+          className="hbox as-button"
+          aria-pressed={selectedMode === 'short'}
           style={{
             flex: 1,
             padding: 10,
@@ -268,9 +279,10 @@ export const S10_RecapStart = () => {
         >
           <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>줄글 기록</div>
           <div className="tiny" style={{ color: 'inherit' }}>3줄 일기</div>
-        </div>
-        <div
-          className="hbox"
+        </button>
+        <button
+          type="button"
+          className="hbox as-button"
           style={{
             flex: 1,
             padding: 10,
@@ -284,7 +296,7 @@ export const S10_RecapStart = () => {
         >
           <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>보이스 기록</div>
           <div className="tiny" style={{ color: 'var(--pencil)' }}>곧 출시</div>
-        </div>
+        </button>
       </div>
     </div>
     <div className="pin-bottom" style={{ bottom: 'calc(28px + var(--safe-b, 0px))' }}>
@@ -296,10 +308,13 @@ export const S10_RecapStart = () => {
       >
         {selectedMaxTurns}턴 회고 시작하기 →
       </button>
-      <div
-        className="tiny"
+      <button
+        type="button"
+        className="tiny as-button"
         onClick={() => nav.back()}
         style={{
+          display: 'block',
+          width: '100%',
           textAlign: 'center',
           color: 'var(--accent-soft)',
           marginTop: 8,
@@ -307,7 +322,7 @@ export const S10_RecapStart = () => {
         }}
       >
         오늘 건너뛰기
-      </div>
+      </button>
     </div>
     {voiceModalOpen && (
       <div
@@ -324,6 +339,10 @@ export const S10_RecapStart = () => {
         onClick={() => setVoiceModalOpen(false)}
       >
         <div
+          ref={voiceDialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="보이스 회고"
           className="hbox"
           style={{
             width: '100%',
@@ -480,14 +499,11 @@ export const S11_ChatDiary = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span
-            style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
+          <BackButton
             onClick={() => {
               if (confirm('회고를 중단할까요? (대화는 보존됩니다)')) nav.back();
             }}
-          >
-            ‹
-          </span>
+          />
           <div className="h-title">오늘의 회고</div>
         </div>
         <button
@@ -568,6 +584,7 @@ export const S11_ChatDiary = () => {
         value={input}
         onChange={(e) => setInput(e.target.value)}
         placeholder={done ? '회고 완료 — 일기로 정리 중...' : '이음이에게 답해주세요...'}
+        aria-label="이음이에게 답하기"
         disabled={done || typing}
         autoFocus
       />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CatSketch, ImgPh, TabBar } from '../components/primitives';
+import { BackButton, CatSketch, ImgPh, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { MOOD_LABEL, TODAY_DAY, latestEntry, useStore } from '../lib/store';
 
@@ -288,9 +288,7 @@ export const S19_Inventory = () => {
     <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(140px + var(--safe-b, 0px))' }}>
     <div className="stage-body">
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span className="nav-arrow" style={{ color: 'var(--ink)' }} onClick={() => nav.back()}>
-          ‹
-        </span>
+        <BackButton onClick={() => nav.back()} tone="var(--ink)" />
         <div className="h-title">인벤토리 / 옷장</div>
       </div>
       <div className="h-label" style={{ marginTop: 4 }}>
@@ -454,9 +452,7 @@ export const S20_Report = () => {
     <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
     <div className="stage-body">
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span className="nav-arrow" style={{ color: 'var(--pencil)' }} onClick={() => nav.back()}>
-          ‹
-        </span>
+        <BackButton onClick={() => nav.back()} tone="var(--pencil)" />
         <div className="h-label">주간 리포트 — 매주 월요일</div>
       </div>
       <div className="h-display" style={{ marginTop: 8, fontSize: 28 }}>

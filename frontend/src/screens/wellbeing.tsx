@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { TabBar } from '../components/primitives';
+import { BackButton, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { getWeeklyInsight, isoWeekOf, type InsightResponse } from '../lib/api';
 
@@ -69,7 +69,7 @@ export const S24_Wellbeing = ({ sample = false }: { sample?: boolean } = {}) => 
     <div className="screen">
       <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className="nav-arrow" onClick={() => nav.back()}>‹</span>
+          <BackButton onClick={() => nav.back()} />
           <div className="h-title">웰빙 인사이트</div>
         </div>
         <div className="tiny" style={{ marginTop: 2, marginBottom: 14 }}>{week} · 이번 주 웰빙 스코어</div>

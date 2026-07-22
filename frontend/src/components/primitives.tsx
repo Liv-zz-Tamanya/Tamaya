@@ -15,6 +15,20 @@ const TAB_ROUTE: Record<Exclude<TabKey, 'home'>, Route> = {
   ins: 'insights',
 };
 
+// 뒤로가기 버튼 — 전 화면 span.nav-arrow·인라인 ‹ 승격 공용 컴포넌트(A11Y-02).
+// .nav-arrow(터치 타깃 44px ::before) 그대로 재사용 + .as-button(sketch.css)로 UA 버튼 크롬 제거.
+export const BackButton = ({ onClick, tone }: { onClick: () => void; tone?: string }) => (
+  <button
+    type="button"
+    className="nav-arrow as-button"
+    aria-label="뒤로"
+    onClick={onClick}
+    style={tone ? { color: tone } : undefined}
+  >
+    ‹
+  </button>
+);
+
 export const TabBar = ({
   active = 'home',
   onHome,

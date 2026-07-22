@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { TabBar } from '../components/primitives';
+import { BackButton, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { getClovaSetting, testClovaKey, saveClovaKey, type ClovaSetting } from '../lib/api';
 
@@ -72,7 +72,7 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
     <div className="screen">
       <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }} onClick={() => nav.back()}>‹</span>
+          <BackButton onClick={() => nav.back()} />
           <div className="h-title">CLOVA 키 (BYOK)</div>
         </div>
         <div className="tiny" style={{ marginTop: 2, marginBottom: 14 }}>
@@ -95,6 +95,7 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
           value={key}
           onChange={(e) => setKey(e.target.value)}
           placeholder="nv-..."
+          aria-label="CLOVA Studio API 키"
           type="password"
           style={{
             width: '100%',

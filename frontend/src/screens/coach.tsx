@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { TabBar } from '../components/primitives';
+import { BackButton, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { sendCoachingMessage, type CoachTurn } from '../lib/api';
 
@@ -83,12 +83,7 @@ export const S23_Coach = ({ sample = false }: { sample?: boolean } = {}) => {
     <div className="screen">
       <div ref={scrollRef} className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 14px calc(140px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span
-            style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
-            onClick={() => nav.back()}
-          >
-            ‹
-          </span>
+          <BackButton onClick={() => nav.back()} />
           <div className="h-title">밤 코칭 · 건강냥</div>
         </div>
         <div className="tiny" style={{ marginBottom: 14 }}>
@@ -158,6 +153,7 @@ export const S23_Coach = ({ sample = false }: { sample?: boolean } = {}) => {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKey}
           placeholder="건강냥에게 말 걸기..."
+          aria-label="건강냥에게 말 걸기"
           autoFocus
         />
         <button

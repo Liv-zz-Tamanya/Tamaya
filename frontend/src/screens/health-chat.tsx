@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { TabBar } from '../components/primitives';
+import { BackButton, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { sendHealthChat } from '../lib/api';
 
@@ -78,12 +78,7 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
     <div className="screen">
       <div ref={scrollRef} className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 14px calc(140px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span
-            style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
-            onClick={() => nav.back()}
-          >
-            ‹
-          </span>
+          <BackButton onClick={() => nav.back()} />
           <div className="h-title">건강 기록 Q&amp;A</div>
         </div>
         <div className="tiny" style={{ marginBottom: 14 }}>
@@ -153,6 +148,7 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKey}
           placeholder="건강 기록에 대해 물어보기..."
+          aria-label="건강 기록에 대해 물어보기"
           autoFocus
         />
         <button

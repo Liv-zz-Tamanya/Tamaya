@@ -1,5 +1,5 @@
 import { KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { CatSketch, MoodFace, TabBar } from '../components/primitives';
+import { BackButton, CatSketch, MoodFace, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import {
   DailyKey,
@@ -121,10 +121,12 @@ export const S06_HomeDay = () => {
         </button>
       </div>
 
-      <div
-        className="hbox r-r"
+      <button
+        type="button"
+        className="hbox r-r as-button"
         onClick={() => nav.go('daily-check')}
-        style={{ padding: 14, marginTop: 12, cursor: 'pointer' }}
+        aria-label={`오늘의 데일리 체크, ${dailyDone} / 5 완료`}
+        style={{ padding: 14, marginTop: 12, cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
       >
         <div
           style={{
@@ -162,11 +164,13 @@ export const S06_HomeDay = () => {
             </div>
           ))}
         </div>
-      </div>
+      </button>
 
-      <div
-        className="hbox r-l"
+      <button
+        type="button"
+        className="hbox r-l as-button"
         onClick={() => nav.go('ai-chat')}
+        aria-label="AI 코칭에게 물어봐요"
         style={{
           padding: 14,
           marginTop: 12,
@@ -176,6 +180,8 @@ export const S06_HomeDay = () => {
           cursor: 'pointer',
           background: 'var(--banner)',
           color: 'var(--paper)',
+          width: '100%',
+          textAlign: 'left',
         }}
       >
         <div className="ph-circle" style={{ width: 40, height: 40, background: 'var(--paper)', color: 'var(--ink)' }}>
@@ -187,47 +193,68 @@ export const S06_HomeDay = () => {
           </div>
           <div className="tiny" style={{ color: 'var(--paper-2)' }}>"점심 뭐 먹지?" "잠이 안 와요"</div>
         </div>
-        <span className="handwriting" style={{ fontSize: 24, color: 'var(--paper)' }}>
+        <span className="handwriting" style={{ fontSize: 24, color: 'var(--paper)' }} aria-hidden="true">
           ›
         </span>
-      </div>
+      </button>
 
       <div
         style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}
       >
-        {summary.map(([t, big, sub], i) => (
-          <div
-            key={i}
-            className={'hbox r-' + (i % 2 ? 'l' : 'r')}
-            onClick={i === 3 ? () => nav.go('cat-room') : undefined}
-            style={{ padding: 12, cursor: i === 3 ? 'pointer' : 'default', position: 'relative' }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div className="tiny">{t}</div>
-              {i === 3 && state.unlockedItems.length > 0 && (
-                <span
-                  className="tiny"
-                  style={{
-                    background: 'var(--accent-soft)',
-                    color: 'var(--ink)',
-                    borderRadius: 999,
-                    padding: '1px 7px',
-                    fontWeight: 700,
-                    letterSpacing: 0,
-                  }}
-                >
-                  NEW!
-                </span>
-              )}
+        {summary.map(([t, big, sub], i) => {
+          const clickable = i === 3;
+          const cardClass = 'hbox r-' + (i % 2 ? 'l' : 'r') + (clickable ? ' as-button' : '');
+          const cardStyle = {
+            padding: 12,
+            cursor: clickable ? 'pointer' : 'default',
+            position: 'relative' as const,
+            ...(clickable ? { display: 'block' as const, width: '100%', textAlign: 'left' as const } : {}),
+          };
+          const content = (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div className="tiny">{t}</div>
+                {i === 3 && state.unlockedItems.length > 0 && (
+                  <span
+                    className="tiny"
+                    style={{
+                      background: 'var(--accent-soft)',
+                      color: 'var(--ink)',
+                      borderRadius: 999,
+                      padding: '1px 7px',
+                      fontWeight: 700,
+                      letterSpacing: 0,
+                    }}
+                  >
+                    NEW!
+                  </span>
+                )}
+              </div>
+              <div className="h-title" style={{ fontSize: 18, marginTop: 2 }}>
+                {big}
+              </div>
+              <div className="tiny" style={{ marginTop: 2 }}>
+                {sub}
+              </div>
+            </>
+          );
+          return clickable ? (
+            <button
+              key={i}
+              type="button"
+              className={cardClass}
+              onClick={() => nav.go('cat-room')}
+              aria-label={`${t} — ${big}, 보러가기`}
+              style={cardStyle}
+            >
+              {content}
+            </button>
+          ) : (
+            <div key={i} className={cardClass} style={cardStyle}>
+              {content}
             </div>
-            <div className="h-title" style={{ fontSize: 18, marginTop: 2 }}>
-              {big}
-            </div>
-            <div className="tiny" style={{ marginTop: 2 }}>
-              {sub}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
     <TabBar active="home" />
@@ -405,10 +432,12 @@ export const S07_HomeNight = () => {
             ['✦', '이번 주 인사이트', 'AI 분석', 'insights'],
           ] as [string, string, string, 'calendar' | 'cat-room' | 'insights'][]
         ).map(([ic, t, s, route], i) => (
-          <div
+          <button
             key={i}
-            className={'hbox ' + (i % 2 ? 'r-l' : 'r-r')}
+            type="button"
+            className={'hbox as-button ' + (i % 2 ? 'r-l' : 'r-r')}
             onClick={() => nav.go(route)}
+            aria-label={`${t} — ${s}`}
             style={{
               padding: 12,
               marginBottom: 8,
@@ -416,6 +445,8 @@ export const S07_HomeNight = () => {
               alignItems: 'center',
               gap: 12,
               cursor: 'pointer',
+              width: '100%',
+              textAlign: 'left',
             }}
           >
             <div
@@ -428,8 +459,8 @@ export const S07_HomeNight = () => {
               <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>{t}</div>
               <div className="tiny">{s}</div>
             </div>
-            <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>›</span>
-          </div>
+            <span style={{ fontFamily: 'Pretendard', fontSize: 22 }} aria-hidden="true">›</span>
+          </button>
         ))}
       </div>
     </div>
@@ -497,9 +528,7 @@ export const S08_DailyCheck = () => {
   <div className="screen">
     <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <span className="nav-arrow" onClick={() => nav.back()}>
-          ‹
-        </span>
+        <BackButton onClick={() => nav.back()} />
         <div className="h-title" style={{ fontSize: 22 }}>데일리 체크</div>
       </div>
       <div className="tiny">하루 5가지 — 가볍게 톡톡</div>
@@ -548,6 +577,7 @@ export const S08_DailyCheck = () => {
                 type="button"
                 onClick={() => togglePick(t)}
                 className={'chip chip-btn ' + (on ? 'solid' : 'dashed')}
+                aria-pressed={on}
                 style={{ background: on ? undefined : 'transparent' }}
               >
                 {t}
@@ -576,6 +606,7 @@ export const S08_DailyCheck = () => {
               type="button"
               onClick={() => setSleep(t)}
               className={'chip chip-btn ' + (d.sleep.quality === t ? 'solid' : '')}
+              aria-pressed={d.sleep.quality === t}
             >
               {t}
             </button>
@@ -604,6 +635,7 @@ export const S08_DailyCheck = () => {
               type="button"
               onClick={() => setMove(t)}
               className={'chip chip-btn ' + (d.movement.bucket === t ? 'solid' : 'dashed')}
+              aria-pressed={d.movement.bucket === t}
               style={{ background: d.movement.bucket === t ? undefined : 'transparent' }}
             >
               {t}
@@ -675,6 +707,7 @@ export const S08_DailyCheck = () => {
                 type="button"
                 onClick={() => setSun(t)}
                 className={'chip chip-btn ' + (d.sun.level === t ? 'solid' : 'dashed')}
+                aria-pressed={d.sun.level === t}
                 style={{ background: d.sun.level === t ? undefined : 'transparent' }}
               >
                 {t}
@@ -756,9 +789,7 @@ export const S09_AIChat = () => {
         style={{ padding: 'calc(46px + var(--safe-t)) 14px calc(140px + var(--safe-b, 0px))' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span className="nav-arrow" onClick={() => nav.back()}>
-            ‹
-          </span>
+          <BackButton onClick={() => nav.back()} />
           <div className="h-title" style={{ fontSize: 22 }}>AI 코칭 (낮 모드)</div>
         </div>
         <div className="tiny" style={{ marginBottom: 14 }}>
@@ -822,6 +853,7 @@ export const S09_AIChat = () => {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKey}
           placeholder="비서에게 말 걸기..."
+          aria-label="비서에게 말 걸기"
           autoFocus
         />
         <button

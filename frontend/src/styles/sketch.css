@@ -8,6 +8,20 @@
 
 html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif; color: var(--ink); }
 
+/* 클릭 가능한 div/span → <button> 시맨틱 전환용 리셋 유틸 (A11Y-02/03/06/07/08) — 파일 최상단에
+   둬서 캐스케이드상 이 규칙이 항상 먼저 오게 한다: .hbox·.chip·.nav-arrow 등 뒤에 오는 클래스가
+   같은 특이도(0,0,1,0)로 배경·테두리·색을 다시 그려 all:unset 을 정상적으로 덮어쓴다(순서가
+   바뀌면 카드 배경/테두리가 사라지는 회귀가 생긴다). display 는 unset 시 초기값(inline)이 되므로,
+   원래 div가 block 이던 자리(카드 등)는 호출부 style={{ display:'block' }}로 보존한다. position
+   도 초기화되므로 .nav-arrow::before 44px 히트박스 컨테이닝 블록 보존을 위해 relative 를
+   재선언한다(뒤에 오는 .nav-arrow 의 position:relative 와 값이 같아 중복이라도 안전). */
+.as-button {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  position: relative;
+}
+
 /* App viewport — 유동 폭 웹앱 (폰 목업 캡 없음).
    화면 컴포넌트(.screen)가 이 컨테이너를 채우고, 본문 콘텐츠(.screen-scroll)와
    탭바 내부는 --app-fluid(responsive.css 티어)로 중앙 정렬·확장된다. */

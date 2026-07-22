@@ -265,6 +265,14 @@ export const S04_CreateCat = () => {
   const [name, setName] = useState(state.character.name);
   // CatColor = 사용자 선택 데이터(store 영속·타입 리터럴) — 디자인 토큰 아님, hex 리터럴 유지
   const colors: CatColor[] = ['#f5e6cf', '#d8a777', '#a66838', '#6b3e1f', '#3a2414'];
+  // 스와치 hex 자체는 접근 가능한 이름이 아니므로 UI 전용 한글 라벨 부여(A11Y-03/06).
+  const colorLabel: Record<CatColor, string> = {
+    '#f5e6cf': '아이보리',
+    '#d8a777': '베이지',
+    '#a66838': '카라멜',
+    '#6b3e1f': '고동색',
+    '#3a2414': '초코',
+  };
   const allPersonalities: Personality[] = ['차분한', '수다쟁이', '시크', '다정한', '장난꾸러기'];
 
   const togglePersonality = (p: Personality) => {
@@ -310,6 +318,7 @@ export const S04_CreateCat = () => {
         onChange={(e) => setName(e.target.value)}
         maxLength={10}
         placeholder="이음이에게 이름을 지어 주세요..."
+        aria-label="이음이에게 이름을 지어 주세요"
         style={{
           marginTop: 12,
           width: '100%',
@@ -335,6 +344,8 @@ export const S04_CreateCat = () => {
               key={c}
               type="button"
               onClick={() => dispatch({ type: 'character/set', patch: { color: c } })}
+              aria-label={colorLabel[c]}
+              aria-pressed={selected}
               className="ph-circle"
               style={{
                 width: 36,
@@ -361,6 +372,7 @@ export const S04_CreateCat = () => {
               type="button"
               onClick={() => togglePersonality(t)}
               className={'chip chip-btn ' + (on ? 'accent' : '')}
+              aria-pressed={on}
             >
               {t}
             </button>

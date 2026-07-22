@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TabBar } from '../components/primitives';
+import { BackButton, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { useStore } from '../lib/store';
 import { purgeMyData, updateNightChatPreference } from '../lib/api';
@@ -82,13 +82,7 @@ export const S22_Settings = () => {
     <div className="screen">
       <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span
-            className="nav-arrow"
-            style={{ color: 'var(--ink)' }}
-            onClick={() => nav.back()}
-          >
-            ‹
-          </span>
+          <BackButton onClick={() => nav.back()} tone="var(--ink)" />
           <div className="h-title">설정</div>
         </div>
 
@@ -113,28 +107,42 @@ export const S22_Settings = () => {
             </div>
             {saveStatus && <div className="tiny" style={{ marginTop: 6, color: 'var(--muted)' }}>{saveStatus}</div>}
           </div>
-          {rows.map((r, i) => (
-            <div
-              key={i}
-              onClick={r.onClick}
-              className="hbox"
-              style={{
-                padding: '12px 14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                cursor: r.onClick ? 'pointer' : 'default',
-              }}
-            >
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>{r.label}</div>
-                <div className="tiny" style={{ marginTop: 3, color: 'var(--muted)' }}>{r.value}</div>
+          {rows.map((r, i) => {
+            const rowContent = (
+              <>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{r.label}</div>
+                  <div className="tiny" style={{ marginTop: 3, color: 'var(--muted)' }}>{r.value}</div>
+                </div>
+                {r.onClick && (
+                  <span style={{ fontSize: 22, color: 'var(--ink)' }} aria-hidden="true">›</span>
+                )}
+              </>
+            );
+            const rowStyle = {
+              padding: '12px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              cursor: r.onClick ? 'pointer' : 'default',
+            };
+            return r.onClick ? (
+              <button
+                key={i}
+                type="button"
+                onClick={r.onClick}
+                className="hbox as-button"
+                aria-label={`${r.label} — ${r.value}`}
+                style={{ ...rowStyle, width: '100%', textAlign: 'left' as const }}
+              >
+                {rowContent}
+              </button>
+            ) : (
+              <div key={i} className="hbox" style={rowStyle}>
+                {rowContent}
               </div>
-              {r.onClick && (
-                <span className="nav-arrow" style={{ color: 'var(--ink)', cursor: 'inherit' }}>›</span>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div style={{ marginTop: 20 }}>
@@ -169,13 +177,14 @@ export const S22_Settings = () => {
         </div>
 
         <div style={{ marginTop: 10, textAlign: 'center' }}>
-          <span
-            className="tiny"
+          <button
+            type="button"
+            className="tiny as-button"
             style={{ cursor: 'pointer', color: 'var(--pencil)' }}
             onClick={() => dispatch({ type: 'streak/inc' })}
           >
             (디버그) +1 스트릭
-          </span>
+          </button>
         </div>
       </div>
       <TabBar active="home" />

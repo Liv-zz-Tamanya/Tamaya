@@ -132,6 +132,7 @@ export const S21_Login = () => {
               disabled={busy}
               autoFocus
               placeholder={`닉네임 (최대 ${NICK_MAX}자)`}
+              aria-label={isSignup ? '회원가입 · 사용할 닉네임' : '로그인 · 닉네임'}
               onChange={(e) => {
                 setNickname(e.target.value);
                 setHint(null);

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { TabBar } from '../components/primitives';
+import { useEffect, useRef, useState } from 'react';
+import { BackButton, TabBar } from '../components/primitives';
 import { MoodHeatmap } from '../components/mood-heatmap';
 import { MoodPalette } from '../components/mood-palette';
 import { useNav } from '../lib/router';
@@ -77,6 +77,18 @@ export const S14_Calendar = () => {
   const [localMoods, setLocalMoods] = useState<Record<string, Mood>>({});
   const [loadingDiaries, setLoadingDiaries] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
+  const pickerDialogRef = useRef<HTMLDivElement>(null);
+
+  // 감정 picker 모달 — 열릴 때 첫 버튼 focus + Esc 로 닫기(A11Y-08, 로직 불변·포커스 관리만 추가).
+  useEffect(() => {
+    if (picker === null) return;
+    pickerDialogRef.current?.querySelector<HTMLElement>('button')?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPicker(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [picker]);
 
   useEffect(() => {
     let alive = true;
@@ -220,15 +232,19 @@ export const S14_Calendar = () => {
             const mood = localMoods[date] ?? moods[date];
             const today = date === todayKey;
             return (
-              <div
+              <button
                 key={i}
+                type="button"
                 onClick={() => openDay(day)}
+                aria-label={`${month}월 ${day}일${mood ? ' · ' + MOOD_LABEL[mood] : ' · 기록 없음, 탭해서 감정 추가'}${today ? ' · 오늘' : ''}`}
+                className="as-button"
                 style={{
                   aspectRatio: 1,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  width: '100%',
                   position: 'relative',
                   cursor: 'pointer',
                 }}
@@ -265,7 +281,7 @@ export const S14_Calendar = () => {
                 >
                   {day}
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -385,6 +401,10 @@ export const S14_Calendar = () => {
         }}
       >
         <div
+          ref={pickerDialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${month}월 ${picker.day}일 감정 선택`}
           onClick={(e) => e.stopPropagation()}
           style={{
             background: 'var(--paper)',
@@ -432,12 +452,7 @@ export const S15_DiaryDetail = () => {
       <div className="screen">
         <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span
-              className="nav-arrow"
-              onClick={() => nav.back()}
-            >
-              ‹
-            </span>
+            <BackButton onClick={() => nav.back()} />
             <div className="h-section">달력</div>
           </div>
           <div className="hbox dashed" style={{ padding: 18, marginTop: 16, textAlign: 'center' }}>
@@ -479,13 +494,7 @@ export const S15_DiaryDetail = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span
-            className="nav-arrow"
-            style={{ color: 'var(--pencil)' }}
-            onClick={() => nav.back()}
-          >
-            ‹
-          </span>
+          <BackButton onClick={() => nav.back()} tone="var(--pencil)" />
           <div className="tiny">달력 / {displayDate}</div>
         </div>
         <div style={{ display: 'flex', gap: 10, color: 'var(--ink)', fontSize: 16 }}>
@@ -621,6 +630,7 @@ export const S16_Stats = () => {
             type="button"
             onClick={() => setPeriod(p)}
             className={'chip chip-btn ' + (period === p ? 'solid' : '')}
+            aria-pressed={period === p}
             style={{ cursor: 'pointer', fontFamily: 'inherit' }}
           >
             {p}
