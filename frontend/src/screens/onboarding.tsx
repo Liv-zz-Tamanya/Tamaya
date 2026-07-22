@@ -201,18 +201,13 @@ export const S03_Privacy = () => {
           <br />
           너만의 것이야.
         </div>
-        <div className="body" style={{ color: 'var(--ink)', lineHeight: 1.5 }}>
-          일기와 감정 기록은 기기 안에 머물러요.
-          <br />
-          네가 원할 때만 백업할 수 있어요.
-        </div>
       </div>
       <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {(
           [
-            ['◐', '로컬 우선 저장', '일기·감정은 기기 안에'],
-            ['☷', '익명 분석', '내용은 학습에 쓰지 않음'],
-            ['⌧', '언제든 삭제', '한 번에 모든 기록 지우기'],
+            ['◐', '대화 속 개인정보는 지운 뒤에만 AI에게 전달돼요', ''],
+            ['☷', '일기는 내 계정에만 — 다른 곳에 팔거나 공유하지 않아요', ''],
+            ['⌧', '언제든 서버·기기에서 완전 삭제할 수 있어요', ''],
           ] as [string, string, string][]
         ).map(([ic, t, s], i) => (
           <div
