@@ -25,13 +25,15 @@ export const S18_CatRoom = () => {
       color: 'var(--paper)',
     }}
   >
+    <div className="screen-scroll" style={{ paddingBottom: 'calc(88px + var(--safe-b, 0px))' }}>
     <div
       style={{
         position: 'absolute',
         top: 44,
         left: 0,
         right: 0,
-        height: 360,
+        maxHeight: 360,
+        height: 'min(360px, 45dvh)',
         overflow: 'hidden',
       }}
     >
@@ -189,7 +191,7 @@ export const S18_CatRoom = () => {
       </div>
     </div>
 
-    <div style={{ position: 'absolute', top: 408, left: 18, right: 18 }}>
+    <div style={{ marginTop: 408, marginLeft: 18, marginRight: 18 }}>
       <div
         className="hbox"
         style={{ padding: 14, background: 'var(--paper)', color: 'var(--ink)' }}
@@ -262,6 +264,7 @@ export const S18_CatRoom = () => {
           tip — 회고를 많이 할수록 이음이와 친밀도가 높아져요
         </div>
       </div>
+    </div>
     </div>
     {toast && <div className="toast">{toast}</div>}
     <TabBar active="cat" />
