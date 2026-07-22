@@ -238,19 +238,6 @@ export const S03_Privacy = () => {
           </div>
         ))}
       </div>
-      <div
-        className="hbox"
-        style={{
-          marginTop: 16,
-          background: 'var(--cream)',
-          textAlign: 'center',
-          padding: '10px 14px',
-          fontFamily: 'Pretendard',
-          fontSize: 12,
-        }}
-      >
-        ※ 기기 분실 시 복구 불가 — 백업 권장
-      </div>
     </div>
     <div style={{ position: 'absolute', bottom: 'calc(28px + var(--safe-b, 0px))', left: 24, right: 24 }}>
       <button
