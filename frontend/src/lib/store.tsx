@@ -55,7 +55,7 @@ export type State = {
   aiChat: ChatMsg[];
   chatDiary: ChatMsg[];
   chatDiaryMode: ChatDiaryMode;
-  chatDiaryMaxTurns: 3 | 5;
+  chatDiaryMaxTurns: 3 | 5 | 50;
   chatDiaryGeneratedDiary: GeneratedDiary | null;
   diaries: DiaryEntry[];
   selectedDay: number | null;       // legacy fallback for older screens
@@ -153,7 +153,7 @@ type Action =
   | { type: 'daily/movement'; bucket: string }
   | { type: 'daily/sun'; level: string }
   | { type: 'ai-chat/append'; msg: ChatMsg }
-  | { type: 'chat-diary/configure'; mode: ChatDiaryMode; maxTurns: 3 | 5 }
+  | { type: 'chat-diary/configure'; mode: ChatDiaryMode; maxTurns: 3 | 5 | 50 }
   | { type: 'chat-diary/append'; msg: ChatMsg }
   | { type: 'chat-diary/set-generated-diary'; diary: GeneratedDiary | null }
   | { type: 'chat-diary/reset' }
@@ -288,7 +288,13 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(reducer, DEFAULT_STATE, (init) => {
     try {
       const raw = localStorage.getItem(LS_KEY);
-      if (raw) return { ...init, ...(JSON.parse(raw) as State) };
+      if (raw) {
+        const saved = { ...init, ...(JSON.parse(raw) as State) };
+        if (saved.chatDiaryMode === 'full') {
+          saved.chatDiaryMaxTurns = CHAT_DIARY_FULL_TURNS;
+        }
+        return saved;
+      }
     } catch {
       // ignore parse errors
     }
@@ -367,7 +373,7 @@ export const simulateAiReply = (userText: string): ChatMsg => {
 
 // ── ChatDiary 회고 시퀀스 ────────────────────────────────────────────────
 
-export const CHAT_DIARY_FULL_TURNS = 5;
+export const CHAT_DIARY_FULL_TURNS = 50;
 export const CHAT_DIARY_SHORT_TURNS = 3;
 
 export const CHAT_DIARY_TURNS: { question: string; hint?: string }[] = [
