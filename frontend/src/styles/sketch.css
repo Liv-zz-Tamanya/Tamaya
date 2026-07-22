@@ -59,6 +59,7 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
   border-radius: 14px;
   background: var(--paper);
   position: relative;
+  color: var(--ink);
 }
 .hbox.dashed { border-style: dashed; background: transparent; }
 .hbox.filled { background: var(--paper-2); }
