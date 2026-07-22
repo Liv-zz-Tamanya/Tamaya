@@ -342,13 +342,15 @@ export const S14_Calendar = () => {
       </div>
 
       {recent && (
-        <div
-          className="hbox r-r"
+        <button
+          type="button"
+          className="hbox r-r as-button"
           onClick={() => {
             dispatch({ type: 'ui/select-date', date: diaryDateOf(recent) });
             nav.go('diary-detail');
           }}
-          style={{ padding: 12, marginTop: 12, cursor: 'pointer' }}
+          aria-label="최근 일기 열기"
+          style={{ padding: 12, marginTop: 12, cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
         >
           <div
             style={{
@@ -371,7 +373,7 @@ export const S14_Calendar = () => {
           <div className="tiny" style={{ marginTop: 6 }}>
             "{stripDatePrefix(recent).slice(0, 30)}..."
           </div>
-        </div>
+        </button>
       )}
 
       {view === 'emoji' && (
@@ -895,9 +897,11 @@ export const S17_Insights = () => {
         </div>
       )}
 
-      <div
-        className="hbox r-r"
+      <button
+        type="button"
+        className="hbox r-r as-button"
         onClick={() => nav.go('report')}
+        aria-label="주간 리포트 열기"
         style={{
           padding: 12,
           marginTop: 12,
@@ -915,7 +919,7 @@ export const S17_Insights = () => {
           <div className="tiny">매주 월요일 발행 · 한 주 요약 카드</div>
         </div>
         <span style={{ fontSize: 22 }}>›</span>
-      </div>
+      </button>
 
       <div className="sticky" style={{ marginTop: 14, transform: 'rotate(-1.5deg)' }}>
         ※ D7+에 더 깊은 패턴 — 꾸준히 모일수록 정확해져요
