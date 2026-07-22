@@ -19,13 +19,14 @@ export const S18_CatRoom = () => {
   };
   return (
   <div
-    className="screen screen--stage"
+    className="screen"
     style={{
       background: 'linear-gradient(180deg, var(--night) 0%, var(--night-2) 68%, var(--night) 100%)',
       color: 'var(--paper)',
     }}
   >
     <div className="screen-scroll" style={{ paddingBottom: 'calc(88px + var(--safe-b, 0px))' }}>
+    <div className="stage-body">
     <div
       style={{
         position: 'absolute',
@@ -266,6 +267,7 @@ export const S18_CatRoom = () => {
       </div>
     </div>
     </div>
+    </div>
     {toast && <div className="toast">{toast}</div>}
     <TabBar active="cat" />
   </div>
@@ -282,8 +284,9 @@ export const S19_Inventory = () => {
     setTimeout(() => setToast(null), 1400);
   };
   return (
-  <div className="screen screen--stage">
+  <div className="screen">
     <div className="screen-scroll" style={{ padding: '46px 18px calc(140px + var(--safe-b, 0px))' }}>
+    <div className="stage-body">
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span className="nav-arrow" style={{ color: 'var(--ink)' }} onClick={() => nav.back()}>
           ‹
@@ -404,7 +407,14 @@ export const S19_Inventory = () => {
         ))}
       </div>
     </div>
-    <div style={{ position: 'absolute', bottom: 'calc(var(--tabbar-h, 64px) + 14px)', left: 18, right: 18 }}>
+    </div>
+    <div
+      className="pin-bottom"
+      style={{
+        bottom: 'calc(var(--tabbar-h, 64px) + 14px)',
+        paddingInline: 'max(18px, calc((100% - var(--stage-max, 560px)) / 2))',
+      }}
+    >
       <button
         type="button"
         onClick={() => {
@@ -440,8 +450,9 @@ export const S20_Report = () => {
   const moodCell = recent ? recent.moods[0] : '🌙';
   const moodLabel = recent ? MOOD_LABEL[recent.moods[0]] : '기록 전';
   return (
-  <div className="screen screen--stage">
+  <div className="screen">
     <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+    <div className="stage-body">
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span className="nav-arrow" style={{ color: 'var(--pencil)' }} onClick={() => nav.back()}>
           ‹
@@ -555,6 +566,7 @@ export const S20_Report = () => {
         </div>
         <span style={{ fontFamily: 'Pretendard', fontSize: 22, color: 'var(--paper)' }}>›</span>
       </div>
+    </div>
     </div>
     {toast && <div className="toast">{toast}</div>}
     <TabBar active="ins" />

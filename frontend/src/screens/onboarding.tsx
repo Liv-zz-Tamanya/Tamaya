@@ -152,7 +152,7 @@ export const S02_Welcome = () => {
         </div>
       </div>
     </div>
-    <div style={{ position: 'absolute', bottom: 'calc(24px + var(--safe-b, 0px))', left: 24, right: 24 }}>
+    <div className="pin-bottom" style={{ bottom: 'calc(24px + var(--safe-b, 0px))' }}>
       <button
         type="button"
         onClick={() => {
@@ -239,7 +239,7 @@ export const S03_Privacy = () => {
         ))}
       </div>
     </div>
-    <div style={{ position: 'absolute', bottom: 'calc(28px + var(--safe-b, 0px))', left: 24, right: 24 }}>
+    <div className="pin-bottom" style={{ bottom: 'calc(28px + var(--safe-b, 0px))' }}>
       <button
         type="button"
         onClick={() => nav.go('create-cat')}
@@ -366,7 +366,7 @@ export const S04_CreateCat = () => {
         나중에 [설정]에서 언제든 바꿀 수 있어요.
       </div>
     </div>
-    <div style={{ position: 'absolute', bottom: 'calc(28px + var(--safe-b, 0px))', left: 24, right: 24 }}>
+    <div className="pin-bottom" style={{ bottom: 'calc(28px + var(--safe-b, 0px))' }}>
       <button
         type="button"
         onClick={save}
@@ -432,7 +432,7 @@ export const S05_FirstMeet = () => {
         "안녕, 난 {name}. 너의 밤 친구야."
       </div>
     </div>
-    <div style={{ position: 'absolute', bottom: 'calc(28px + var(--safe-b, 0px))', left: 24, right: 24 }}>
+    <div className="pin-bottom" style={{ bottom: 'calc(28px + var(--safe-b, 0px))' }}>
       <button
         type="button"
         onClick={() => nav.reset('home-night')}
@@ -443,7 +443,8 @@ export const S05_FirstMeet = () => {
       </button>
     </div>
     <div
-      style={{ position: 'absolute', bottom: 'calc(8px + var(--safe-b, 0px))', left: 24, right: 24, textAlign: 'center' }}
+      className="pin-bottom"
+      style={{ bottom: 'calc(8px + var(--safe-b, 0px))', textAlign: 'center' }}
     >
       <div className="tiny" style={{ color: 'var(--accent-soft)' }}>
         이제부터 매일 밤 만나요

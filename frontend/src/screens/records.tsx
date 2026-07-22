@@ -392,6 +392,7 @@ export const S14_Calendar = () => {
             borderRadius: 16,
             padding: 18,
             width: '78%',
+            maxWidth: 340,
             textAlign: 'center',
             boxShadow: '4px 6px 0 rgba(0,0,0,0.25)',
           }}

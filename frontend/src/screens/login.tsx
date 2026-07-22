@@ -91,9 +91,10 @@ export const S21_Login = () => {
       }}
     >
       <div
+        className="screen-scroll"
         style={{
           padding: '60px 24px 24px',
-          height: '100%',
+          minHeight: '100%',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',

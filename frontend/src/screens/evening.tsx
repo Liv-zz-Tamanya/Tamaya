@@ -281,7 +281,7 @@ export const S10_RecapStart = () => {
         </div>
       </div>
     </div>
-    <div style={{ position: 'absolute', bottom: 'calc(28px + var(--safe-b, 0px))', left: 24, right: 24 }}>
+    <div className="pin-bottom" style={{ bottom: 'calc(28px + var(--safe-b, 0px))' }}>
       <button
         type="button"
         onClick={() => nav.go('chat-diary')}
