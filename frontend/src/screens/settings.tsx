@@ -105,6 +105,7 @@ export const S22_Settings = () => {
                 value={openTime}
                 onChange={(event) => setOpenTime(event.target.value)}
                 disabled={saving}
+                style={{ fontSize: 16 }}
               />
               <button type="button" className="btn" onClick={() => void saveNightChatTime()} disabled={saving} style={{ cursor: saving ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
                 {saving ? '저장 중…' : '저장'}

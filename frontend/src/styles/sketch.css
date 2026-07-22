@@ -96,18 +96,24 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
 
 /* Nav back arrow — 화면 좌상단 ‹ 뒤로가기 (인라인 span 4곳 통합, C6).
    font-family 는 전역(body·.app-root=Pretendard) 상속 → 인라인 재지정 불필요.
-   터치 타깃 44px: padding 으로 히트박스 확장 + 동일 폭 negative margin 으로
-   레이아웃 상 시각 위치는 유지(글자 자체 크기는 font-size 로 불변). */
+   터치 타깃 44px: ::before pseudo-element 히트박스로 확장(레이아웃 영향 0) —
+   글리프 자체는 자연 플로우 크기 유지, min-width/padding/negative-margin 방식은
+   margin 이 padding 만 상쇄하고 min-width 확장은 미보상되어 시각 시프트 유발(리뷰 확인, 2026-07-21). */
 .nav-arrow {
+  position: relative;
   font-size: 22px;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+}
+.nav-arrow::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   min-width: 44px;
   min-height: 44px;
-  padding: 8px;
-  margin: -8px;
+  width: 100%;
+  height: 100%;
 }
 
 /* Placeholder shapes */
