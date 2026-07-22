@@ -25,6 +25,8 @@ def test_diary_chat_prompt_includes_turn_policy_without_finalize_hint():
     assert "Tool 결과에 없는 날짜, 인물, 장소, 사건을 만들지 마" in prompt
     assert "Tool을 호출하지 말고 직접 답해" in prompt
     assert "NO_TOOL" in prompt
+    assert "기억의 불확실성이 암시되는 것만으로 저장된 Diary를 검색하지 마" in prompt
+    assert "저장된 과거 기록의 확인, 검색, 회상, 비교를 명시적으로 요청" in prompt
 
 
 def test_diary_chat_prompt_includes_finalize_policy():

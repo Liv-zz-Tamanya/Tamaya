@@ -134,6 +134,15 @@ def test_load_filter_limit_and_summary(tmp_path: Path):
     assert summary.combined_rate == 100
 
 
+def test_diary_abstention_boundary_cases_load_with_expected_decisions():
+    cases = load_cases(Path(__file__).parents[2] / "evals" / "datasets", ["diary"])
+    decisions = {case.id: case.expected_decision for _, case in cases}
+    assert decisions["diary-011"].value == "NO_TOOL"
+    assert decisions["diary-012"].value == "NO_TOOL"
+    assert decisions["diary-013"].value == "TOOL_CALL"
+    assert decisions["diary-014"].value == "TOOL_CALL"
+
+
 class _ScriptedModel(ToolCallingChatModel):
     async def ainvoke(self, messages: list[BaseMessage], tools: list[BaseTool]) -> AIMessage:
         if any(message.type == "tool" for message in messages):
