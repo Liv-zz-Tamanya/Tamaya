@@ -11,6 +11,7 @@ from app.application.service.agent_execution_observability import (
     AgentExecutionRecord,
     AgentExecutionTrace,
     AgentTerminationReason,
+    AgentTraceDetail,
     activate_agent_execution_trace,
     reset_agent_execution_trace,
 )
@@ -150,6 +151,143 @@ async def test_tool_execution_records_round_names_and_no_tool_arguments_or_resul
     assert record.tool_names == ("search_diary_memories",)
     assert record.tool_duration_ms >= 0
     assert "PRIVATE_DIARY_TEXT" not in str(record)
+
+
+async def test_full_trace_records_direct_llm_response_details():
+    recorder = _Recorder()
+    response = AIMessage(
+        content="final response",
+        response_metadata={"finish_reason": "stop"},
+        usage_metadata={"input_tokens": 7, "output_tokens": 11, "total_tokens": 18},
+    )
+    agent = PersonalAssistantAgent(
+        _ResponsesModel([response]),
+        [],
+        execution_recorder=recorder,
+        trace_detail=AgentTraceDetail.FULL,
+    )
+
+    await agent.run(
+        messages=[HumanMessage(content="안녕")],
+        mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
+    )
+
+    record = recorder.records[0]
+    assert len(record.llm_call_traces) == 1
+    trace = record.llm_call_traces[0]
+    assert trace.call_number == 1
+    assert trace.finish_reason == "stop"
+    assert trace.response_content == "final response"
+    assert trace.tool_calls == ()
+    assert (trace.input_tokens, trace.output_tokens, trace.total_tokens) == (7, 11, 18)
+    assert trace.duration_ms is not None
+    assert record.first_finish_reason == "stop"
+    assert record.first_response_content == "final response"
+    assert record.final_response_content == "final response"
+
+
+async def test_full_trace_records_tool_call_arguments_and_final_response():
+    recorder = _Recorder()
+    model = _ResponsesModel(
+        [
+            AIMessage(
+                content="",
+                tool_calls=[_tool_call()],
+                response_metadata={"finish_reason": "tool_calls"},
+                usage_metadata={"input_tokens": 3, "output_tokens": 4, "total_tokens": 7},
+            ),
+            AIMessage(
+                content="done",
+                response_metadata={"finish_reason": "stop"},
+                usage_metadata={"input_tokens": 5, "output_tokens": 6, "total_tokens": 11},
+            ),
+        ]
+    )
+    agent = PersonalAssistantAgent(
+        model,
+        [_tool()],
+        execution_recorder=recorder,
+        trace_detail=AgentTraceDetail.FULL,
+    )
+
+    await agent.run(
+        messages=[HumanMessage(content="PRIVATE_DIARY_TEXT")],
+        mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
+    )
+
+    record = recorder.records[0]
+    assert len(record.llm_call_traces) == 2
+    assert record.first_finish_reason == "tool_calls"
+    assert record.first_response_content is None
+    assert record.final_response_content == "done"
+    assert record.tool_calls[0].round == 1
+    assert record.tool_calls[0].call_id == "call-memory"
+    assert record.tool_calls[0].name == "search_diary_memories"
+    assert record.tool_calls[0].arguments == {"query": "PRIVATE_DIARY_TEXT"}
+    assert [trace.call_number for trace in record.llm_call_traces] == [1, 2]
+    assert record.llm_call_traces[0].tool_calls == record.tool_calls
+    assert record.llm_call_traces[1].response_content == "done"
+
+
+async def test_full_trace_records_invalid_tool_arguments_without_failing_recording():
+    recorder = _Recorder()
+    response = AIMessage(
+        content="",
+        invalid_tool_calls=[
+            {
+                "name": "search_diary_memories",
+                "args": "{bad",
+                "id": "bad-call",
+                "error": "invalid json",
+            }
+        ],
+        response_metadata={"finish_reason": "tool_calls"},
+    )
+    agent = PersonalAssistantAgent(
+        _ResponsesModel([response]),
+        [],
+        execution_recorder=recorder,
+        trace_detail=AgentTraceDetail.FULL,
+    )
+
+    await agent.run(
+        messages=[HumanMessage(content="안녕")],
+        mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
+    )
+
+    record = recorder.records[0]
+    assert record.tool_calls[0].name == "search_diary_memories"
+    assert record.tool_calls[0].arguments is None
+    assert record.tool_calls[0].arguments_parse_error == "invalid json"
+
+
+async def test_basic_trace_keeps_tool_arguments_and_response_content_empty():
+    recorder = _Recorder()
+    model = _ResponsesModel(
+        [
+            AIMessage(content="", tool_calls=[_tool_call()]),
+            AIMessage(content="PRIVATE_FINAL_RESPONSE"),
+        ]
+    )
+    agent = PersonalAssistantAgent(model, [_tool()], execution_recorder=recorder)
+
+    await agent.run(
+        messages=[HumanMessage(content="PRIVATE_DIARY_TEXT")],
+        mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
+    )
+
+    record = recorder.records[0]
+    assert record.tool_calls[0].name == "search_diary_memories"
+    assert record.tool_calls[0].arguments is None
+    assert record.first_response_content is None
+    assert record.final_response_content is None
+    assert all(trace.response_content is None for trace in record.llm_call_traces)
+    assert "PRIVATE_DIARY_TEXT" not in str(record)
+    assert "PRIVATE_FINAL_RESPONSE" not in str(record)
 
 
 async def test_input_and_output_guardrails_have_distinct_terminal_records():
