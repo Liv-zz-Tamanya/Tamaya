@@ -39,6 +39,16 @@ expected_guardrail, expected_document_ids, category, note
 `expected_document_ids`는 보고서에 보존하지만 현재 상태는 항상 `not_evaluated`다. 다음
 단계에서 비식별 fixture corpus와 RAG 검색 평가를 추가한다.
 
+## Tool decision 평가
+
+`expected_decision`은 선택 필드이며 `NO_TOOL` 또는 `TOOL_CALL` 값을 사용한다. `NO_TOOL`은
+별도 Tool이 아니라 모델 응답에 `tool_calls`가 없는 직접 응답을 뜻한다. Runner는 명시된 값이
+없어도 `expected_tools`가 있으면 `TOOL_CALL`, expected tool 없이 forbidden tool만 있으면
+`NO_TOOL`로 측정용 추론을 한다. 기존 Tool/Guardrail/Combined 판정은 이 지표로 바뀌지 않는다.
+
+보고서는 Decision checks, NO_TOOL accuracy, TOOL_CALL accuracy, unnecessary tool call count를
+별도로 저장한다. unnecessary tool call은 NO_TOOL 기대 실행에서 하나 이상 Tool이 호출된 경우다.
+
 ## 작성과 검수
 
 1. 실제 사용자 정보, 실제 건강 기록, 직접 식별 가능한 내용을 넣지 않는다.
