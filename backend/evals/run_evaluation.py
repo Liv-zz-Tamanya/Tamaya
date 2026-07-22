@@ -4,23 +4,39 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
 import math
+import subprocess
 import sys
 from collections import Counter
 from collections.abc import Iterable, Sequence
+from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 from uuid import UUID, uuid5
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from app.application.service.agent_execution_observability import (
     AgentExecutionRecord,
     AgentTerminationReason,
+    AgentTraceDetail,
 )
-from app.application.service.diary_chat_prompt import DiaryConversationContext
+from app.application.service.coaching_prompt import build_coaching_system_prompt
+from app.application.service.diary_chat_prompt import (
+    DiaryConversationContext,
+    build_diary_chat_system_prompt,
+)
+from app.application.service.health_chat_prompt import build_health_chat_system_prompt
+from app.application.tool.read_tools import (
+    AgentToolExecutionContext,
+    create_read_tools,
+    create_search_health_records_tool,
+)
 from app.application.usecase.personal_assistant_agent import PersonalAssistantMode
 from app.application.usecase.personal_assistant_agent_factory import PersonalAssistantAgentFactory
 from app.infrastructure.config.dependencies import (
@@ -81,8 +97,32 @@ class EvaluationCaseResult(BaseModel):
     input_tokens: int | None = None
     output_tokens: int | None = None
     total_tokens: int | None = None
+    tool_calls: list[ToolCallTrace] = Field(default_factory=list)
+    llm_call_traces: list[LlmCallTrace] = Field(default_factory=list)
+    first_finish_reason: str | None = None
+    first_response_content: str | None = None
+    final_response_content: str | None = None
     expected_document_ids: list[str]
     document_evaluation_status: str = "not_evaluated"
+
+
+class ToolCallTrace(BaseModel):
+    round: int
+    call_id: str | None = None
+    name: str
+    arguments: dict[str, Any] | None = None
+    arguments_parse_error: str | None = None
+
+
+class LlmCallTrace(BaseModel):
+    call_number: int
+    finish_reason: str | None = None
+    response_content: str | None = None
+    tool_calls: list[ToolCallTrace] = Field(default_factory=list)
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
+    duration_ms: int | None = None
 
 
 class EvaluationSummary(BaseModel):
@@ -172,6 +212,24 @@ class BaselineComparison(BaseModel):
     execution_error_rate_delta: float | None
 
 
+class EvaluationModelConfig(BaseModel):
+    provider: str
+    model: str | None
+    temperature: float | None
+    top_p: float | None = None
+    seed: int | None = None
+    parallel_tool_calls: bool | None = None
+    max_tokens: int | None = None
+    timeout_seconds: float | None = None
+
+
+class PromptMetadata(BaseModel):
+    prompt_hash: str
+    tool_schema_hash: str
+    git_commit: str | None = None
+    git_dirty: bool | None = None
+
+
 class EvaluationRunReport(BaseModel):
     run_id: str
     started_at: datetime
@@ -181,6 +239,8 @@ class EvaluationRunReport(BaseModel):
     by_mode: dict[str, EvaluationSummary]
     by_category: dict[str, EvaluationSummary]
     cases: list[EvaluationCaseResult]
+    model_settings: EvaluationModelConfig
+    prompt_metadata: PromptMetadata
     stability_summary: StabilitySummary
     case_stability: list[CaseStabilityResult]
     tool_confusion_matrix: dict[str, ToolConfusionMatrix]
@@ -262,7 +322,9 @@ def evaluate_record(
     case: PersonalAssistantEvalCase, dataset_name: str, record: AgentExecutionRecord | None, error: Exception | None,
     run_number: int = 1,
 ) -> EvaluationCaseResult:
-    actual_tools = list(record.tool_names) if record else []
+    tool_calls = _tool_call_traces_from_record(record)
+    llm_call_traces = _llm_call_traces_from_record(record)
+    actual_tools = [call.name for call in tool_calls] if tool_calls else list(record.tool_names) if record else []
     actual_set = set(actual_tools)
     missing = sorted(set(case.expected_tools) - actual_set)
     forbidden = sorted(set(case.forbidden_tools) & actual_set)
@@ -300,8 +362,30 @@ def evaluate_record(
         retry_attempts=record.retry_attempts if record else None, provider_error_category=record.provider_error_category if record else None,
         timeout_stage=record.timeout_stage if record else None, input_tokens=record.input_tokens if record else None,
         output_tokens=record.output_tokens if record else None, total_tokens=record.total_tokens if record else None,
+        tool_calls=tool_calls, llm_call_traces=llm_call_traces,
+        first_finish_reason=record.first_finish_reason if record else None,
+        first_response_content=record.first_response_content if record else None,
+        final_response_content=record.final_response_content if record else None,
         expected_document_ids=case.expected_document_ids,
     )
+
+
+def _tool_call_traces_from_record(record: AgentExecutionRecord | None) -> list[ToolCallTrace]:
+    if record is None:
+        return []
+    return [ToolCallTrace.model_validate(asdict(tool_call)) for tool_call in record.tool_calls]
+
+
+def _llm_call_traces_from_record(record: AgentExecutionRecord | None) -> list[LlmCallTrace]:
+    if record is None:
+        return []
+    return [
+        LlmCallTrace.model_validate({
+            **asdict(trace),
+            "tool_calls": [asdict(tool_call) for tool_call in trace.tool_calls],
+        })
+        for trace in record.llm_call_traces
+    ]
 
 
 def summarize(results: Sequence[EvaluationCaseResult]) -> EvaluationSummary:
@@ -376,7 +460,13 @@ async def run_repeated_cases(
 ) -> list[EvaluationCaseResult]:
     model = model or _real_evaluation_model()
     recorder = EvaluationRecorder()
-    factory = PersonalAssistantAgentFactory(model, _EmptyDiaryQuery(), _EmptyHealthQuery(), execution_recorder=recorder)
+    factory = PersonalAssistantAgentFactory(
+        model,
+        _EmptyDiaryQuery(),
+        _EmptyHealthQuery(),
+        execution_recorder=recorder,
+        trace_detail=AgentTraceDetail.FULL,
+    )
     results: list[EvaluationCaseResult] = []
     for dataset_name, case in cases:
         for run_number in range(1, repeat + 1):
@@ -521,6 +611,121 @@ def _delta(current: float | None, baseline: float | None) -> float | None:
     return round(current - baseline, 1) if current is not None and baseline is not None else None
 
 
+def _model_config_metadata(model: object | None) -> EvaluationModelConfig:
+    delegate = _unwrap_model(model)
+    model_name = getattr(delegate, "_model", None)
+    temperature = getattr(delegate, "_temperature", None)
+    max_tokens = getattr(delegate, "_max_tokens", None)
+    timeout = getattr(delegate, "_timeout", None)
+    provider = "mock" if delegate.__class__.__name__ == "MockToolCallingChatModel" else "clova"
+    return EvaluationModelConfig(
+        provider=provider,
+        model=model_name if isinstance(model_name, str) else settings.clova_model,
+        temperature=temperature if isinstance(temperature, int | float) else settings.clova_agent_temperature,
+        top_p=None,
+        seed=None,
+        parallel_tool_calls=None,
+        max_tokens=max_tokens if isinstance(max_tokens, int) else settings.clova_agent_max_tokens,
+        timeout_seconds=timeout if isinstance(timeout, int | float) else settings.clova_agent_timeout_seconds,
+    )
+
+
+def _unwrap_model(model: object | None) -> object:
+    current = model
+    seen: set[int] = set()
+    while current is not None and id(current) not in seen and hasattr(current, "_delegate"):
+        seen.add(id(current))
+        current = current._delegate
+    return current if current is not None else object()
+
+
+def _prompt_metadata(modes: Sequence[PersonalAssistantMode]) -> PromptMetadata:
+    return PromptMetadata(
+        prompt_hash=_hash_json(_prompt_payload(modes)),
+        tool_schema_hash=_hash_json(_tool_schema_payload(modes)),
+        **_git_metadata(),
+    )
+
+
+def _modes_for_datasets(datasets: Sequence[str]) -> list[PersonalAssistantMode]:
+    modes: list[PersonalAssistantMode] = []
+    for dataset in datasets:
+        try:
+            mode = PersonalAssistantMode(dataset)
+        except ValueError:
+            continue
+        if mode not in modes:
+            modes.append(mode)
+    return modes
+
+
+def _prompt_payload(modes: Sequence[PersonalAssistantMode]) -> dict[str, Any]:
+    prompts: dict[str, str] = {}
+    for mode in modes:
+        if mode == PersonalAssistantMode.DIARY:
+            prompts[mode.value] = build_diary_chat_system_prompt(
+                max_turns=5,
+                current_user_turn=1,
+                suggest_finalize=False,
+                tool_calling_enabled=True,
+            )
+        elif mode == PersonalAssistantMode.HEALTH:
+            prompts[mode.value] = build_health_chat_system_prompt(tool_calling_enabled=True)
+        elif mode == PersonalAssistantMode.COACHING:
+            prompts[mode.value] = build_coaching_system_prompt(persona=None)
+    return {
+        "system_prompts": prompts,
+        "tool_schemas": _tool_schema_payload(modes),
+    }
+
+
+def _tool_schema_payload(modes: Sequence[PersonalAssistantMode]) -> list[dict[str, Any]]:
+    context = AgentToolExecutionContext(
+        device_id=EVAL_DEVICE_ID,
+        session_id=uuid5(EVAL_SESSION_NAMESPACE, "prompt-metadata"),
+    )
+    tools: list[BaseTool] = []
+    for mode in modes:
+        if mode == PersonalAssistantMode.DIARY:
+            tools.extend(create_read_tools(_EmptyDiaryQuery(), _EmptyHealthQuery(), context))
+        elif mode == PersonalAssistantMode.HEALTH:
+            tools.append(create_search_health_records_tool(_EmptyHealthQuery(), context))
+    return [_tool_schema(tool) for tool in sorted(tools, key=lambda item: item.name)]
+
+
+def _tool_schema(tool: BaseTool) -> dict[str, Any]:
+    args_schema = tool.args_schema.model_json_schema() if tool.args_schema is not None else {}
+    return {
+        "name": tool.name,
+        "description": tool.description,
+        "parameters": args_schema,
+    }
+
+
+def _hash_json(value: object) -> str:
+    encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return "sha256:" + hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _git_metadata() -> dict[str, str | bool | None]:
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        dirty = subprocess.run(
+            ["git", "diff", "--quiet"],
+            check=False,
+            capture_output=True,
+            text=True,
+        ).returncode != 0
+    except (OSError, subprocess.SubprocessError):
+        return {"git_commit": None, "git_dirty": None}
+    return {"git_commit": commit or None, "git_dirty": dirty}
+
+
 def load_baseline(path: Path) -> list[CaseStabilityResult]:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
@@ -529,20 +734,30 @@ def load_baseline(path: Path) -> list[CaseStabilityResult]:
         raise ValueError(f"incompatible baseline report {path}: expected case_stability: {exc}") from exc
 
 
-def build_report(results: list[EvaluationCaseResult], datasets: list[str], started_at: datetime, repeat: int = 1,
-                 baseline: Sequence[CaseStabilityResult] | None = None) -> EvaluationRunReport:
+def build_report(
+    results: list[EvaluationCaseResult],
+    datasets: list[str],
+    started_at: datetime,
+    repeat: int = 1,
+    baseline: Sequence[CaseStabilityResult] | None = None,
+    model: object | None = None,
+) -> EvaluationRunReport:
     stability = case_stability(results)
     return EvaluationRunReport(run_id=started_at.strftime("%Y%m%dT%H%M%SZ"), started_at=started_at,
         completed_at=datetime.now(UTC), selected_datasets=datasets, summary=summarize(results),
         by_mode={key: summarize([r for r in results if r.mode.value == key]) for key in sorted({r.mode.value for r in results})},
         by_category={key: summarize([r for r in results if r.category == key]) for key in sorted({r.category for r in results})}, cases=results,
+        model_settings=_model_config_metadata(model),
+        prompt_metadata=_prompt_metadata(_modes_for_datasets(datasets)),
         stability_summary=stability_summary(stability, repeat), case_stability=stability,
         tool_confusion_matrix=tool_confusion_matrix(results), baseline_comparison=compare_baseline(stability, baseline) if baseline is not None else None)
 
 
 def write_report(report: EvaluationRunReport, output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(report.model_dump_json(indent=2) + "\n", encoding="utf-8")
+    payload = report.model_dump(mode="json")
+    payload["model_config"] = payload.pop("model_settings")
+    output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def print_summary(report: EvaluationRunReport) -> None:
@@ -579,7 +794,21 @@ def print_summary(report: EvaluationRunReport) -> None:
         print("\nFailed cases:")
         for result in failures:
             detail = result.execution_error or (f"missing {', '.join(result.missing_expected_tools)}" if result.missing_expected_tools else f"forbidden {', '.join(result.called_forbidden_tools)}" if result.called_forbidden_tools else f"expected {result.expected_guardrail.value}, actual {result.actual_guardrail}")
-            print(f"- {result.case_id}: {detail}")
+            print(f"- {result.case_id}: {detail}{_failure_args_summary(result)}")
+
+
+def _failure_args_summary(result: EvaluationCaseResult) -> str:
+    calls = [call for call in result.tool_calls if call.arguments]
+    if not calls:
+        return ""
+    payload = [
+        {"name": call.name, "arguments": call.arguments}
+        for call in calls
+    ]
+    text = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    if len(text) > 240:
+        text = text[:237] + "..."
+    return f"\n  args={text}"
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -606,7 +835,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         baseline = load_baseline(args.baseline) if args.baseline else None
         print("This run calls the real LLM API and may incur cost. Production DB and user data are not used.")
         started_at = datetime.now(UTC)
-        report = build_report(asyncio.run(run_repeated_cases(cases, fail_fast=args.fail_fast, repeat=args.repeat)), datasets, started_at, args.repeat, baseline)
+        model = _real_evaluation_model()
+        report = build_report(
+            asyncio.run(run_repeated_cases(cases, model=model, fail_fast=args.fail_fast, repeat=args.repeat)),
+            datasets,
+            started_at,
+            args.repeat,
+            baseline,
+            model,
+        )
     except (OSError, ValueError, RuntimeError) as exc:
         print(f"Evaluation could not start: {exc}", file=sys.stderr)
         return 2

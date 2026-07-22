@@ -2,6 +2,7 @@ from uuid import UUID
 
 from app.application.service.agent_execution_observability import (
     AgentExecutionRecorder,
+    AgentTraceDetail,
     NullAgentExecutionRecorder,
 )
 from app.application.service.diary_memory_query_service import DiaryMemoryQueryService
@@ -30,12 +31,14 @@ class PersonalAssistantAgentFactory:
         health_query: HealthRecordQueryService,
         timeout_policy: PersonalAssistantTimeoutPolicy = DEFAULT_PERSONAL_ASSISTANT_TIMEOUT_POLICY,
         execution_recorder: AgentExecutionRecorder = NullAgentExecutionRecorder(),
+        trace_detail: AgentTraceDetail = AgentTraceDetail.BASIC,
     ) -> None:
         self._model = model
         self._diary_query = diary_query
         self._health_query = health_query
         self._timeout_policy = timeout_policy
         self._execution_recorder = execution_recorder
+        self._trace_detail = trace_detail
 
     def create(
         self,
@@ -70,4 +73,5 @@ class PersonalAssistantAgentFactory:
             tools,
             timeout_policy=self._timeout_policy,
             execution_recorder=self._execution_recorder,
+            trace_detail=self._trace_detail,
         )
