@@ -37,7 +37,14 @@ const SCREENS: Record<Route, () => ReactNode> = {
 export const AppShell = () => <StoreProvider><AppShellInner /></StoreProvider>;
 
 const AppShellInner = () => {
-  const [stack, setStack] = useState<Route[]>(['splash']);
+  const initialRoute = (): Route => {
+    if (import.meta.env.DEV) {
+      const m = window.location.hash.match(/^#s=([\w-]+)$/);
+      if (m && m[1] in SCREENS) return m[1] as Route;
+    }
+    return 'splash';
+  };
+  const [stack, setStack] = useState<Route[]>([initialRoute()]);
   const [now, setNow] = useState(() => new Date());
   const [openTime, setOpenTime] = useState(DEFAULT_NIGHT_CHAT_OPEN_TIME);
   const [timezone, setTimezone] = useState('Asia/Seoul');
