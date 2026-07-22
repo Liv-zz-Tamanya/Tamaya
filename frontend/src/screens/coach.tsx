@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { BackButton, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
+import { scrollBehavior } from '../lib/scroll';
 import { sendCoachingMessage, type CoachTurn } from '../lib/api';
 
 // S23 · 밤 코칭 (건강냥 Medlife) — guardrail-first 코칭 대화.
@@ -33,7 +34,7 @@ export const S23_Coach = ({ sample = false }: { sample?: boolean } = {}) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: scrollBehavior() });
   }, [msgs, typing]);
 
   const send = (text?: string) => {
@@ -84,7 +85,7 @@ export const S23_Coach = ({ sample = false }: { sample?: boolean } = {}) => {
       <div ref={scrollRef} className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 14px calc(140px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <BackButton onClick={() => nav.back()} />
-          <div className="h-title">밤 코칭 · 건강냥</div>
+          <h1 className="h-title">밤 코칭 · 건강냥</h1>
         </div>
         <div className="tiny" style={{ marginBottom: 14 }}>
           밤에 깨어난 건강냥과 하루를 돌아봐요 · 진단·처방이 아닌 웰니스 코칭
@@ -119,7 +120,7 @@ export const S23_Coach = ({ sample = false }: { sample?: boolean } = {}) => {
           )}
         </div>
 
-        <div className="h-label" style={{ marginTop: 18, marginBottom: 6 }}>이야기 시작하기</div>
+        <h2 className="h-label" style={{ marginTop: 18, marginBottom: 6 }}>이야기 시작하기</h2>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {quick.map((t, i) => (
             <button
@@ -135,7 +136,7 @@ export const S23_Coach = ({ sample = false }: { sample?: boolean } = {}) => {
         </div>
 
         {err && (
-          <div className="tiny" style={{ marginTop: 12, color: '#8a2c33' }}>
+          <div className="tiny" role="alert" style={{ marginTop: 12, color: '#8a2c33' }}>
             ⚠ 백엔드(건강냥이) 연결 실패 — <code>make up · migrate · be</code> 기동 후 다시 시도.
           </div>
         )}

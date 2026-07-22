@@ -150,7 +150,7 @@ export const S14_Calendar = () => {
   return (
   <div className="screen">
     <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
-      <div className="h-title">달력</div>
+      <h1 className="h-title">달력</h1>
       <div className="tiny" style={{ marginTop: 2 }}>감정의 흐름을 한 눈에</div>
 
       <div
@@ -455,7 +455,7 @@ export const S15_DiaryDetail = () => {
         <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <BackButton onClick={() => nav.back()} />
-            <div className="h-section">달력</div>
+            <h1 className="h-section">달력</h1>
           </div>
           <div className="hbox dashed" style={{ padding: 18, marginTop: 16, textAlign: 'center' }}>
             <div className="body">아직 이 날의 기록이 없어요.</div>
@@ -505,9 +505,9 @@ export const S15_DiaryDetail = () => {
         </div>
       </div>
 
-      <div className="h-display" style={{ marginTop: 8, fontSize: 28 }}>
+      <h1 className="h-display" style={{ marginTop: 8, fontSize: 28 }}>
         {weekday}요일 · {displayDate}
-      </div>
+      </h1>
 
       <div className="hbox r-l" style={{ padding: 12, marginTop: 14 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -516,7 +516,7 @@ export const S15_DiaryDetail = () => {
             <div style={{ fontWeight: 700 }}>
               {entry.moods.map((m) => MOOD_LABEL[m]).join(' · ')}
             </div>
-            <div className="tiny" style={{ color: 'var(--muted)' }}>회고 대화로 작성</div>
+            <div className="tiny" style={{ color: 'var(--pencil)' }}>회고 대화로 작성</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
@@ -543,9 +543,9 @@ export const S15_DiaryDetail = () => {
         </div>
       </div>
 
-      <div className="h-label" style={{ marginTop: 14, marginBottom: 6 }}>
+      <h2 className="h-label" style={{ marginTop: 14, marginBottom: 6 }}>
         키워드
-      </div>
+      </h2>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {entry.keywords.map((t, i) => (
           <span key={i} className="chip dashed">
@@ -555,7 +555,7 @@ export const S15_DiaryDetail = () => {
       </div>
 
       <div className="hbox r-l" style={{ padding: 12, marginTop: 14 }}>
-        <div className="h-label">그날의 체크</div>
+        <h2 className="h-label">그날의 체크</h2>
         <div
           style={{
             display: 'grid',
@@ -622,7 +622,7 @@ export const S16_Stats = () => {
   return (
   <div className="screen">
     <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
-      <div className="h-title">통계</div>
+      <h1 className="h-title">통계</h1>
       <div className="tiny" style={{ marginTop: 2 }}>한 주를 한 눈에 봐요</div>
 
       <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
@@ -673,7 +673,7 @@ export const S16_Stats = () => {
       {/* 통계 카드 — 넓은 폭서 reflow-grid 로 2열 자연 확장(로직·데이터 불변) */}
       <div className="reflow-grid" style={{ marginTop: 12 }}>
       <div className="hbox r-r" style={{ padding: 14 }}>
-        <div className="h-label">요일별 작성</div>
+        <h2 className="h-label">요일별 작성</h2>
         <div
           style={{
             display: 'flex',
@@ -713,7 +713,7 @@ export const S16_Stats = () => {
       </div>
 
       <div className="hbox r-l" style={{ padding: 14 }}>
-        <div className="h-label">감정 분포</div>
+        <h2 className="h-label">감정 분포</h2>
         <div
           style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}
         >
@@ -734,7 +734,7 @@ export const S16_Stats = () => {
       </div>
 
       <div className="hbox r-r" style={{ padding: 14 }}>
-        <div className="h-label">라이프스타일</div>
+        <h2 className="h-label">라이프스타일</h2>
         <div
           style={{
             display: 'grid',
@@ -780,15 +780,15 @@ export const S17_Insights = () => {
   return (
   <div className="screen">
     <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
-      <div className="h-title">인사이트</div>
+      <h1 className="h-title">인사이트</h1>
       <div className="tiny" style={{ marginTop: 2 }}>이음이가 정리해준 이번 주</div>
 
       {enough ? (
         <>
       <div className="hbox night r-l" style={{ padding: 16, marginTop: 14 }}>
-        <div className="h-label" style={{ color: 'var(--accent-soft)' }}>
+        <h2 className="h-label" style={{ color: 'var(--accent-soft)' }}>
           이번 주 메인 패턴
-        </div>
+        </h2>
         <div
           className="h-title"
           style={{ color: 'var(--paper)', fontSize: 22, marginTop: 4 }}
@@ -806,9 +806,9 @@ export const S17_Insights = () => {
         </div>
       </div>
 
-      <div className="h-label" style={{ marginTop: 14, marginBottom: 6 }}>
+      <h2 className="h-label" style={{ marginTop: 14, marginBottom: 6 }}>
         이번 주 발견
-      </div>
+      </h2>
       {/* 발견 카드 — 넓은 폭서 reflow-grid 로 다열 자연 확장(데이터·문구 불변) */}
       <div className="reflow-grid">
       {(
@@ -833,7 +833,7 @@ export const S17_Insights = () => {
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 500 }}>{t}</div>
-            <div className="tiny" style={{ color: 'var(--muted)' }}>{s}</div>
+            <div className="tiny" style={{ color: 'var(--pencil)' }}>{s}</div>
           </div>
           <span className="tiny" style={{ color: 'var(--accent)' }}>
             ✦
@@ -843,7 +843,7 @@ export const S17_Insights = () => {
       </div>
 
       <div className="hbox accent r-l" style={{ padding: 14, marginTop: 14 }}>
-        <div className="h-label">이번 주 추천 루틴</div>
+        <h2 className="h-label">이번 주 추천 루틴</h2>
         <div className="h-title" style={{ fontSize: 18, marginTop: 4 }}>
           회의 끝 · 3분 호흡 알람
         </div>

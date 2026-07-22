@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { BackButton, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
+import { scrollBehavior } from '../lib/scroll';
 import { sendHealthChat } from '../lib/api';
 
 // S26 · 건강 RAG 챗 — 사용자 건강기록을 embedding 검색(top-5)해 컨텍스트로 답하는 헬스 Q&A.
@@ -33,7 +34,7 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: scrollBehavior() });
   }, [msgs, typing]);
 
   const send = (text?: string) => {
@@ -79,7 +80,7 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
       <div ref={scrollRef} className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 14px calc(140px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <BackButton onClick={() => nav.back()} />
-          <div className="h-title">건강 기록 Q&amp;A</div>
+          <h1 className="h-title">건강 기록 Q&amp;A</h1>
         </div>
         <div className="tiny" style={{ marginBottom: 14 }}>
           내 건강 데이터(RAG) 기반 답변 · 진단 아님, 참고용
@@ -114,7 +115,7 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
           )}
         </div>
 
-        <div className="h-label" style={{ marginTop: 18, marginBottom: 6 }}>자주 묻는 것</div>
+        <h2 className="h-label" style={{ marginTop: 18, marginBottom: 6 }}>자주 묻는 것</h2>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {quick.map((t, i) => (
             <button
@@ -130,7 +131,7 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
         </div>
 
         {err && (
-          <div className="tiny" style={{ marginTop: 12, color: '#8a2c33' }}>
+          <div className="tiny" role="alert" style={{ marginTop: 12, color: '#8a2c33' }}>
             ⚠ 백엔드(건강냥이) 연결 실패 — 건강 기록 시드(<code>seed_demo_signals.py</code>) + 기동 확인.
           </div>
         )}

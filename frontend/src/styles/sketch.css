@@ -100,6 +100,10 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
 .r-rr { transform: rotate(0.7deg); }
 
 /* Typography */
+/* A11Y-09: 시맨틱 헤딩(h1/h2) 리셋 — 브라우저 기본 헤딩 마진/폰트를 지워, 화면 최상위
+   제목·섹션 라벨을 div 대신 h1/h2 로 마크업해도 기존 .h-title/.h-section/.h-label/
+   .h-display 등 클래스의 시각이 그대로 유지되게 한다(시각 무변화). */
+h1, h2 { margin: 0; font: inherit; font-size: inherit; font-weight: inherit; }
 .h-display { font-family: 'Pretendard'; font-weight: 700; font-size: 32px; line-height: 1; letter-spacing: -0.5px; }
 .h-title { font-family: 'Pretendard'; font-weight: 700; font-size: 24px; line-height: 1.1; }
 .h-section { font-family: 'Pretendard'; font-weight: 400; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; color: var(--pencil); }

@@ -70,7 +70,7 @@ export const S24_Wellbeing = ({ sample = false }: { sample?: boolean } = {}) => 
       <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <BackButton onClick={() => nav.back()} />
-          <div className="h-title">웰빙 인사이트</div>
+          <h1 className="h-title">웰빙 인사이트</h1>
         </div>
         <div className="tiny" style={{ marginTop: 2, marginBottom: 14 }}>{week} · 이번 주 웰빙 스코어</div>
 
@@ -82,7 +82,7 @@ export const S24_Wellbeing = ({ sample = false }: { sample?: boolean } = {}) => 
         )}
 
         {phase === 'error' && (
-          <div className="hbox r-l" style={{ padding: 18 }}>
+          <div className="hbox r-l" role="alert" style={{ padding: 18 }}>
             <div className="body" style={{ color: '#8a2c33' }}>인사이트를 불러오지 못했어요</div>
             <div className="tiny" style={{ marginTop: 6 }}>
               백엔드(건강냥이) 연결을 확인해 주세요 — <code>make up · migrate · be</code>
@@ -115,13 +115,13 @@ export const S24_Wellbeing = ({ sample = false }: { sample?: boolean } = {}) => 
             </div>
 
             <div className="hbox r-l" style={{ padding: 16, marginTop: 12 }}>
-              <div className="h-label" style={{ marginBottom: 10 }}>구성</div>
+              <h2 className="h-label" style={{ marginBottom: 10 }}>구성</h2>
               <Bar label="정서 (emotion)" value={data.report.emotion_score} />
               <Bar label="행동 (behavior)" value={data.report.behavior_score} />
             </div>
 
             <div className="hbox r-r" style={{ padding: 16, marginTop: 12 }}>
-              <div className="h-label" style={{ marginBottom: 10 }}>일별 추이</div>
+              <h2 className="h-label" style={{ marginBottom: 10 }}>일별 추이</h2>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 90 }}>
                 {data.trend.length === 0 && <div className="tiny">추이 데이터 없음</div>}
                 {data.trend.map((t, i) => (

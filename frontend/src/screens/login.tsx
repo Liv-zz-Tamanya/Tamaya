@@ -112,9 +112,9 @@ export const S21_Login = () => {
         >
           <CatSketch size={100} mood="happy" />
         </div>
-        <div className="h-display" style={{ fontSize: 40, marginTop: 14 }}>
+        <h1 className="h-display" style={{ fontSize: 40, marginTop: 14 }}>
           Tamaya
-        </div>
+        </h1>
         <div className="handwriting" style={{ fontSize: 19, marginTop: 4, color: 'var(--ink-soft)' }}>
           {isSignup ? '반가워요! 닉네임을 만들어 주세요' : '다시 왔군요! 닉네임을 알려주세요'}
         </div>
@@ -176,6 +176,7 @@ export const S21_Login = () => {
           {hint && (
             <div
               className="tiny"
+              role={hint.ok ? 'status' : 'alert'}
               style={{
                 marginTop: 8,
                 textAlign: 'left',

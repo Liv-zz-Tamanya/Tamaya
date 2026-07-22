@@ -101,9 +101,9 @@ export const S01_Splash = () => {
         <CatSketch size={128} mood="wink" />
       </div>
       <div style={{ textAlign: 'center' }}>
-        <div className="h-display" style={{ fontSize: 52, color: 'var(--paper)' }}>
+        <h1 className="h-display" style={{ fontSize: 52, color: 'var(--paper)' }}>
           Tamaya
-        </div>
+        </h1>
         <div className="handwriting" style={{ color: 'var(--accent-soft)', marginTop: 8 }}>
           밤이 되면 만나요
         </div>
@@ -124,11 +124,11 @@ export const S02_Welcome = () => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div className="h-section">01 / 04 · 인사</div>
         <OnbProgress step={1} />
-        <div className="h-display" style={{ fontSize: 28, lineHeight: 1.15 }}>
+        <h1 className="h-display" style={{ fontSize: 28, lineHeight: 1.15 }}>
           혼자여도
           <br />
           외롭지 않게.
-        </div>
+        </h1>
         <div className="body" style={{ color: 'var(--ink)', lineHeight: 1.55 }}>
           하루를 더 잘 준비하고
           <br />
@@ -202,11 +202,11 @@ export const S03_Privacy = () => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div className="h-section">02 / 04 · 약속</div>
         <OnbProgress step={2} />
-        <div className="h-display" style={{ fontSize: 28, lineHeight: 1.15 }}>
+        <h1 className="h-display" style={{ fontSize: 28, lineHeight: 1.15 }}>
           네 마음은
           <br />
           너만의 것이야.
-        </div>
+        </h1>
       </div>
       <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {(
@@ -232,7 +232,7 @@ export const S03_Privacy = () => {
               <div
                 className="tiny"
                 style={{
-                  color: 'var(--muted)',
+                  color: 'var(--pencil)',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -294,11 +294,11 @@ export const S04_CreateCat = () => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div className="h-section">03 / 04 · 캐릭터</div>
         <OnbProgress step={3} />
-        <div className="h-display" style={{ fontSize: 28, lineHeight: 1.15 }}>
+        <h1 className="h-display" style={{ fontSize: 28, lineHeight: 1.15 }}>
           너만의 이음이를
           <br />
           만들어 봐.
-        </div>
+        </h1>
       </div>
 
       <div
@@ -333,9 +333,9 @@ export const S04_CreateCat = () => {
         }}
       />
 
-      <div className="h-label" style={{ marginTop: 18, marginBottom: 8 }}>
+      <h2 className="h-label" style={{ marginTop: 18, marginBottom: 8 }}>
         털 색 고르기
-      </div>
+      </h2>
       <div style={{ display: 'flex', gap: 10 }}>
         {colors.map((c) => {
           const selected = state.character.color === c;
@@ -360,9 +360,9 @@ export const S04_CreateCat = () => {
         })}
       </div>
 
-      <div className="h-label" style={{ marginTop: 18, marginBottom: 8 }}>
+      <h2 className="h-label" style={{ marginTop: 18, marginBottom: 8 }}>
         성격 (말투에 영향) · 최대 2개
-      </div>
+      </h2>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {allPersonalities.map((t) => {
           const on = state.character.personalities.includes(t);
@@ -380,7 +380,7 @@ export const S04_CreateCat = () => {
         })}
       </div>
 
-      <div className="tiny" style={{ marginTop: 14, color: 'var(--muted)' }}>
+      <div className="tiny" style={{ marginTop: 14, color: 'var(--pencil)' }}>
         나중에 [설정]에서 언제든 바꿀 수 있어요.
       </div>
     </div>
@@ -428,11 +428,11 @@ export const S05_FirstMeet = () => {
           04 / 04 · 첫 만남
         </div>
         <OnbProgress step={4} dark style={{ marginInline: 'auto' }} />
-        <div className="h-display" style={{ fontSize: 28, lineHeight: 1.15, color: 'var(--paper)' }}>
+        <h1 className="h-display" style={{ fontSize: 28, lineHeight: 1.15, color: 'var(--paper)' }}>
           이제 만났네,
           <br />
           {name}!
-        </div>
+        </h1>
       </div>
 
       <div style={{ marginTop: 30, display: 'flex', justifyContent: 'center' }}>

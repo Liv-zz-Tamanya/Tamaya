@@ -197,7 +197,7 @@ export const S18_CatRoom = () => {
         className="hbox"
         style={{ padding: 14, background: 'var(--paper)', color: 'var(--ink)' }}
       >
-        <div className="h-label">친밀도 &amp; 컨디션</div>
+        <h1 className="h-label">친밀도 &amp; 컨디션</h1>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
           {(
             [
@@ -268,7 +268,7 @@ export const S18_CatRoom = () => {
     </div>
     </div>
     </div>
-    {toast && <div className="toast">{toast}</div>}
+    {toast && <div className="toast" role="status">{toast}</div>}
     <TabBar active="cat" />
   </div>
   );
@@ -289,7 +289,7 @@ export const S19_Inventory = () => {
     <div className="stage-body">
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <BackButton onClick={() => nav.back()} tone="var(--ink)" />
-        <div className="h-title">인벤토리 / 옷장</div>
+        <h1 className="h-title">인벤토리 / 옷장</h1>
       </div>
       <div className="h-label" style={{ marginTop: 4 }}>
         모은 아이템 · {state.unlockedItems.length}개 · {state.points} 포인트
@@ -373,9 +373,9 @@ export const S19_Inventory = () => {
         </div>
       </div>
 
-      <div className="h-label" style={{ marginTop: 16, marginBottom: 8 }}>
+      <h2 className="h-label" style={{ marginTop: 16, marginBottom: 8 }}>
         먹이 · 7개
-      </div>
+      </h2>
       <div
         style={{
           display: 'grid',
@@ -429,7 +429,7 @@ export const S19_Inventory = () => {
         {sel ? `${sel} 입히기` : '선택 입히기'}
       </button>
     </div>
-    {toast && <div className="toast">{toast}</div>}
+    {toast && <div className="toast" role="status">{toast}</div>}
     <TabBar active="cat" />
   </div>
   );
@@ -455,11 +455,11 @@ export const S20_Report = () => {
         <BackButton onClick={() => nav.back()} tone="var(--pencil)" />
         <div className="h-label">주간 리포트 — 매주 월요일</div>
       </div>
-      <div className="h-display" style={{ marginTop: 8, fontSize: 28 }}>
+      <h1 className="h-display" style={{ marginTop: 8, fontSize: 28 }}>
         5월 4째주
         <br />
         너의 일주일.
-      </div>
+      </h1>
       <div className="h-label" style={{ marginTop: 6 }}>
         5/19 — 5/25 · 6일 기록 · 1일 휴식
       </div>
@@ -564,7 +564,7 @@ export const S20_Report = () => {
       </div>
     </div>
     </div>
-    {toast && <div className="toast">{toast}</div>}
+    {toast && <div className="toast" role="status">{toast}</div>}
     <TabBar active="ins" />
   </div>
   );

@@ -83,13 +83,13 @@ export const S22_Settings = () => {
       <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <BackButton onClick={() => nav.back()} tone="var(--ink)" />
-          <div className="h-title">설정</div>
+          <h1 className="h-title">설정</h1>
         </div>
 
         <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div className="hbox" style={{ padding: '12px 14px' }}>
             <div style={{ fontWeight: 700, fontSize: 14 }}>밤 채팅 시작 시간</div>
-            <div className="tiny" style={{ marginTop: 3, color: 'var(--muted)' }}>매일 설정한 시간부터 다음 날 06:00까지</div>
+            <div className="tiny" style={{ marginTop: 3, color: 'var(--pencil)' }}>매일 설정한 시간부터 다음 날 06:00까지</div>
             <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
               <input
                 aria-label="밤 채팅 시작 시간"
@@ -105,14 +105,14 @@ export const S22_Settings = () => {
                 {saving ? '저장 중…' : '저장'}
               </button>
             </div>
-            {saveStatus && <div className="tiny" style={{ marginTop: 6, color: 'var(--muted)' }}>{saveStatus}</div>}
+            {saveStatus && <div className="tiny" role="status" style={{ marginTop: 6, color: 'var(--pencil)' }}>{saveStatus}</div>}
           </div>
           {rows.map((r, i) => {
             const rowContent = (
               <>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{r.label}</div>
-                  <div className="tiny" style={{ marginTop: 3, color: 'var(--muted)' }}>{r.value}</div>
+                  <div className="tiny" style={{ marginTop: 3, color: 'var(--pencil)' }}>{r.value}</div>
                 </div>
                 {r.onClick && (
                   <span style={{ fontSize: 22, color: 'var(--ink)' }} aria-hidden="true">›</span>
@@ -146,12 +146,12 @@ export const S22_Settings = () => {
         </div>
 
         <div style={{ marginTop: 20 }}>
-          <div className="h-label" style={{ marginBottom: 8 }}>현재 상태</div>
+          <h2 className="h-label" style={{ marginBottom: 8 }}>현재 상태</h2>
           <div className="hbox" style={{ padding: '12px 14px' }}>
             <div className="tiny" style={{ marginBottom: 5, color: 'var(--ink)' }}>
               포인트 · {state.points} ◉ / 스트릭 {state.streak}일 / Lv.{state.level}
             </div>
-            <div className="tiny" style={{ color: 'var(--muted)' }}>아이템 {state.unlockedItems.length}개 · 입는중 {state.equippedItem ?? '없음'}</div>
+            <div className="tiny" style={{ color: 'var(--pencil)' }}>아이템 {state.unlockedItems.length}개 · 입는중 {state.equippedItem ?? '없음'}</div>
           </div>
         </div>
 

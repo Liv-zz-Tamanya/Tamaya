@@ -73,7 +73,7 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
       <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <BackButton onClick={() => nav.back()} />
-          <div className="h-title">CLOVA 키 (BYOK)</div>
+          <h1 className="h-title">CLOVA 키 (BYOK)</h1>
         </div>
         <div className="tiny" style={{ marginTop: 2, marginBottom: 14 }}>
           내 CLOVA 키를 요청별로 사용 · 없으면 mock으로 동작
@@ -132,6 +132,7 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
         {msg && (
           <div
             className="hbox"
+            role={msg.kind === 'ok' ? 'status' : 'alert'}
             style={{ marginTop: 14, padding: 12, color: msg.kind === 'ok' ? 'var(--accent)' : '#8a2c33' }}
           >
             <div className="body">{msg.kind === 'ok' ? '✓ ' : '⚠ '}{msg.text}</div>

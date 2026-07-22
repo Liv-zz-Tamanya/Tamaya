@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { BackButton, CatSketch, MoodFace } from '../components/primitives';
 import { useNav } from '../lib/router';
+import { scrollBehavior } from '../lib/scroll';
 import {
   AI_ENABLED,
   clearChatSessionCache,
@@ -182,9 +183,9 @@ export const S10_RecapStart = () => {
           저녁 회고 — 시작 전
         </div>
       </div>
-      <div className="h-display" style={{ marginTop: 14, color: 'var(--paper)', fontSize: 36 }}>
+      <h1 className="h-display" style={{ marginTop: 14, color: 'var(--paper)', fontSize: 36 }}>
         오늘도 고생했어.
-      </div>
+      </h1>
       <div
         className="handwriting"
         style={{ color: 'var(--accent-soft)', marginTop: 10, fontSize: 18, fontWeight: 700 }}
@@ -240,9 +241,9 @@ export const S10_RecapStart = () => {
         )}
       </div>
 
-      <div className="h-label" style={{ marginTop: 18, color: 'var(--accent-soft)' }}>
+      <h2 className="h-label" style={{ marginTop: 18, color: 'var(--accent-soft)' }}>
         오늘은 어떻게 할까?
-      </div>
+      </h2>
       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
         <button
           type="button"
@@ -400,7 +401,7 @@ export const S11_ChatDiary = () => {
   }, [dispatch, maxTurns, state.chatDiary.length]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: scrollBehavior() });
   }, [state.chatDiary, typing]);
 
   const userTurns = state.chatDiary.filter((m) => m.role === 'user').length;
@@ -504,7 +505,7 @@ export const S11_ChatDiary = () => {
               if (confirm('회고를 중단할까요? (대화는 보존됩니다)')) nav.back();
             }}
           />
-          <div className="h-title">오늘의 회고</div>
+          <h1 className="h-title">오늘의 회고</h1>
         </div>
         <button
           type="button"
@@ -687,11 +688,11 @@ export const S12_MoodFinalize = () => {
   <div className="screen">
     <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(80px + var(--safe-b, 0px))' }}>
       <div className="tiny" style={{ color: 'var(--pencil)' }}>{state.chatDiaryMaxTurns}턴 완료 — 일기로 마무리</div>
-      <div className="h-display" style={{ marginTop: 8, fontSize: 32 }}>
+      <h1 className="h-display" style={{ marginTop: 8, fontSize: 32 }}>
         오늘은 어떤
         <br />
         하루였어?
-      </div>
+      </h1>
 
       {analyzing ? (
         <div className="hbox r-l" style={{ padding: 22, marginTop: 18, textAlign: 'center', border: '1.5px solid var(--ink)' }}>
@@ -756,7 +757,7 @@ export const S12_MoodFinalize = () => {
             type="button"
             onClick={() => flash('✎ 일기 직접 수정은 곧 지원돼요')}
             className="tiny"
-            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--muted)' }}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--pencil)' }}
           >
             ✎ 수정
           </button>
@@ -803,7 +804,7 @@ export const S12_MoodFinalize = () => {
         </>
       )}
     </div>
-    {toast && <div className="toast">{toast}</div>}
+    {toast && <div className="toast" role="status">{toast}</div>}
     <div
       style={{
         position: 'absolute',
@@ -863,9 +864,9 @@ export const S13_Reward = () => {
         boxShadow: '4px 6px 0 rgba(0,0,0,0.25)',
       }}
     >
-      <div className="tiny" style={{ textAlign: 'center', color: 'var(--pencil)' }}>
+      <h1 className="tiny" style={{ textAlign: 'center', color: 'var(--pencil)' }}>
         오늘 회고 완료 — 보상 도착
-      </div>
+      </h1>
 
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
         <div
