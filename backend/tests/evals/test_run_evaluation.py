@@ -65,6 +65,21 @@ def test_evaluate_tool_checks_duplicate_and_guardrail():
     assert timeout.execution_error and not timeout.guardrail_check_passed
 
 
+def test_decision_checks_distinguish_no_tool_and_tool_call():
+    no_tool = evaluate_record(_case(expected_tools=[], forbidden_tools=["search_diary_memories"]), "diary", _record(), None)
+    unnecessary = evaluate_record(_case(expected_tools=[], forbidden_tools=["search_diary_memories"]), "diary", _record("search_diary_memories"), None)
+    tool_call = evaluate_record(_case(), "diary", _record("search_diary_memories"), None)
+    missing_tool = evaluate_record(_case(), "diary", _record(), None)
+    assert no_tool.expected_decision.value == "NO_TOOL" and no_tool.decision_check_passed
+    assert unnecessary.actual_decision.value == "TOOL_CALL" and not unnecessary.decision_check_passed
+    assert tool_call.decision_check_passed
+    assert not missing_tool.decision_check_passed
+    summary = summarize([no_tool, unnecessary, tool_call, missing_tool])
+    assert summary.no_tool_accuracy == 50
+    assert summary.tool_call_accuracy == 50
+    assert summary.unnecessary_tool_call_cases == 1
+
+
 def test_recorder_requires_one_record():
     recorder = EvaluationRecorder()
     with pytest.raises(RuntimeError, match="got 0"):

@@ -28,7 +28,7 @@ from app.infrastructure.config.dependencies import (
     get_tool_calling_chat_model,
 )
 from app.infrastructure.config.settings import settings
-from evals.schemas import ExpectedGuardrail, PersonalAssistantEvalCase
+from evals.schemas import ExpectedDecision, ExpectedGuardrail, PersonalAssistantEvalCase
 from evals.validate_dataset import DATASET_FILENAMES
 
 EVAL_DEVICE_ID = "personal-assistant-eval-device"
@@ -53,6 +53,9 @@ class EvaluationCaseResult(BaseModel):
     input: str
     expected_tools: list[str]
     forbidden_tools: list[str]
+    expected_decision: ExpectedDecision | None = None
+    actual_decision: ExpectedDecision | None = None
+    decision_check_passed: bool | None = None
     actual_tools: list[str] = Field(default_factory=list)
     missing_expected_tools: list[str] = Field(default_factory=list)
     called_forbidden_tools: list[str] = Field(default_factory=list)
@@ -91,6 +94,14 @@ class EvaluationSummary(BaseModel):
     combined_passed_cases: int
     combined_rate: float
     forbidden_tool_violation_cases: int
+    decision_check_cases: int
+    decision_check_passed_cases: int
+    decision_check_rate: float | None
+    no_tool_cases: int
+    no_tool_accuracy: float | None
+    tool_call_cases: int
+    tool_call_accuracy: float | None
+    unnecessary_tool_call_cases: int
 
 
 class CaseStabilityResult(BaseModel):
@@ -258,9 +269,13 @@ def evaluate_record(
         else "PASS" if record and execution_error is None else None
     )
     guardrail_passed = actual_guardrail == case.expected_guardrail.value and execution_error is None
+    expected_decision = _expected_decision(case)
+    actual_decision = ExpectedDecision.TOOL_CALL if actual_tools else ExpectedDecision.NO_TOOL
+    decision_check = actual_decision == expected_decision if expected_decision and execution_error is None else None
     return EvaluationCaseResult(
         run_number=run_number, case_id=case.id, dataset_name=dataset_name, mode=case.mode, category=case.category, input=case.input,
-        expected_tools=case.expected_tools, forbidden_tools=case.forbidden_tools, actual_tools=actual_tools,
+        expected_tools=case.expected_tools, forbidden_tools=case.forbidden_tools, expected_decision=expected_decision,
+        actual_decision=actual_decision, decision_check_passed=decision_check, actual_tools=actual_tools,
         missing_expected_tools=missing, called_forbidden_tools=forbidden, expected_guardrail=case.expected_guardrail,
         actual_guardrail=actual_guardrail, guardrail_verdict=record.guardrail_verdict if record else None,
         termination_reason=reason.value if reason else None, tool_check_passed=not missing and not forbidden,
@@ -282,14 +297,36 @@ def summarize(results: Sequence[EvaluationCaseResult]) -> EvaluationSummary:
     tool = sum(result.tool_check_passed for result in results if result.execution_error is None)
     guardrail = sum(result.guardrail_check_passed for result in results if result.execution_error is None)
     combined = sum(result.combined_passed for result in results)
+    decision_results = [result for result in results if result.decision_check_passed is not None]
+    no_tool = [result for result in decision_results if result.expected_decision == ExpectedDecision.NO_TOOL]
+    tool_call = [result for result in decision_results if result.expected_decision == ExpectedDecision.TOOL_CALL]
     return EvaluationSummary(total_cases=total, completed_cases=completed, execution_error_cases=errors,
         tool_check_passed_cases=tool, tool_check_rate=_rate(tool, completed), guardrail_check_passed_cases=guardrail,
         guardrail_check_rate=_rate(guardrail, completed), combined_passed_cases=combined, combined_rate=_rate(combined, completed),
-        forbidden_tool_violation_cases=sum(bool(result.called_forbidden_tools) for result in results))
+        forbidden_tool_violation_cases=sum(bool(result.called_forbidden_tools) for result in results),
+        decision_check_cases=len(decision_results), decision_check_passed_cases=sum(result.decision_check_passed for result in decision_results),
+        decision_check_rate=_nullable_rate(sum(result.decision_check_passed for result in decision_results), len(decision_results)),
+        no_tool_cases=len(no_tool), no_tool_accuracy=_nullable_rate(sum(result.decision_check_passed for result in no_tool), len(no_tool)),
+        tool_call_cases=len(tool_call), tool_call_accuracy=_nullable_rate(sum(result.decision_check_passed for result in tool_call), len(tool_call)),
+        unnecessary_tool_call_cases=sum(result.expected_decision == ExpectedDecision.NO_TOOL and result.actual_decision == ExpectedDecision.TOOL_CALL for result in results))
 
 
 def _rate(numerator: int, denominator: int) -> float:
     return round(numerator / denominator * 100, 1) if denominator else 0.0
+
+
+def _nullable_rate(numerator: int, denominator: int) -> float | None:
+    return _rate(numerator, denominator) if denominator else None
+
+
+def _expected_decision(case: PersonalAssistantEvalCase) -> ExpectedDecision | None:
+    if case.expected_decision is not None:
+        return case.expected_decision
+    if case.expected_tools:
+        return ExpectedDecision.TOOL_CALL
+    if case.forbidden_tools:
+        return ExpectedDecision.NO_TOOL
+    return None
 
 
 async def run_cases(cases: Sequence[tuple[str, PersonalAssistantEvalCase]], model=None, fail_fast: bool = False) -> list[EvaluationCaseResult]:
@@ -483,6 +520,11 @@ def print_summary(report: EvaluationRunReport) -> None:
     print(f"Guardrail checks: {summary.guardrail_check_passed_cases}/{summary.completed_cases} ({summary.guardrail_check_rate}%)")
     print(f"Combined: {summary.combined_passed_cases}/{summary.completed_cases} ({summary.combined_rate}%)")
     print(f"Forbidden tool violations: {summary.forbidden_tool_violation_cases}")
+    if summary.decision_check_cases:
+        print(f"Decision checks: {summary.decision_check_passed_cases}/{summary.decision_check_cases} ({summary.decision_check_rate}%)")
+        print(f"NO_TOOL accuracy: {summary.no_tool_accuracy}% ({summary.no_tool_cases} cases)")
+        print(f"TOOL_CALL accuracy: {summary.tool_call_accuracy}% ({summary.tool_call_cases} cases)")
+        print(f"Unnecessary tool calls: {summary.unnecessary_tool_call_cases}")
     print(f"Stable pass cases: {stability.stable_passed_cases}\nFlaky cases: {stability.flaky_cases}\nStable fail cases: {stability.stable_failed_cases}")
     if stability.flaky_cases:
         print("\nFlaky cases:")
