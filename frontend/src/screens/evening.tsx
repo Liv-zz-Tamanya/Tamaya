@@ -143,7 +143,13 @@ export const S10_RecapStart = () => {
       color: 'var(--paper)',
     }}
   >
-    <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0, opacity: 0.35 }}>
+    <svg
+      width="100%"
+      height="100%"
+      viewBox="0 0 375 800"
+      preserveAspectRatio="xMidYMid slice"
+      style={{ position: 'absolute', inset: 0, opacity: 0.35 }}
+    >
       {[
         [40, 90],
         [120, 140],

@@ -46,7 +46,13 @@ export const S01_Splash = () => {
   }, [nav]);
   return (
   <div className="screen" style={{ background: 'var(--night)', color: 'var(--paper)' }}>
-    <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0, opacity: 0.5 }}>
+    <svg
+      width="100%"
+      height="100%"
+      viewBox="0 0 375 800"
+      preserveAspectRatio="xMidYMid slice"
+      style={{ position: 'absolute', inset: 0, opacity: 0.5 }}
+    >
       {[
         [40, 90],
         [120, 60],
@@ -386,7 +392,13 @@ export const S05_FirstMeet = () => {
   const name = state.character.name || '이음이';
   return (
   <div className="screen" style={{ background: 'var(--night)', color: 'var(--paper)' }}>
-    <svg width="100%" height="180" style={{ position: 'absolute', top: 40, opacity: 0.4 }}>
+    <svg
+      width="100%"
+      height="180"
+      viewBox="0 0 375 180"
+      preserveAspectRatio="xMidYMid slice"
+      style={{ position: 'absolute', top: 40, opacity: 0.4 }}
+    >
       {[
         [60, 40],
         [140, 80],

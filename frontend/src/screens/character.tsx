@@ -38,7 +38,7 @@ export const S18_CatRoom = () => {
         overflow: 'hidden',
       }}
     >
-      <svg width="100%" height="100%" viewBox="0 0 375 360" preserveAspectRatio="none">
+      <svg width="100%" height="100%" viewBox="0 0 375 360" preserveAspectRatio="xMidYMid slice">
         <rect
           x="34"
           y="40"
@@ -134,7 +134,7 @@ export const S18_CatRoom = () => {
         style={{
           position: 'absolute',
           left: '50%',
-          top: 170,
+          top: '47.2%',
           transform: 'translateX(-50%)',
         }}
       >
@@ -162,7 +162,7 @@ export const S18_CatRoom = () => {
         </div>
       </div>
 
-      <div style={{ position: 'absolute', left: 30, top: 200 }}>
+      <div style={{ position: 'absolute', left: '8%', top: '55.6%' }}>
         <span className="chip" style={{ background: 'var(--paper)', color: 'var(--ink)' }}>
           👕 줄무늬 스카프
         </span>

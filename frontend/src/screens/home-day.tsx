@@ -281,7 +281,13 @@ export const S07_HomeNight = () => {
         className="hbox night r-l"
         style={{ padding: 16, marginTop: 6, position: 'relative', overflow: 'hidden', borderColor: 'var(--accent-soft)' }}
       >
-        <svg width="100%" height="40" style={{ position: 'absolute', top: 6, left: 0, opacity: 0.4 }}>
+        <svg
+          width="100%"
+          height="40"
+          viewBox="0 0 375 40"
+          preserveAspectRatio="xMidYMid slice"
+          style={{ position: 'absolute', top: 6, left: 0, opacity: 0.4 }}
+        >
           {[
             [40, 12],
             [120, 24],
