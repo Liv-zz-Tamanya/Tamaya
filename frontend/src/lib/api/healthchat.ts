@@ -1,6 +1,7 @@
 // 건강 RAG 챗 — 사용자 건강기록을 embedding 검색(top-5)해 컨텍스트 주입하는 건강 Q&A.
 // 세션 기반(서버 보관). 사용자 발화는 전송 직전 maskPII()로 PII 제거(liv-I1).
 // (건강냥 BE: /api/v1/health-chat/sessions, /sessions/{id}/messages)
+// PRE-SEND GUARD 확인 2026-07-22
 import { apiFetch, ApiError } from './client';
 import { maskPII } from './masking';
 

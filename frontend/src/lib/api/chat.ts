@@ -1,5 +1,6 @@
 // AI 채팅 — backend 채팅 세션/메시지 왕복.
 // 사용자 발화는 전송 직전 maskPII()로 PII를 제거한다(원문 평문은 기기를 안 떠남, liv-I1).
+// PRE-SEND GUARD 확인 2026-07-22
 import { apiFetch, clearToken, ApiError } from './client';
 import { ensureDeviceToken } from './auth';
 import { maskPII, MaskResult } from './masking';
