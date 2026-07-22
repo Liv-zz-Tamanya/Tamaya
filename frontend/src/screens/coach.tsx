@@ -81,7 +81,7 @@ export const S23_Coach = ({ sample = false }: { sample?: boolean } = {}) => {
 
   return (
     <div className="screen">
-      <div ref={scrollRef} className="screen-scroll" style={{ padding: '46px 14px calc(140px + var(--safe-b, 0px))' }}>
+      <div ref={scrollRef} className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 14px calc(140px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span
             style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}

@@ -95,8 +95,20 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
 .handwriting { font-family: 'Pretendard'; font-size: 18px; color: var(--ink-soft); }
 
 /* Nav back arrow — 화면 좌상단 ‹ 뒤로가기 (인라인 span 4곳 통합, C6).
-   font-family 는 전역(body·.app-root=Pretendard) 상속 → 인라인 재지정 불필요. */
-.nav-arrow { font-size: 22px; cursor: pointer; }
+   font-family 는 전역(body·.app-root=Pretendard) 상속 → 인라인 재지정 불필요.
+   터치 타깃 44px: padding 으로 히트박스 확장 + 동일 폭 negative margin 으로
+   레이아웃 상 시각 위치는 유지(글자 자체 크기는 font-size 로 불변). */
+.nav-arrow {
+  font-size: 22px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px;
+  margin: -8px;
+}
 
 /* Placeholder shapes */
 .ph-circle { border: 1.5px solid var(--ink); border-radius: 50%; background: var(--paper-2); display: flex; align-items: center; justify-content: center; }
@@ -109,6 +121,9 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
 .chip.solid { background: var(--ink); color: #fff; }
 .chip.accent { background: var(--accent); color: #fff; border-color: var(--ink); }
 .chip.dashed { border-style: dashed; background: transparent; }
+/* 터치 타깃 44px — 클릭 가능한 칩(.chip-btn 병기, 14곳)의 최소 높이 보장.
+   .chip 뒤에 위치해 padding 을 덮어씀(동일 특이도, 캐스케이드 순서로 승리). */
+.chip-btn { min-height: 44px; padding: 10px 14px; }
 
 /* Mood palette chip — .chip 확장(소프트 그라데이션 감정 칩, 탭 1회 선택). MoodPalette 전용. */
 .chip.mood-chip { padding: 8px 14px; min-height: 40px; font-size: 13px; gap: 6px; transition: transform 0.12s ease, box-shadow 0.12s ease; }
@@ -257,7 +272,7 @@ html, body { background: #f5f1e8; }
   border-radius: 999px;
   padding: 12px 16px;
   font-family: 'Pretendard', 'Pretendard', sans-serif;
-  font-size: 14px;
+  font-size: 16px; /* iOS Safari 자동 줌 방지 — 16px 미만 시 입력 포커스에서 강제 확대 */
   color: var(--ink, #3a2414);
   outline: none;
   min-width: 0;

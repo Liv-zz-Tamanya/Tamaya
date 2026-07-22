@@ -157,7 +157,7 @@ export const S10_RecapStart = () => {
         <circle key={i} cx={x} cy={y} r="1.4" fill="#f5e6cf" />
       ))}
     </svg>
-    <div className="screen-scroll" style={{ padding: '60px 24px calc(100px + var(--safe-b, 0px))' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(60px + var(--safe-t)) 24px calc(100px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
           style={{ fontFamily: 'Pretendard', fontSize: 22, color: 'var(--accent-soft)', cursor: 'pointer' }}
@@ -463,7 +463,7 @@ export const S11_ChatDiary = () => {
     <div
       ref={scrollRef}
       className="screen-scroll"
-      style={{ padding: '46px 14px calc(96px + var(--safe-b, 0px))' }}
+      style={{ padding: 'calc(46px + var(--safe-t)) 14px calc(96px + var(--safe-b, 0px))' }}
     >
       <div
         style={{
@@ -662,7 +662,7 @@ export const S12_MoodFinalize = () => {
 
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '46px 18px calc(80px + var(--safe-b, 0px))' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(80px + var(--safe-b, 0px))' }}>
       <div className="tiny" style={{ color: 'var(--pencil)' }}>{state.chatDiaryMaxTurns}턴 완료 — 일기로 마무리</div>
       <div className="h-display" style={{ marginTop: 8, fontSize: 32 }}>
         오늘은 어떤

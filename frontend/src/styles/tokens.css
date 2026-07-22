@@ -49,8 +49,10 @@
   --mood-irritated: #fff5e1; /* 😡 짜증 (= MOOD_BAR['😡']) */
 
   /* ===== SAFE AREA — iOS 노치/홈 인디케이터 (viewport-fit=cover 대응) ======
-     하단 고정 요소(.input-row/.tabbar/CTA)는 반드시 --safe-b 만큼 띄운다. */
+     하단 고정 요소(.input-row/.tabbar/CTA)는 반드시 --safe-b 만큼 띄운다.
+     상단 스크롤 컨테이너 첫 패딩은 반드시 --safe-t 만큼 띄운다(상태바 가림 방지). */
   --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
   --tabbar-h: calc(64px + var(--safe-b));
 
   /* ===== SPACE — 4pt 기반 스케일 ========================================== */

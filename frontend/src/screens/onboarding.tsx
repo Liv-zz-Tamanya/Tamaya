@@ -114,7 +114,7 @@ export const S02_Welcome = () => {
   const nav = useNav();
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '56px 24px 120px' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(56px + var(--safe-t)) 24px 120px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div className="h-section">01 / 04 · 인사</div>
         <OnbProgress step={1} />
@@ -192,7 +192,7 @@ export const S03_Privacy = () => {
   const nav = useNav();
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '52px 24px 120px' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(52px + var(--safe-t)) 24px 120px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div className="h-section">02 / 04 · 약속</div>
         <OnbProgress step={2} />
@@ -276,7 +276,7 @@ export const S04_CreateCat = () => {
 
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '48px 24px 120px' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(48px + var(--safe-t)) 24px 120px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div className="h-section">03 / 04 · 캐릭터</div>
         <OnbProgress step={3} />
@@ -312,7 +312,7 @@ export const S04_CreateCat = () => {
           padding: '11px 16px',
           background: 'var(--paper)',
           fontFamily: 'Pretendard',
-          fontSize: 15,
+          fontSize: 16, /* iOS Safari 자동 줌 방지 */
           color: 'var(--ink)',
           outline: 'none',
         }}
@@ -398,7 +398,7 @@ export const S05_FirstMeet = () => {
         <circle key={i} cx={x} cy={y} r="1.5" fill="#f5e6cf" />
       ))}
     </svg>
-    <div className="screen-scroll" style={{ padding: '56px 24px 120px' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(56px + var(--safe-t)) 24px 120px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', textAlign: 'center' }}>
         <div className="h-section" style={{ color: 'var(--accent-soft)' }}>
           04 / 04 · 첫 만남

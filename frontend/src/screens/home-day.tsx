@@ -46,7 +46,7 @@ export const S06_HomeDay = () => {
   ];
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
       <div
         style={{
           display: 'flex',
@@ -243,7 +243,7 @@ export const S07_HomeNight = () => {
     className="screen"
     style={{ background: 'var(--night)', color: 'var(--paper)' }}
   >
-    <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
       <div
         style={{
           display: 'flex',
@@ -489,7 +489,7 @@ export const S08_DailyCheck = () => {
 
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <span className="nav-arrow" onClick={() => nav.back()}>
           ‹
@@ -624,15 +624,31 @@ export const S08_DailyCheck = () => {
                 onClick={() => setWater(i + 1 === d.water ? i : i + 1)}
                 aria-label={`물 ${i + 1}잔`}
                 style={{
-                  width: 16,
-                  height: 22,
-                  border: '1.5px solid var(--ink)',
-                  borderRadius: 4,
-                  background: i < d.water ? 'var(--ink)' : 'var(--paper)',
+                  /* 터치 타깃 44px: 히트박스(padding)와 시각(내부 span 16×22)을 분리.
+                     border-box 전역 리셋 하에서 width/height 를 직접 키우면 실제
+                     칩 모양이 커져버리므로, 버튼 자체는 투명 히트박스로만 쓰고
+                     negative margin 으로 원래 레이아웃 폭(16×22+gap)을 유지한다. */
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: 'none',
+                  background: 'transparent',
                   cursor: 'pointer',
-                  padding: 0,
+                  padding: '11px 14px',
+                  margin: '-11px -14px',
                 }}
-              />
+              >
+                <span
+                  style={{
+                    display: 'block',
+                    width: 16,
+                    height: 22,
+                    border: '1.5px solid var(--ink)',
+                    borderRadius: 4,
+                    background: i < d.water ? 'var(--ink)' : 'var(--paper)',
+                  }}
+                />
+              </button>
             ))}
           </div>
         </div>
@@ -731,7 +747,7 @@ export const S09_AIChat = () => {
       <div
         ref={scrollRef}
         className="screen-scroll"
-        style={{ padding: '46px 14px calc(140px + var(--safe-b, 0px))' }}
+        style={{ padding: 'calc(46px + var(--safe-t)) 14px calc(140px + var(--safe-b, 0px))' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span className="nav-arrow" onClick={() => nav.back()}>

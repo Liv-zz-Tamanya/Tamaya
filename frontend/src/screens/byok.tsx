@@ -70,7 +70,7 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
 
   return (
     <div className="screen">
-      <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+      <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }} onClick={() => nav.back()}>‹</span>
           <div className="h-title">CLOVA 키 (BYOK)</div>
@@ -102,7 +102,7 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
             border: '1.5px solid var(--ink)',
             borderRadius: 10,
             fontFamily: 'inherit',
-            fontSize: 14,
+            fontSize: 16, /* iOS Safari 자동 줌 방지 */
             background: '#fff',
           }}
         />

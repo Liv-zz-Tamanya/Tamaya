@@ -285,7 +285,7 @@ export const S19_Inventory = () => {
   };
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '46px 18px calc(140px + var(--safe-b, 0px))' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(140px + var(--safe-b, 0px))' }}>
     <div className="stage-body">
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span className="nav-arrow" style={{ color: 'var(--ink)' }} onClick={() => nav.back()}>
@@ -451,7 +451,7 @@ export const S20_Report = () => {
   const moodLabel = recent ? MOOD_LABEL[recent.moods[0]] : '기록 전';
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
     <div className="stage-body">
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span className="nav-arrow" style={{ color: 'var(--pencil)' }} onClick={() => nav.back()}>

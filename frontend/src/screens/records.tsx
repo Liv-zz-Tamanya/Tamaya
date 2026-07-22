@@ -137,7 +137,7 @@ export const S14_Calendar = () => {
   const recent = latestEntry(monthEntries);
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
       <div className="h-title">달력</div>
       <div className="tiny" style={{ marginTop: 2 }}>감정의 흐름을 한 눈에</div>
 
@@ -430,7 +430,7 @@ export const S15_DiaryDetail = () => {
   if (!entry) {
     return (
       <div className="screen">
-        <div className="screen-scroll" style={{ padding: '46px 18px 24px' }}>
+        <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span
               className="nav-arrow"
@@ -470,7 +470,7 @@ export const S15_DiaryDetail = () => {
 
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '46px 18px 24px' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px 24px' }}>
       <div
         style={{
           display: 'flex',
@@ -610,7 +610,7 @@ export const S16_Stats = () => {
   ];
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
       <div className="h-title">통계</div>
       <div className="tiny" style={{ marginTop: 2 }}>한 주를 한 눈에 봐요</div>
 
@@ -767,7 +767,7 @@ export const S17_Insights = () => {
   const enough = state.diaries.length >= 5;
   return (
   <div className="screen">
-    <div className="screen-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+    <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
       <div className="h-title">인사이트</div>
       <div className="tiny" style={{ marginTop: 2 }}>이음이가 정리해준 이번 주</div>
 
