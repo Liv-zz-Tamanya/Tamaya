@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -12,13 +13,21 @@ from app.application.service.agent_execution_observability import (
 )
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
 from evals.run_evaluation import (
+    CaseStabilityResult,
     EvaluationRecorder,
+    build_report,
+    case_stability,
+    compare_baseline,
     evaluate_record,
+    load_baseline,
     load_cases,
+    main,
     messages_for_case,
     run_cases,
+    run_repeated_cases,
     select_cases,
     summarize,
+    tool_confusion_matrix,
 )
 from evals.schemas import PersonalAssistantEvalCase
 
@@ -88,3 +97,67 @@ class _ScriptedModel(ToolCallingChatModel):
 async def test_run_specific_case_with_fake_model():
     results = await run_cases([("diary", _case())], model=_ScriptedModel())
     assert results[0].combined_passed
+
+
+async def test_repeat_records_deterministic_run_numbers():
+    results = await run_repeated_cases([("diary", _case())], model=_ScriptedModel(), repeat=3)
+    assert [result.run_number for result in results] == [1, 2, 3]
+    assert all(result.combined_passed for result in results)
+
+
+def test_case_stability_counts_flaky_errors_tools_and_percentiles():
+    passed = evaluate_record(_case(), "diary", _record("search_diary_memories"), None, 1)
+    failed = evaluate_record(_case(), "diary", _record("search_health_records"), None, 2)
+    error = evaluate_record(_case(), "diary", _record(reason=AgentTerminationReason.TIMEOUT), RuntimeError("timeout"), 3)
+    stability = case_stability([passed, failed, error])[0]
+    assert stability.status == "flaky"
+    assert stability.case_pass_rate == 33.3
+    assert stability.execution_error_runs == 1
+    assert stability.actual_tool_selected_runs == {"search_diary_memories": 1, "search_health_records": 1}
+    assert stability.p95_execution_duration_ms == 3
+    assert stability.average_total_tokens == 3
+
+
+def test_case_stability_marks_all_failed_runs_stable_fail():
+    failed = evaluate_record(_case(), "diary", _record(), None, 1)
+    timed_out = evaluate_record(_case(), "diary", _record(reason=AgentTerminationReason.TIMEOUT), RuntimeError("timeout"), 2)
+    stability = case_stability([failed, timed_out])[0]
+    assert stability.status == "stable_fail"
+    assert stability.case_pass_rate == 0
+
+
+def test_tool_confusion_excludes_unlabeled_and_errors():
+    expected = evaluate_record(_case(), "diary", _record("search_diary_memories", "search_diary_memories"), None)
+    forbidden = evaluate_record(_case(forbidden_tools=["search_health_records"]), "diary", _record("search_diary_memories", "search_health_records"), None)
+    error = evaluate_record(_case(), "diary", _record(reason=AgentTerminationReason.TIMEOUT), RuntimeError("timeout"))
+    matrix = tool_confusion_matrix([expected, forbidden, error])
+    assert matrix["search_diary_memories"].true_positive == 2
+    assert matrix["search_health_records"].false_positive == 1
+    assert matrix["search_health_records"].unlabeled == 2
+    assert matrix["search_health_records"].recall is None
+
+
+def test_baseline_comparison_detects_rate_and_status_regressions():
+    current = case_stability([evaluate_record(_case(), "diary", _record(), None, 1), evaluate_record(_case(), "diary", _record("search_diary_memories"), None, 2)])
+    baseline = [CaseStabilityResult.model_validate({**current[0].model_dump(), "case_pass_rate": 100, "passed_runs": 2, "failed_runs": 0, "status": "stable_pass"})]
+    comparison = compare_baseline(current, baseline)
+    assert comparison.regressed_cases == ["case-1"]
+    added = CaseStabilityResult.model_validate({**current[0].model_dump(), "case_id": "added"})
+    comparison = compare_baseline([*current, added], baseline)
+    assert comparison.added_cases == ["added"]
+
+
+def test_build_report_repeat_one_keeps_execution_summary():
+    result = evaluate_record(_case(), "diary", _record("search_diary_memories"), None)
+    report = build_report([result], ["diary"], datetime.now(UTC))
+    assert report.summary.total_cases == 1
+    assert report.stability_summary.repeat_count == 1
+
+
+def test_repeat_validation_and_incompatible_baseline(tmp_path: Path):
+    with pytest.raises(SystemExit, match="2"):
+        main(["--repeat", "0"])
+    bad_baseline = tmp_path / "old.json"
+    bad_baseline.write_text('{"summary": {}}', encoding="utf-8")
+    with pytest.raises(ValueError, match="incompatible baseline"):
+        load_baseline(bad_baseline)

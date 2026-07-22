@@ -74,6 +74,37 @@ uv run python -m evals.run_evaluation --case-id diary-001
 uv run python -m evals.run_evaluation --fail-on-mismatch
 ```
 
+반복 실행과 안정성 비교도 지원한다.
+
+```bash
+# 선택한 각 case를 5회 실행
+uv run python -m evals.run_evaluation --dataset diary --repeat 5
+
+# 특정 case의 변동성 확인
+uv run python -m evals.run_evaluation --case-id diary-004 --repeat 10
+
+# 이전 안정성 리포트와 rate 기준 비교
+uv run python -m evals.run_evaluation --dataset diary --repeat 5 \
+  --baseline evals/reports/diary-baseline.json --fail-on-regression
+```
+
+`cases`는 execution 단위 결과다. 따라서 `--repeat 5`면 같은 case ID가 `run_number` 1부터
+5까지로 다섯 번 저장된다. `summary`도 execution 단위 집계이며, `case_stability`와
+`stability_summary`는 고유 case 단위 집계다. case pass rate는 `combined_passed / total_runs`이고
+실행 오류도 분모에 포함해 실패로 계산한다. 모든 실행 통과는 `stable_pass`, 일부만 통과하면
+`flaky`, 통과가 없으면 `stable_fail`이다.
+
+Tool 선택률은 실행마다 같은 Tool의 중복 호출을 한 번으로 계산한다. Tool confusion matrix는
+expected tool을 positive, forbidden tool을 negative로 처리하며 둘 다 아닌 case와 실행 오류는
+`unlabeled`로 제외한다. precision/recall 분모가 0이면 `null`이다. latency p95는 표준 라이브러리의
+nearest-rank 방식(`ceil(0.95 * n)`번째 정렬값)을 사용하며, latency/token의 `null` 값은 해당 통계에서
+제외한다.
+
+baseline 비교는 `case_stability`가 있는 리포트만 지원한다. pass rate 하락, forbidden violation rate
+증가, execution error rate 증가, stable pass에서 하락, flaky에서 stable fail 하락을 regression으로
+표시한다. 반복 횟수가 커질수록 실제 LLM API 비용도 비례해 증가하지만 production DB와 사용자
+데이터에는 접근하지 않는다.
+
 결과는 기본적으로 `evals/reports/`에 UTF-8 JSON으로 저장된다. baseline mismatch는 Agent나
 데이터셋을 개선하기 전 자연스럽게 발생할 수 있으며 기본 exit code를 실패시키지 않는다.
 테스트는 scripted fake model과 빈 fake query service를 사용하므로 외부 API를 호출하지 않는다.
