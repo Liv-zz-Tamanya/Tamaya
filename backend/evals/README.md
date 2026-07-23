@@ -264,3 +264,24 @@ uv run python -m evals.run_e2e_evaluation --case-id e2e-diary-001 --repeat 3
 - 답변 채점은 generation 평가와 동일(완전성 결정론 + judge). judge 과잉 판정
   한계도 동일하게 적용되므로 `UNSUPPORTED_CLAIM` 판정은 원문을 확인할 것.
 - 토큰·지연(mean/p50/p95)·반복 안정성(stable/flaky) 집계 포함.
+
+## 일기 생성 품질 평가
+
+diary fixture의 대화를 실제 CLOVA `generate_diary`에 넣어 제목·본문·감정·키워드
+변환 품질을 잰다. **CLOVA 비용 발생**(12건 × repeat). DB 미사용.
+
+```bash
+uv run python -m evals.run_diary_generation_evaluation
+uv run python -m evals.run_diary_generation_evaluation --fixture-id diary-hana-0602 --repeat 3
+```
+
+- 핵심 사건 반영: gold chunk ↔ 본문 문장 임베딩 매칭(threshold는 chunk 평가와 동일).
+- 문장 단위 grounding: 각 본문 문장을 gold chunk/사용자 발화/assistant 발화와 대조 —
+  `ungrounded`(원문에 없는 문장 의심), `assistant_only`(assistant 발화에만 근거한
+  발화 혼동 의심)로 분류한다. **감상·다짐 문장이 ungrounded로 잡히는 경향이 있으므로
+  카운트만 보지 말고 리포트의 문장·유사도를 사람이 확인할 것.**
+- 계약 검사(결정론): JSON 스키마, emotion 어휘(DIARY_EMOTIONS), satisfaction 0~100,
+  keywords 2~3개, 문장 수 4~5, 일반어 키워드(오늘/기분/생각/하루) 금지.
+- 감정 타당성: fixture의 `plausible_emotions` 라벨과 대조(라벨은 사람이 작성).
+- 키워드 근거: 토큰 단위 검사 — 명사구 합성("항공권 예매")은 허용하고, 어느 토큰도
+  원문에 없는 키워드만 미근거로 판정.

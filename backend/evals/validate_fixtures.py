@@ -14,6 +14,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from app.application.service.diary_generation_prompt import DIARY_EMOTIONS
 from evals.fixture_schemas import (
     EVAL_DEVICE_PREFIX,
     DiaryDayFixture,
@@ -75,6 +76,12 @@ def validate_fixture_dir(fixture_dir: Path) -> tuple[FixtureSet, list[str]]:
             errors.append(f"{diary_path}: {day.fixture_id}: 미등록 device_id: {day.device_id}")
         if not any(message.role == "user" for message in day.messages):
             errors.append(f"{diary_path}: {day.fixture_id}: user 메시지가 최소 1개 필요합니다")
+        unknown_emotions = sorted(set(day.plausible_emotions) - set(DIARY_EMOTIONS))
+        if unknown_emotions:
+            errors.append(
+                f"{diary_path}: {day.fixture_id}: DIARY_EMOTIONS에 없는 감정: "
+                f"{', '.join(unknown_emotions)}"
+            )
     for day in fixtures.health_days:
         if day.device_id not in known_devices:
             errors.append(f"{health_path}: {day.fixture_id}: 미등록 device_id: {day.device_id}")

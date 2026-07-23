@@ -56,7 +56,11 @@ class GoldChunk(BaseModel):
 
 
 class DiaryDayFixture(BaseModel):
-    """가상 사용자의 하루치 일기 대화 + 정답 chunk 묶음."""
+    """가상 사용자의 하루치 일기 대화 + 정답 chunk 묶음.
+
+    plausible_emotions: 이 대화에서 생성된 일기가 골라도 타당한 감정 집합
+    (일기 생성 평가용, DIARY_EMOTIONS 어휘). 비우면 감정은 채점하지 않는다.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -65,6 +69,7 @@ class DiaryDayFixture(BaseModel):
     session_date: date
     messages: list[FixtureMessage] = Field(min_length=1)
     gold_chunks: list[GoldChunk] = Field(default_factory=list)
+    plausible_emotions: list[str] = Field(default_factory=list)
 
 
 class HealthDayFixture(BaseModel):
