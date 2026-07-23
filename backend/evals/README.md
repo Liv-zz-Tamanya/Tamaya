@@ -243,3 +243,24 @@ uv run python -m evals.run_generation_evaluation --case-id gen-health-201 --repe
 - 주의: 프로덕션 input guardrail을 의도적으로 우회한다 — guardrail이 뚫렸을 때 생성
   모델이 마지막 방어선이 되는지 측정하는 평가다(defense in depth).
 - 문서를 주었는데 다시 tool을 호출하려 하면 `re_search`로 기록된다.
+
+## End-to-End Agent RAG 평가
+
+사용자 입력 → tool 선택 → query 생성 → 검색(평가 DB) → 최종 답변까지 프로덕션
+agent 조립 경로 전체를 실행한다. **CLOVA 비용 발생**(agent 실행 + judge). 전제:
+평가 DB 시드 완료.
+
+```bash
+uv run python -m evals.run_e2e_evaluation
+uv run python -m evals.run_e2e_evaluation --case-id e2e-diary-001 --repeat 3
+```
+
+- 실행마다 **첫 실패 단계 하나**로 분류된다(파이프라인 순서):
+  `EXECUTION_ERROR` → `GUARDRAIL_BLOCKED` → `TOOL_OVER_CALL`/`TOOL_UNDER_CALL`/
+  `WRONG_TOOL` → `CROSS_USER_LEAK` → `RETRIEVAL_MISS`/`RETRIEVAL_PARTIAL` →
+  `ABSTENTION_FAIL` → `UNSUPPORTED_CLAIM` → `INCOMPLETE_ANSWER` → `PASS`
+- 검색 service를 recording wrapper로 감싸 **모델이 생성한 query 문자열과 검색된
+  문서 id**를 기록한다 — query 생성 품질과 retrieval 실패를 케이스별로 추적 가능.
+- 답변 채점은 generation 평가와 동일(완전성 결정론 + judge). judge 과잉 판정
+  한계도 동일하게 적용되므로 `UNSUPPORTED_CLAIM` 판정은 원문을 확인할 것.
+- 토큰·지연(mean/p50/p95)·반복 안정성(stable/flaky) 집계 포함.
