@@ -298,6 +298,14 @@ function reducer(state: State, action: Action): State {
 
 const LS_KEY = 'tamaya-state-v2'; // v2: 시드 일기 + selectedDay 추가 (구버전 자동 리셋)
 
+// 완전삭제(purge) 진행 중 persist 억제 — beforeunload/visibilitychange flush(PERF-04)가
+// localStorage.removeItem 직후의 reload 사이에 끼어들어 인메모리 state를 재기록,
+// 삭제를 되돌리는 것을 방지한다 (liv-I1 완전 삭제 보증).
+let persistSuppressed = false;
+export const suppressPersistence = () => {
+  persistSuppressed = true;
+};
+
 const StoreContext = createContext<{
   state: State;
   dispatch: React.Dispatch<Action>;
@@ -319,6 +327,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   // 페이지 종료(beforeunload) 시점에 대기 중 저장을 즉시 flush 한다 (PERF-04).
   useEffect(() => {
     const persist = () => {
+      if (persistSuppressed) return;
       try {
         localStorage.setItem(LS_KEY, JSON.stringify(state));
       } catch {
@@ -327,6 +336,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     };
     const timer = window.setTimeout(persist, 300);
     const flush = () => {
+      if (persistSuppressed) return;
       window.clearTimeout(timer);
       persist();
     };

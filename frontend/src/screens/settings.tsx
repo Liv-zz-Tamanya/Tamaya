@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { BackButton, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
-import { useStore } from '../lib/store';
+import { suppressPersistence, useStore } from '../lib/store';
 import { purgeMyData, updateNightChatPreference } from '../lib/api';
 
 // 22 · Settings — character name, notifications, data, logout
@@ -50,6 +50,7 @@ export const S22_Settings = () => {
       serverMsg = '서버 연결 실패 — 로컬만 삭제(서버는 기동 후 재시도)';
     }
     try {
+      suppressPersistence(); // beforeunload flush가 삭제를 되돌리지 않도록 removeItem 직전에 억제 (liv-I1)
       Object.keys(localStorage)
         .filter((k) => k.startsWith('tamaya-'))
         .forEach((k) => localStorage.removeItem(k));
