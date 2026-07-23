@@ -1,0 +1,129 @@
+name: CLOVA Evaluations
+
+# 실제 CLOVA API를 호출하는 평가들 — 비용이 발생하므로 수동 실행(workflow_dispatch)만.
+# 필요 시 schedule(cron)을 추가해 정기 실행으로 전환할 수 있다.
+# 전제: 저장소 secret CLOVA_API_KEY 등록. 리포트는 아티팩트로 90일 보관된다.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "실행할 평가"
+        type: choice
+        default: all
+        options:
+          - all
+          - tool-selection   # agent 도구 선택·가드레일 (run_evaluation)
+          - chunk            # Event Chunk 생성 (run_chunk_evaluation)
+          - generation       # RAG 답변 생성 (run_generation_evaluation)
+          - e2e              # End-to-End agent RAG (run_e2e_evaluation, DB 필요)
+          - diary            # 일기 생성 품질 (run_diary_generation_evaluation)
+          - signal           # 코칭 정성신호 (run_signal_evaluation)
+          - conversation     # 대화 품질·Output Safety (run_conversation_evaluation)
+      repeat:
+        description: "케이스당 반복 횟수"
+        type: string
+        default: "1"
+
+concurrency:
+  group: eval-clova
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: aidiary
+          POSTGRES_PASSWORD: aidiary
+          POSTGRES_DB: aidiary
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aidiary"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CLOVA_MOCK_MODE: "false"
+      CLOVA_API_KEY: ${{ secrets.CLOVA_API_KEY }}
+      TARGET: ${{ inputs.target }}
+      REPEAT: ${{ inputs.repeat }}
+    steps:
+      - name: Require CLOVA secret
+        run: |
+          if [ -z "$CLOVA_API_KEY" ]; then
+            echo "::error::저장소 secret CLOVA_API_KEY가 필요합니다."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Cache embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-paraphrase-multilingual-minilm-l12-v2
+
+      # e2e 평가만 평가 DB가 필요하다. 시드는 임베딩만 쓰므로 비용 없음.
+      - name: Seed eval database
+        if: ${{ inputs.target == 'all' || inputs.target == 'e2e' }}
+        run: uv run python -m evals.seed_fixtures
+        env:
+          CLOVA_MOCK_MODE: "true"
+
+      - name: Run evaluations
+        run: |
+          mkdir -p reports-out
+          run_eval () {
+            name="$1"; module="$2"; shift 2
+            echo "::group::$name"
+            uv run python -m "$module" --repeat "$REPEAT" --output "reports-out/${name}.json" "$@"
+            echo "::endgroup::"
+          }
+          case "$TARGET" in
+            all)
+              run_eval tool-selection evals.run_evaluation
+              run_eval chunk evals.run_chunk_evaluation
+              run_eval generation evals.run_generation_evaluation
+              run_eval e2e evals.run_e2e_evaluation
+              run_eval diary evals.run_diary_generation_evaluation
+              run_eval signal evals.run_signal_evaluation
+              run_eval conversation evals.run_conversation_evaluation \
+                --review-output reports-out/conversation-review.md
+              ;;
+            tool-selection) run_eval tool-selection evals.run_evaluation ;;
+            chunk) run_eval chunk evals.run_chunk_evaluation ;;
+            generation) run_eval generation evals.run_generation_evaluation ;;
+            e2e) run_eval e2e evals.run_e2e_evaluation ;;
+            diary) run_eval diary evals.run_diary_generation_evaluation ;;
+            signal) run_eval signal evals.run_signal_evaluation ;;
+            conversation)
+              run_eval conversation evals.run_conversation_evaluation \
+                --review-output reports-out/conversation-review.md
+              ;;
+          esac
+
+      # 이전 실행의 리포트와 비교하려면 아티팩트를 내려받아
+      # `uv run python -m evals.compare_reports 이전.json 최신.json --tolerance 5` 를 사용한다.
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clova-eval-reports-${{ github.run_id }}
+          path: backend/reports-out/
+          retention-days: 90
