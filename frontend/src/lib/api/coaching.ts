@@ -19,15 +19,15 @@ export async function sendCoachingMessage(
   persona?: string | null,
 ): Promise<{ reply: string; maskedText: string }> {
   const masked = maskPII(rawText); // ← 전송 직전 PII 제거 (liv-I1)
+  // history의 user 턴도 재마스킹 — 호출부가 raw 표시용 텍스트를 보관하더라도
+  // 서버로는 마스킹본만 나간다 (F1: coach.tsx history 우회 차단).
+  const safeHistory = history.map((h) =>
+    h.role === 'user' ? { ...h, content: maskPII(h.content).text } : h,
+  );
   const res = await apiFetch<CoachingMessageResponse>('/api/v1/coaching/messages', {
     method: 'POST',
     auth: false,
-    body: {
-      message: masked.text,
-      device_id: getDeviceId(),
-      persona: persona ?? null,
-      history,
-    },
+    body: { message: masked.text, device_id: getDeviceId(), persona: persona ?? null, history: safeHistory },
   });
   return { reply: res.reply ?? '', maskedText: masked.text };
 }

@@ -85,15 +85,16 @@ export const S21_Login = () => {
 
   return (
     <div
-      className="phone-inner"
+      className="screen"
       style={{
-        background: 'linear-gradient(180deg, #f5e6cf 0%, #ead0a6 70%, #d8a777 100%)',
+        background: 'linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 70%, var(--accent-soft) 100%)',
       }}
     >
       <div
+        className="screen-scroll"
         style={{
-          padding: '60px 24px 24px',
-          height: '100%',
+          padding: 'calc(60px + var(--safe-t)) 24px 24px',
+          minHeight: '100%',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -102,24 +103,24 @@ export const S21_Login = () => {
       >
         <div
           style={{
-            background: '#f5e6cf',
+            background: 'var(--paper)',
             borderRadius: '50%',
             padding: 16,
-            border: '2px solid #3a2414',
+            border: '2px solid var(--ink)',
             marginTop: 32,
           }}
         >
           <CatSketch size={100} mood="happy" />
         </div>
-        <div className="h-display" style={{ fontSize: 40, marginTop: 14 }}>
+        <h1 className="h-display" style={{ fontSize: 40, marginTop: 14 }}>
           Tamaya
-        </div>
-        <div className="handwriting" style={{ fontSize: 19, marginTop: 4, color: '#5a3a22' }}>
+        </h1>
+        <div className="handwriting" style={{ fontSize: 19, marginTop: 4, color: 'var(--ink-soft)' }}>
           {isSignup ? '반가워요! 닉네임을 만들어 주세요' : '다시 왔군요! 닉네임을 알려주세요'}
         </div>
 
         <div style={{ marginTop: 'auto', width: '100%' }}>
-          <div className="tiny" style={{ textAlign: 'left', color: '#5a3a22', marginBottom: 6 }}>
+          <div className="tiny" style={{ textAlign: 'left', color: 'var(--ink-soft)', marginBottom: 6 }}>
             {isSignup ? '회원가입 · 사용할 닉네임' : '로그인 · 닉네임'}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -131,6 +132,7 @@ export const S21_Login = () => {
               disabled={busy}
               autoFocus
               placeholder={`닉네임 (최대 ${NICK_MAX}자)`}
+              aria-label={isSignup ? '회원가입 · 사용할 닉네임' : '로그인 · 닉네임'}
               onChange={(e) => {
                 setNickname(e.target.value);
                 setHint(null);
@@ -143,9 +145,9 @@ export const S21_Login = () => {
                 minWidth: 0,
                 padding: '12px 14px',
                 borderRadius: 12,
-                border: '1.5px solid #3a2414',
-                background: '#fff9ef',
-                color: '#3a2414',
+                border: '1.5px solid var(--ink)',
+                background: 'var(--bg)',
+                color: 'var(--ink)',
                 fontFamily: 'inherit',
                 fontSize: 16,
               }}
@@ -158,9 +160,9 @@ export const S21_Login = () => {
                 className="btn"
                 style={{
                   flexShrink: 0,
-                  background: '#fff9ef',
-                  color: '#3a2414',
-                  border: '1.5px solid #3a2414',
+                  background: 'var(--bg)',
+                  color: 'var(--ink)',
+                  border: '1.5px solid var(--ink)',
                   cursor: busy ? 'wait' : 'pointer',
                   fontFamily: 'inherit',
                   padding: '0 14px',
@@ -174,10 +176,11 @@ export const S21_Login = () => {
           {hint && (
             <div
               className="tiny"
+              role={hint.ok ? 'status' : 'alert'}
               style={{
                 marginTop: 8,
                 textAlign: 'left',
-                color: hint.ok ? '#2e7d32' : '#b3261e',
+                color: hint.ok ? 'var(--ok)' : 'var(--danger)',
               }}
             >
               {hint.text}
@@ -201,7 +204,7 @@ export const S21_Login = () => {
               marginTop: 12,
               background: 'none',
               border: 'none',
-              color: '#5a3a22',
+              color: 'var(--ink-soft)',
               textDecoration: 'underline',
               cursor: busy ? 'wait' : 'pointer',
               fontFamily: 'inherit',

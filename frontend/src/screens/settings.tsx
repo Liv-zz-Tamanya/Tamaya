@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { TabBar } from '../components/primitives';
+import { BackButton, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
-import { useStore } from '../lib/store';
+import { suppressPersistence, useStore } from '../lib/store';
 import { purgeMyData, updateNightChatPreference } from '../lib/api';
 
 // 22 · Settings — character name, notifications, data, logout
@@ -50,10 +50,10 @@ export const S22_Settings = () => {
       serverMsg = '서버 연결 실패 — 로컬만 삭제(서버는 기동 후 재시도)';
     }
     try {
-      localStorage.removeItem('tamaya-state-v2');
-      localStorage.removeItem('tamaya-auth-token');
-      localStorage.removeItem('tamaya-chat-session');
-      localStorage.removeItem('tamaya-healthchat-session');
+      suppressPersistence(); // beforeunload flush가 삭제를 되돌리지 않도록 removeItem 직전에 억제 (liv-I1)
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith('tamaya-'))
+        .forEach((k) => localStorage.removeItem(k));
     } catch {
       /* ignore */
     }
@@ -70,7 +70,6 @@ export const S22_Settings = () => {
     { label: '이음이 이름', value: state.character.name, onClick: () => nav.go('create-cat') },
     { label: '알림 — 주간 리포트', value: '월요일 09:00' },
     { label: '데이터 — 로컬 저장', value: `일기 ${state.diaries.length}건` },
-    { label: '데이터 — 백업', value: '직접 내보내기' },
     { label: '🐱 밤 코칭 (건강냥)', value: 'BE 연동 · 코칭 대화', onClick: () => nav.go('coach') },
     { label: '📈 웰빙 인사이트', value: 'BE 연동 · 주간 스코어', onClick: () => nav.go('wellbeing') },
     { label: '✚ 건강 기록 Q&A', value: 'BE 연동 · RAG 챗', onClick: () => nav.go('health-chat') },
@@ -79,22 +78,17 @@ export const S22_Settings = () => {
   ];
 
   return (
-    <div className="phone-inner">
-      <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+    <div className="screen">
+      <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span
-            style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
-            onClick={() => nav.back()}
-          >
-            ‹
-          </span>
-          <div className="h-title">설정</div>
+          <BackButton onClick={() => nav.back()} tone="var(--ink)" />
+          <h1 className="h-title">설정</h1>
         </div>
 
-        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div className="hbox r-r" style={{ padding: '12px 14px' }}>
-            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>밤 채팅 시작 시간</div>
-            <div className="tiny" style={{ marginTop: 2 }}>매일 설정한 시간부터 다음 날 06:00까지</div>
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="hbox" style={{ padding: '12px 14px' }}>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>밤 채팅 시작 시간</div>
+            <div className="tiny" style={{ marginTop: 3, color: 'var(--pencil)' }}>매일 설정한 시간부터 다음 날 06:00까지</div>
             <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
               <input
                 aria-label="밤 채팅 시작 시간"
@@ -104,44 +98,59 @@ export const S22_Settings = () => {
                 value={openTime}
                 onChange={(event) => setOpenTime(event.target.value)}
                 disabled={saving}
+                style={{ fontSize: 16 }}
               />
               <button type="button" className="btn" onClick={() => void saveNightChatTime()} disabled={saving} style={{ cursor: saving ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
                 {saving ? '저장 중…' : '저장'}
               </button>
             </div>
-            {saveStatus && <div className="tiny" style={{ marginTop: 6 }}>{saveStatus}</div>}
+            {saveStatus && <div className="tiny" role="status" style={{ marginTop: 6, color: 'var(--pencil)' }}>{saveStatus}</div>}
           </div>
-          {rows.map((r, i) => (
-            <div
-              key={i}
-              onClick={r.onClick}
-              className={'hbox ' + (i % 2 ? 'r-l' : 'r-r')}
-              style={{
-                padding: '12px 14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                cursor: r.onClick ? 'pointer' : 'default',
-              }}
-            >
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>{r.label}</div>
-                <div className="tiny" style={{ marginTop: 2 }}>{r.value}</div>
+          {rows.map((r, i) => {
+            const rowContent = (
+              <>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{r.label}</div>
+                  <div className="tiny" style={{ marginTop: 3, color: 'var(--pencil)' }}>{r.value}</div>
+                </div>
+                {r.onClick && (
+                  <span style={{ fontSize: 22, color: 'var(--ink)' }} aria-hidden="true">›</span>
+                )}
+              </>
+            );
+            const rowStyle = {
+              padding: '12px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              cursor: r.onClick ? 'pointer' : 'default',
+            };
+            return r.onClick ? (
+              <button
+                key={i}
+                type="button"
+                onClick={r.onClick}
+                className="hbox as-button"
+                aria-label={`${r.label} — ${r.value}`}
+                style={{ ...rowStyle, width: '100%', textAlign: 'left' as const }}
+              >
+                {rowContent}
+              </button>
+            ) : (
+              <div key={i} className="hbox" style={rowStyle}>
+                {rowContent}
               </div>
-              {r.onClick && (
-                <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>›</span>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        <div style={{ marginTop: 18 }}>
-          <div className="h-label" style={{ marginBottom: 8 }}>현재 상태</div>
-          <div className="hbox r-l" style={{ padding: 12 }}>
-            <div className="tiny" style={{ marginBottom: 4 }}>
+        <div style={{ marginTop: 20 }}>
+          <h2 className="h-label" style={{ marginBottom: 8 }}>현재 상태</h2>
+          <div className="hbox" style={{ padding: '12px 14px' }}>
+            <div className="tiny" style={{ marginBottom: 5, color: 'var(--ink)' }}>
               포인트 · {state.points} ◉ / 스트릭 {state.streak}일 / Lv.{state.level}
             </div>
-            <div className="tiny">아이템 {state.unlockedItems.length}개 · 입는중 {state.equippedItem ?? '없음'}</div>
+            <div className="tiny" style={{ color: 'var(--pencil)' }}>아이템 {state.unlockedItems.length}개 · 입는중 {state.equippedItem ?? '없음'}</div>
           </div>
         </div>
 
@@ -151,9 +160,9 @@ export const S22_Settings = () => {
           disabled={purging}
           className="btn block"
           style={{
-            marginTop: 18,
-            color: '#8a2c33',
-            borderColor: '#8a2c33',
+            marginTop: 20,
+            color: 'var(--danger)',
+            borderColor: 'var(--danger)',
             background: '#fff',
             cursor: purging ? 'wait' : 'pointer',
             fontFamily: 'inherit',
@@ -166,15 +175,18 @@ export const S22_Settings = () => {
           서버·기기의 내 데이터를 모두 지웁니다 · liv-zz Private-First 약속
         </div>
 
-        <div style={{ marginTop: 10, textAlign: 'center' }}>
-          <span
-            className="tiny"
-            style={{ cursor: 'pointer', color: '#7a5634' }}
-            onClick={() => dispatch({ type: 'streak/inc' })}
-          >
-            (디버그) +1 스트릭
-          </span>
-        </div>
+        {import.meta.env.DEV && (
+          <div style={{ marginTop: 10, textAlign: 'center' }}>
+            <button
+              type="button"
+              className="tiny as-button"
+              style={{ cursor: 'pointer', color: 'var(--pencil)' }}
+              onClick={() => dispatch({ type: 'streak/inc' })}
+            >
+              (디버그) +1 스트릭
+            </button>
+          </div>
+        )}
       </div>
       <TabBar active="home" />
     </div>

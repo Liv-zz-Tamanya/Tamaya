@@ -1,8 +1,8 @@
 import { createContext, useContext } from 'react';
 
 // Single-file router for the prototype app shell. No URL coupling — history
-// is in-memory; switching to design mode uses URL hash separately. Each route
-// id maps to one screen component (declared in AppShell).
+// is in-memory. In DEV mode, #s=<route> deeplink allows specifying initial screen.
+// Each route id maps to one screen component (declared in AppShell).
 
 export type Route =
   | 'splash'

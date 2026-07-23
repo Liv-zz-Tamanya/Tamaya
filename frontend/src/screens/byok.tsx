@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { TabBar } from '../components/primitives';
+import { BackButton, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { getClovaSetting, testClovaKey, saveClovaKey, type ClovaSetting } from '../lib/api';
 
@@ -7,18 +7,14 @@ import { getClovaSetting, testClovaKey, saveClovaKey, type ClovaSetting } from '
 // 보안 불변식: 원문 키는 요청 본문으로만 가고, 응답·저장소엔 마스킹(••••last4)만 남는다.
 // 건강냥이 BE: /api/v1/settings/clova {GET, /test, PUT}
 
-export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
+export const S25_Byok = () => {
   const nav = useNav();
-  // 와이어프레임 캔버스(#design)에선 "키 등록됨" 상태를 샘플로 보여준다(백엔드 불필요).
-  const [setting, setSetting] = useState<ClovaSetting | null>(
-    sample ? { has_key: true, masked: '••••3f9c' } : null,
-  );
+  const [setting, setSetting] = useState<ClovaSetting | null>(null);
   const [key, setKey] = useState('');
-  const [busy, setBusy] = useState<false | 'test' | 'save' | 'load'>(sample ? false : 'load');
+  const [busy, setBusy] = useState<false | 'test' | 'save' | 'load'>('load');
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
   useEffect(() => {
-    if (sample) return;
     void (async () => {
       try {
         setSetting(await getClovaSetting());
@@ -28,7 +24,7 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
         setBusy(false);
       }
     })();
-  }, [sample]);
+  }, []);
 
   const onTest = () => {
     if (!key.trim()) return;
@@ -69,11 +65,11 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
   };
 
   return (
-    <div className="phone-inner">
-      <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
+    <div className="screen">
+      <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }} onClick={() => nav.back()}>‹</span>
-          <div className="h-title">CLOVA 키 (BYOK)</div>
+          <BackButton onClick={() => nav.back()} />
+          <h1 className="h-title">CLOVA 키 (BYOK)</h1>
         </div>
         <div className="tiny" style={{ marginTop: 2, marginBottom: 14 }}>
           내 CLOVA 키를 요청별로 사용 · 없으면 mock으로 동작
@@ -95,14 +91,15 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
           value={key}
           onChange={(e) => setKey(e.target.value)}
           placeholder="nv-..."
+          aria-label="CLOVA Studio API 키"
           type="password"
           style={{
             width: '100%',
             padding: '12px 14px',
-            border: '1.5px solid #3a2414',
+            border: '1.5px solid var(--ink)',
             borderRadius: 10,
             fontFamily: 'inherit',
-            fontSize: 14,
+            fontSize: 16, /* iOS Safari 자동 줌 방지 */
             background: '#fff',
           }}
         />
@@ -131,13 +128,14 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
         {msg && (
           <div
             className="hbox"
-            style={{ marginTop: 14, padding: 12, color: msg.kind === 'ok' ? 'var(--accent)' : '#8a2c33' }}
+            role={msg.kind === 'ok' ? 'status' : 'alert'}
+            style={{ marginTop: 14, padding: 12, color: msg.kind === 'ok' ? 'var(--accent)' : 'var(--danger)' }}
           >
             <div className="body">{msg.kind === 'ok' ? '✓ ' : '⚠ '}{msg.text}</div>
           </div>
         )}
 
-        <div className="tiny" style={{ marginTop: 16, color: '#7a5634' }}>
+        <div className="tiny" style={{ marginTop: 16, color: 'var(--pencil)' }}>
           ※ 키는 마스킹 프리뷰(••••last4)만 device 기준 저장됩니다. 원문 키는 서버에 저장되지 않아요.
         </div>
       </div>

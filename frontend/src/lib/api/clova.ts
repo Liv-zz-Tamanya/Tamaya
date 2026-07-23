@@ -1,6 +1,7 @@
 // BYOK CLOVA 키 설정 — 연결 테스트 + 마스킹 설정 영속.
 // 보안 불변식: 원문 키는 요청 본문으로만 가고, 응답·저장소엔 마스킹(••••last4)만 남는다.
 // (건강냥 BE: /api/v1/settings/clova {test, PUT, GET})
+// PRE-SEND GUARD 확인 2026-07-22
 import { apiFetch } from './client';
 import { getDeviceId } from './auth';
 

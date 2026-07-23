@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
-import { MoodFace, TabBar } from '../components/primitives';
+import { useEffect, useRef, useState } from 'react';
+import { BackButton, TabBar } from '../components/primitives';
+import { MoodHeatmap } from '../components/mood-heatmap';
+import { MoodPalette } from '../components/mood-palette';
 import { useNav } from '../lib/router';
 import {
   DiaryEntry,
@@ -18,10 +20,8 @@ import {
   formatMonthDay,
   latestEntry,
   moodByDate,
-  moodByDay,
   statsFor,
   weekdayOfDate,
-  weekdayOf,
   useStore,
 } from '../lib/store';
 import { listDiaries, type DiaryResponse } from '../lib/api';
@@ -59,35 +59,69 @@ const addDays = (date: string, delta: number) => {
   return formatDateKey(d.getFullYear(), d.getMonth() + 1, d.getDate());
 };
 
+// 서버 일기 fetch 모듈 캐시(60s TTL) — 달력을 재방문할 때마다 100건을 재요청하던 것을
+// 막는다. 최신 달 강제 점프는 세션 최초 1회만 — 그 이후 방문에서는 사용자가 보던 달을
+// 뺏지 않는다 (PERF-05). 로컬 store.diaries 가 표시 정본이라 데이터 표시 로직은 불변.
+const DIARIES_CACHE_TTL = 60_000;
+let diariesCache: { items: DiaryResponse[]; at: number } | null = null;
+let diariesJumped = false;
+
 export const S14_Calendar = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
   const [visibleMonth, setVisibleMonth] = useState(() => {
-    const recent = latestEntry(state.diaries);
-    const baseDate = recent
-      ? diaryDateOf(recent)
-      : formatDateKey(new Date().getFullYear(), new Date().getMonth() + 1, 1);
-    const { year, month } = dateParts(baseDate);
-    return new Date(year, month - 1, 1);
+    // 실제 오늘의 달을 기본으로 연다(레거시: latestEntry 기반 → 5월 시드에 고정).
+    // 서버 일기 로드 성공 시 아래 effect 가 서버 최신 일기 달로 점프한다.
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [picker, setPicker] = useState<{ date: string; day: number } | null>(null);
+  const [view, setView] = useState<'emoji' | 'heat'>('emoji');
   const [localMoods, setLocalMoods] = useState<Record<string, Mood>>({});
   const [loadingDiaries, setLoadingDiaries] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
+  const pickerDialogRef = useRef<HTMLDivElement>(null);
+
+  // 감정 picker 모달 — 열릴 때 첫 버튼 focus + Esc 로 닫기(A11Y-08, 로직 불변·포커스 관리만 추가).
+  useEffect(() => {
+    if (picker === null) return;
+    pickerDialogRef.current?.querySelector<HTMLElement>('button')?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPicker(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [picker]);
 
   useEffect(() => {
     let alive = true;
+
+    // 서버 일기 반영 + 최신 달 점프(세션 최초 1회) — fetch/캐시 공통 경로.
+    const apply = (items: DiaryResponse[]) => {
+      if (!alive) return;
+      dispatch({ type: 'diaries/merge', entries: items.map(diaryFromApi) });
+      const latestServerDiary = items[0];
+      if (!diariesJumped && latestServerDiary) {
+        const { year, month } = dateParts(latestServerDiary.diary_date);
+        setVisibleMonth(new Date(year, month - 1, 1));
+        diariesJumped = true;
+      }
+    };
+
+    // TTL 안이면 재요청 없이 캐시로 표시(로딩 flicker 없음).
+    if (diariesCache && Date.now() - diariesCache.at < DIARIES_CACHE_TTL) {
+      apply(diariesCache.items);
+      return () => {
+        alive = false;
+      };
+    }
+
     setLoadingDiaries(true);
     setLoadFailed(false);
     listDiaries({ limit: 100 })
       .then((res) => {
-        if (!alive) return;
-        dispatch({ type: 'diaries/merge', entries: res.items.map(diaryFromApi) });
-        const latestServerDiary = res.items[0];
-        if (latestServerDiary) {
-          const { year, month } = dateParts(latestServerDiary.diary_date);
-          setVisibleMonth(new Date(year, month - 1, 1));
-        }
+        diariesCache = { items: res.items, at: Date.now() };
+        apply(res.items);
       })
       .catch(() => {
         if (alive) setLoadFailed(true);
@@ -124,6 +158,8 @@ export const S14_Calendar = () => {
       setPicker({ date, day });
     }
   };
+  // 히트맵 셀 탭 → 기존 일기 상세 이동 핸들러(openDay) 재사용.
+  const openDate = (dateKey: string) => openDay(dateParts(dateKey).day);
   const moodCounts = MOODS_ALL.map((m) => ({
     m,
     label: MOOD_LABEL[m],
@@ -131,10 +167,10 @@ export const S14_Calendar = () => {
   })).filter((x) => x.n > 0);
   const recent = latestEntry(monthEntries);
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
-      <div className="h-title">달력</div>
-      <div className="tiny">감정의 흐름을 한 눈에</div>
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
+      <h1 className="h-title">달력</h1>
+      <div className="tiny" style={{ marginTop: 2 }}>감정의 흐름을 한 눈에</div>
 
       <div
         style={{
@@ -148,21 +184,41 @@ export const S14_Calendar = () => {
           type="button"
           onClick={() => moveMonth(-1)}
           aria-label="이전 달"
-          style={{ border: 0, background: 'transparent', fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
+          style={{ border: 0, background: 'transparent', fontFamily: 'Pretendard', fontWeight: 700, fontSize: 22, color: 'var(--ink)', cursor: 'pointer' }}
         >
           ‹
         </button>
-        <div className="h-section">{year} · {month}월</div>
+        <div style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: 15, color: 'var(--pencil)' }}>
+          {year} · {month}월
+        </div>
         <button
           type="button"
           onClick={() => moveMonth(1)}
           aria-label="다음 달"
-          style={{ border: 0, background: 'transparent', fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
+          style={{ border: 0, background: 'transparent', fontFamily: 'Pretendard', fontWeight: 700, fontSize: 22, color: 'var(--ink)', cursor: 'pointer' }}
         >
           ›
         </button>
       </div>
 
+      {/* 표시 레이어 토글 — 이모지 달력 ↔ 무드 색 히트맵 (서버 조회·월 이동 로직 불변) */}
+      <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+        {(['emoji', 'heat'] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setView(v)}
+            className={'chip chip-btn ' + (view === v ? 'solid' : '')}
+            aria-pressed={view === v}
+            style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            {v === 'emoji' ? '이모지' : '무드 색'}
+          </button>
+        ))}
+      </div>
+
+      {view === 'emoji' && (
+        <>
       <div
         style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginTop: 8, gap: 2 }}
       >
@@ -172,7 +228,7 @@ export const S14_Calendar = () => {
             className="tiny"
             style={{
               textAlign: 'center',
-              color: i === 0 ? '#8c4a1f' : i === 6 ? '#5a3a22' : '#7a5634',
+              color: i === 0 ? 'var(--accent)' : i === 6 ? 'var(--ink-soft)' : 'var(--pencil)',
             }}
           >
             {d}
@@ -195,15 +251,19 @@ export const S14_Calendar = () => {
             const mood = localMoods[date] ?? moods[date];
             const today = date === todayKey;
             return (
-              <div
+              <button
                 key={i}
+                type="button"
                 onClick={() => openDay(day)}
+                aria-label={`${month}월 ${day}일${mood ? ' · ' + MOOD_LABEL[mood] : ' · 기록 없음, 탭해서 감정 추가'}${today ? ' · 오늘' : ''}`}
+                className="as-button"
                 style={{
                   aspectRatio: 1,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  width: '100%',
                   position: 'relative',
                   cursor: 'pointer',
                 }}
@@ -213,12 +273,12 @@ export const S14_Calendar = () => {
                     style={{
                       width: 30,
                       height: 30,
-                      border: today ? '2px solid #8c4a1f' : '1.5px solid #3a2414',
+                      border: today ? '2px solid var(--accent)' : '1.5px solid var(--ink)',
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: today ? '#ead0a6' : '#fff',
+                      background: today ? 'var(--paper-2)' : '#fff',
                       fontSize: 14,
                     }}
                   >
@@ -229,7 +289,7 @@ export const S14_Calendar = () => {
                     style={{
                       width: 30,
                       height: 30,
-                      border: '1px dashed #c9a877',
+                      border: '1px dashed var(--line)',
                       borderRadius: '50%',
                     }}
                   />
@@ -240,20 +300,28 @@ export const S14_Calendar = () => {
                 >
                   {day}
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
       </div>
+        </>
+      )}
+
+      {view === 'heat' && (
+        <div className="hbox" style={{ marginTop: 8, padding: 12 }}>
+          <MoodHeatmap diaries={monthEntries} month={visibleMonth} onSelect={openDate} overlay={localMoods} />
+        </div>
+      )}
 
       {loadingDiaries && (
-        <div className="tiny" style={{ marginTop: 10, textAlign: 'center', color: '#7a5634' }}>
+        <div className="tiny" style={{ marginTop: 10, textAlign: 'center', color: 'var(--pencil)' }}>
           서버 일기 불러오는 중...
         </div>
       )}
 
       {loadFailed && (
-        <div className="tiny" style={{ marginTop: 10, textAlign: 'center', color: '#8c4a1f' }}>
+        <div className="tiny" style={{ marginTop: 10, textAlign: 'center', color: 'var(--accent)' }}>
           서버 일기를 불러오지 못해 기기 기록만 표시 중이에요
         </div>
       )}
@@ -283,9 +351,9 @@ export const S14_Calendar = () => {
         }}
       >
         {moodCounts.map((x, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div key={i} className="chip" style={{ background: 'var(--paper)' }}>
             <span>{x.m}</span>
-            <span className="tiny">
+            <span style={{ fontSize: 11, color: 'var(--pencil)' }}>
               {x.label} ×{x.n}
             </span>
           </div>
@@ -293,13 +361,15 @@ export const S14_Calendar = () => {
       </div>
 
       {recent && (
-        <div
-          className="hbox r-r"
+        <button
+          type="button"
+          className="hbox r-r as-button"
           onClick={() => {
             dispatch({ type: 'ui/select-date', date: diaryDateOf(recent) });
             nav.go('diary-detail');
           }}
-          style={{ padding: 12, marginTop: 12, cursor: 'pointer' }}
+          aria-label="최근 일기 열기"
+          style={{ padding: 12, marginTop: 12, cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
         >
           <div
             style={{
@@ -312,25 +382,27 @@ export const S14_Calendar = () => {
               <div className="h-section">{formatMonthDay(recent)}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
                 <span style={{ fontSize: 20 }}>{recent.moods[0]}</span>
-                <span style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
+                <span style={{ fontWeight: 700 }}>
                   {recent.moods.map((m) => MOOD_LABEL[m]).join(' · ')}
                 </span>
               </div>
             </div>
-            <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>›</span>
+            <span style={{ fontSize: 22 }}>›</span>
           </div>
           <div className="tiny" style={{ marginTop: 6 }}>
             "{stripDatePrefix(recent).slice(0, 30)}..."
           </div>
+        </button>
+      )}
+
+      {view === 'emoji' && (
+        <div className="tiny" style={{ marginTop: 8, textAlign: 'center', color: 'var(--pencil)' }}>
+          ※ 점선 동그라미 = 기록 없음 — 탭해서 빠르게 감정 추가
         </div>
       )}
 
-      <div className="tiny" style={{ marginTop: 8, textAlign: 'center', color: '#7a5634' }}>
-        ※ 점선 동그라미 = 기록 없음 — 탭해서 빠르게 감정 추가
-      </div>
-
       {monthEntries.length > 0 && (
-        <div className="tiny" style={{ marginTop: 4, textAlign: 'center', color: '#8c4a1f' }}>
+        <div className="tiny" style={{ marginTop: 4, textAlign: 'center', color: 'var(--accent)' }}>
           {month}월 기록 {monthEntries.length}건 (전체 {state.diaries.length}건)
         </div>
       )}
@@ -342,7 +414,7 @@ export const S14_Calendar = () => {
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(26,26,26,0.55)',
+          background: 'var(--scrim)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -350,57 +422,50 @@ export const S14_Calendar = () => {
         }}
       >
         <div
+          ref={pickerDialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${month}월 ${picker.day}일 감정 선택`}
           onClick={(e) => e.stopPropagation()}
           style={{
-            background: '#f5e6cf',
-            border: '2px solid #3a2414',
+            background: 'var(--paper)',
+            border: '2px solid var(--ink)',
             borderRadius: 16,
             padding: 18,
             width: '78%',
+            maxWidth: 340,
             textAlign: 'center',
             boxShadow: '4px 6px 0 rgba(0,0,0,0.25)',
           }}
         >
           <div className="h-section">{month}월 {picker.day}일 감정</div>
           <div className="h-title" style={{ fontSize: 18, marginTop: 2 }}>한 단어로 표현하면?</div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 8,
-              marginTop: 14,
-              fontSize: 28,
-            }}
-          >
-            {['😌', '😊', '😣', '😢', '😡'].map((e) => (
-              <button
-                key={e}
-                type="button"
-                onClick={() => {
-                  setLocalMoods((m) => ({ ...m, [picker.date]: e as Mood }));
-                  setPicker(null);
-                }}
-                style={{
-                  width: 48,
-                  height: 48,
-                  border: '1.5px solid #3a2414',
-                  borderRadius: '50%',
-                  background: '#fff',
-                  cursor: 'pointer',
-                  fontSize: 22,
-                  fontFamily: 'inherit',
-                }}
-              >
-                <MoodFace mood={e} size={30} />
-              </button>
-            ))}
-          </div>
-          <div
-            className="tiny"
-            style={{ marginTop: 14, cursor: 'pointer', color: '#7a5634' }}
-            onClick={() => setPicker(null)}
-          >
-            닫기
+          <div style={{ marginTop: 14 }}>
+            <MoodPalette
+              value={localMoods[picker.date] ?? null}
+              onChange={(m) => {
+                setLocalMoods((prev) => ({ ...prev, [picker.date]: m }));
+                // quick-add 감정을 store 에 영속(화면 이동해도 소실 X). picker 는
+                // 일기 없는 날짜에서만 열리므로(openDay) 기존 일기 덮어쓰기 없음.
+                // 서버 미전송 — 로컬 store/localStorage 만 사용(liv-I1). mood-only
+                // 엔트리라 diaries/merge 필드병합 시 서버 풍부 엔트리와 충돌하지 않음.
+                dispatch({
+                  type: 'diary/save',
+                  entry: {
+                    day: picker.day,
+                    date: picker.date,
+                    moods: [m],
+                    keywords: [],
+                    body: '',
+                    check: {},
+                    createdAt: Date.now(),
+                  },
+                });
+                setPicker(null);
+              }}
+              allowSkip
+              onSkip={() => setPicker(null)}
+            />
           </div>
         </div>
       </div>
@@ -421,16 +486,11 @@ export const S15_DiaryDetail = () => {
 
   if (!entry) {
     return (
-      <div className="phone-inner">
-        <div className="phone-scroll" style={{ padding: '46px 18px 24px' }}>
+      <div className="screen">
+        <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span
-              style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
-              onClick={() => nav.back()}
-            >
-              ‹
-            </span>
-            <div className="h-section">달력</div>
+            <BackButton onClick={() => nav.back()} />
+            <h1 className="h-section">달력</h1>
           </div>
           <div className="hbox dashed" style={{ padding: 18, marginTop: 16, textAlign: 'center' }}>
             <div className="body">아직 이 날의 기록이 없어요.</div>
@@ -461,8 +521,8 @@ export const S15_DiaryDetail = () => {
     entry.moods.length >= 3 ? [45, 30, 25] : entry.moods.length === 2 ? [60, 40] : [100];
 
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px 24px' }}>
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px 24px' }}>
       <div
         style={{
           display: 'flex',
@@ -470,33 +530,28 @@ export const S15_DiaryDetail = () => {
           alignItems: 'center',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span
-            style={{ fontFamily: 'Pretendard', fontSize: 22, cursor: 'pointer' }}
-            onClick={() => nav.back()}
-          >
-            ‹
-          </span>
-          <div className="h-section">달력 / {displayDate}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <BackButton onClick={() => nav.back()} tone="var(--pencil)" />
+          <div className="tiny">달력 / {displayDate}</div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <span className="tiny">✎</span>
-          <span className="tiny">⋮</span>
+        <div style={{ display: 'flex', gap: 10, color: 'var(--ink)', fontSize: 16 }}>
+          <span>✎</span>
+          <span>⋮</span>
         </div>
       </div>
 
-      <div className="h-display" style={{ marginTop: 8, fontSize: 32 }}>
+      <h1 className="h-display" style={{ marginTop: 8, fontSize: 28 }}>
         {weekday}요일 · {displayDate}
-      </div>
+      </h1>
 
       <div className="hbox r-l" style={{ padding: 12, marginTop: 14 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <span style={{ fontSize: 22 }}>{entry.moods[0]}</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
+            <div style={{ fontWeight: 700 }}>
               {entry.moods.map((m) => MOOD_LABEL[m]).join(' · ')}
             </div>
-            <div className="tiny">회고 대화로 작성</div>
+            <div className="tiny" style={{ color: 'var(--pencil)' }}>회고 대화로 작성</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
@@ -507,7 +562,7 @@ export const S15_DiaryDetail = () => {
                 flex: moodWeights[i],
                 height: 8,
                 background: MOOD_BAR[m],
-                border: '1.5px solid #3a2414',
+                border: '1.5px solid var(--ink)',
               }}
             />
           ))}
@@ -516,16 +571,16 @@ export const S15_DiaryDetail = () => {
 
       <div
         className="hbox r-r"
-        style={{ padding: 16, marginTop: 12, background: '#fff5e1' }}
+        style={{ padding: 16, marginTop: 12, background: 'var(--cream)' }}
       >
         <div className="handwriting" style={{ fontSize: 18, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
           {entry.body}
         </div>
       </div>
 
-      <div className="h-label" style={{ marginTop: 14, marginBottom: 6 }}>
+      <h2 className="h-label" style={{ marginTop: 14, marginBottom: 6 }}>
         키워드
-      </div>
+      </h2>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {entry.keywords.map((t, i) => (
           <span key={i} className="chip dashed">
@@ -535,7 +590,7 @@ export const S15_DiaryDetail = () => {
       </div>
 
       <div className="hbox r-l" style={{ padding: 12, marginTop: 14 }}>
-        <div className="h-section">그날의 체크</div>
+        <h2 className="h-label">그날의 체크</h2>
         <div
           style={{
             display: 'grid',
@@ -552,8 +607,8 @@ export const S15_DiaryDetail = () => {
                   width: 38,
                   height: 38,
                   margin: '0 auto',
-                  background: on ? '#3a2414' : '#f5e6cf',
-                  color: on ? '#f5e6cf' : '#3a2414',
+                  background: on ? 'var(--ink)' : 'var(--paper)',
+                  color: on ? 'var(--paper)' : 'var(--ink)',
                 }}
               >
                 {ic}
@@ -576,7 +631,7 @@ export const S15_DiaryDetail = () => {
         >
           <div className="check on">✓</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
+            <div style={{ fontWeight: 700 }}>
               내일 한 가지 — {entry.tomorrow}
             </div>
             <div className="tiny">{tomorrowDate}에 알람으로 추가됨</div>
@@ -593,17 +648,17 @@ export const S16_Stats = () => {
   const { state } = useStore();
   const s = statsFor(state.diaries, period);
   const maxW = Math.max(...s.weekday, 1);
-  const pct = period === '전체' ? 100 : Math.round((s.writeDays / s.target) * 100);
+  const nowMonth = new Date().getMonth() + 1;
   const life: [string, string, string][] = [
     ['🍚 식사', `${s.life.food}/${s.writeDays}`, s.life.food >= s.writeDays * 0.7 ? '꾸준 ↑' : '보통'],
     ['😴 수면', `${s.life.sleep}/${s.writeDays}`, s.life.sleep >= s.writeDays * 0.6 ? '양호' : '부족 ↓'],
     ['🚶 운동', `${s.life.movement}/${s.writeDays}`, s.life.movement >= s.writeDays * 0.5 ? '활발' : '보통'],
   ];
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
-      <div className="h-title">통계</div>
-      <div className="tiny">기록의 모양을 봐요</div>
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
+      <h1 className="h-title">통계</h1>
+      <div className="tiny" style={{ marginTop: 2 }}>한 주를 한 눈에 봐요</div>
 
       <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
         {(['주', '월', '전체'] as const).map((p) => (
@@ -612,6 +667,7 @@ export const S16_Stats = () => {
             type="button"
             onClick={() => setPeriod(p)}
             className={'chip chip-btn ' + (period === p ? 'solid' : '')}
+            aria-pressed={period === p}
             style={{ cursor: 'pointer', fontFamily: 'inherit' }}
           >
             {p}
@@ -632,25 +688,24 @@ export const S16_Stats = () => {
             {s.writeDays}
           </div>
           <div>
-            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
-              {period === '전체' ? '일 누적' : `/ ${s.target} 일`}
+            <div style={{ fontWeight: 700 }}>
+              {period === '전체' ? '일 누적' : '일 기록'}
             </div>
-            <div className="tiny squiggle">
+            <div className="tiny">
               {period === '주'
-                ? `이번 주 ${pct}% 작성`
+                ? `이번 주 ${s.writeDays}일 기록했어요`
                 : period === '월'
-                  ? `5월 ${pct}% 작성`
+                  ? `${nowMonth}월 ${s.writeDays}일 기록했어요`
                   : `누적 기록 ${s.count}건`}
             </div>
           </div>
         </div>
-        <div className="bar" style={{ marginTop: 10 }}>
-          <i style={{ width: Math.min(100, pct) + '%' }} />
-        </div>
       </div>
 
-      <div className="hbox r-r" style={{ padding: 14, marginTop: 12 }}>
-        <div className="h-section">요일별 작성</div>
+      {/* 통계 카드 — 넓은 폭서 reflow-grid 로 2열 자연 확장(로직·데이터 불변) */}
+      <div className="reflow-grid" style={{ marginTop: 12 }}>
+      <div className="hbox r-r" style={{ padding: 14 }}>
+        <h2 className="h-label">요일별 작성</h2>
         <div
           style={{
             display: 'flex',
@@ -677,8 +732,8 @@ export const S16_Stats = () => {
                   style={{
                     height: Math.max(h, s.weekday[i] > 0 ? 6 : 0),
                     width: 22,
-                    background: s.weekday[i] > 0 ? '#8c4a1f' : '#f5e6cf',
-                    border: '1.5px solid #3a2414',
+                    background: s.weekday[i] > 0 ? 'var(--accent)' : 'var(--paper)',
+                    border: '1.5px solid var(--ink)',
                     borderRadius: 4,
                   }}
                 />
@@ -689,14 +744,14 @@ export const S16_Stats = () => {
         </div>
       </div>
 
-      <div className="hbox r-l" style={{ padding: 14, marginTop: 12 }}>
-        <div className="h-section">감정 분포</div>
+      <div className="hbox r-l" style={{ padding: 14 }}>
+        <h2 className="h-label">감정 분포</h2>
         <div
           style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}
         >
           {s.moodPct.map((x, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: 'Pretendard', fontSize: 13, width: 64 }}>
+              <span style={{ fontSize: 13, width: 64 }}>
                 {x.mood} {x.label}
               </span>
               <div className="bar" style={{ flex: 1 }}>
@@ -710,8 +765,8 @@ export const S16_Stats = () => {
         </div>
       </div>
 
-      <div className="hbox r-r" style={{ padding: 14, marginTop: 12 }}>
-        <div className="h-section">라이프스타일</div>
+      <div className="hbox r-r" style={{ padding: 14 }}>
+        <h2 className="h-label">라이프스타일</h2>
         <div
           style={{
             display: 'grid',
@@ -729,7 +784,6 @@ export const S16_Stats = () => {
               <div className="tiny">{t}</div>
               <div
                 style={{
-                  fontFamily: 'Pretendard',
                   fontWeight: 700,
                   fontSize: 20,
                   marginTop: 2,
@@ -741,6 +795,7 @@ export const S16_Stats = () => {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </div>
     <TabBar active="stat" />
@@ -755,20 +810,20 @@ export const S17_Insights = () => {
   // 데이터 부족(<5건) 시 인사이트 대신 안내 (feature-spec §F7: 7일 미만 안내).
   const enough = state.diaries.length >= 5;
   return (
-  <div className="phone-inner">
-    <div className="phone-scroll" style={{ padding: '46px 18px calc(88px + var(--safe-b, 0px))' }}>
-      <div className="h-title">인사이트</div>
-      <div className="tiny">이음이가 정리해준 이번 주</div>
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
+      <h1 className="h-title">인사이트</h1>
+      <div className="tiny" style={{ marginTop: 2 }}>이음이가 정리해준 이번 주</div>
 
       {enough ? (
         <>
       <div className="hbox night r-l" style={{ padding: 16, marginTop: 14 }}>
-        <div className="h-section" style={{ color: '#d8a777' }}>
+        <h2 className="h-label" style={{ color: 'var(--accent-soft)' }}>
           이번 주 메인 패턴
-        </div>
+        </h2>
         <div
           className="h-title"
-          style={{ color: '#f5e6cf', fontSize: 22, marginTop: 4 }}
+          style={{ color: 'var(--paper)', fontSize: 22, marginTop: 4 }}
         >
           "5분의 틈"이 있던 날엔
           <br />
@@ -776,16 +831,18 @@ export const S17_Insights = () => {
         </div>
         <div
           className="handwriting"
-          style={{ color: '#d8a777', fontSize: 16, marginTop: 8 }}
+          style={{ color: 'var(--accent-soft)', fontSize: 16, marginTop: 8 }}
         >
           회의 사이 짧은 호흡을 한 화·목요일에는 평온함이
           <br />두 배 많았어요. 같은 패턴, 다음 주에도 ?
         </div>
       </div>
 
-      <div className="h-label" style={{ marginTop: 14, marginBottom: 6 }}>
+      <h2 className="h-label" style={{ marginTop: 14, marginBottom: 6 }}>
         이번 주 발견
-      </div>
+      </h2>
+      {/* 발견 카드 — 넓은 폭서 reflow-grid 로 다열 자연 확장(데이터·문구 불변) */}
+      <div className="reflow-grid">
       {(
         [
           ['☼', '햇볕 쐰 날 = 잠 더 푹', '3일 중 3일 "푹잠"으로 기록'],
@@ -798,7 +855,6 @@ export const S17_Insights = () => {
           className={'hbox ' + (i % 2 ? 'r-l' : 'r-r')}
           style={{
             padding: 12,
-            marginTop: 8,
             display: 'flex',
             alignItems: 'flex-start',
             gap: 10,
@@ -808,17 +864,18 @@ export const S17_Insights = () => {
             {ic}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>{t}</div>
-            <div className="tiny">{s}</div>
+            <div style={{ fontWeight: 500 }}>{t}</div>
+            <div className="tiny" style={{ color: 'var(--pencil)' }}>{s}</div>
           </div>
-          <span className="tiny" style={{ color: '#8c4a1f' }}>
+          <span className="tiny" style={{ color: 'var(--accent)' }}>
             ✦
           </span>
         </div>
       ))}
+      </div>
 
       <div className="hbox accent r-l" style={{ padding: 14, marginTop: 14 }}>
-        <div className="h-section">이번 주 추천 루틴</div>
+        <h2 className="h-label">이번 주 추천 루틴</h2>
         <div className="h-title" style={{ fontSize: 18, marginTop: 4 }}>
           회의 끝 · 3분 호흡 알람
         </div>
@@ -839,7 +896,7 @@ export const S17_Insights = () => {
               type="button"
               onClick={() => setRoutine('later')}
               className="chip chip-btn"
-              style={{ background: '#f5e6cf', cursor: 'pointer', fontFamily: 'inherit' }}
+              style={{ background: 'var(--paper)', cursor: 'pointer', fontFamily: 'inherit' }}
             >
               나중에
             </button>
@@ -872,9 +929,11 @@ export const S17_Insights = () => {
         </div>
       )}
 
-      <div
-        className="hbox r-r"
+      <button
+        type="button"
+        className="hbox r-r as-button"
         onClick={() => nav.go('report')}
+        aria-label="주간 리포트 열기"
         style={{
           padding: 12,
           marginTop: 12,
@@ -888,11 +947,11 @@ export const S17_Insights = () => {
           ◇
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>이번 주 리포트 보기</div>
+          <div style={{ fontWeight: 700 }}>이번 주 리포트 보기</div>
           <div className="tiny">매주 월요일 발행 · 한 주 요약 카드</div>
         </div>
-        <span style={{ fontFamily: 'Pretendard', fontSize: 22 }}>›</span>
-      </div>
+        <span style={{ fontSize: 22 }}>›</span>
+      </button>
 
       <div className="sticky" style={{ marginTop: 14, transform: 'rotate(-1.5deg)' }}>
         ※ D7+에 더 깊은 패턴 — 꾸준히 모일수록 정확해져요

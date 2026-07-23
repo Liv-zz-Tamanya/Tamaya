@@ -8,33 +8,58 @@
 
 html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif; color: var(--ink); }
 
-/* App viewport — mobile-first column, centered on wide screens (no phone frame).
-   화면 컴포넌트(.phone-inner)가 이 컨테이너를 채운다. */
+/* 클릭 가능한 div/span → <button> 시맨틱 전환용 리셋 유틸 (A11Y-02/03/06/07/08) — 파일 최상단에
+   둬서 캐스케이드상 이 규칙이 항상 먼저 오게 한다: .hbox·.chip·.nav-arrow 등 뒤에 오는 클래스가
+   같은 특이도(0,0,1,0)로 배경·테두리·색을 다시 그려 all:unset 을 정상적으로 덮어쓴다(순서가
+   바뀌면 카드 배경/테두리가 사라지는 회귀가 생긴다). display 는 unset 시 초기값(inline)이 되므로,
+   원래 div가 block 이던 자리(카드 등)는 호출부 style={{ display:'block' }}로 보존한다. position
+   도 초기화되므로 .nav-arrow::before 44px 히트박스 컨테이닝 블록 보존을 위해 relative 를
+   재선언한다(뒤에 오는 .nav-arrow 의 position:relative 와 값이 같아 중복이라도 안전). */
+.as-button {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* App viewport — 유동 폭 웹앱 (폰 목업 캡 없음).
+   화면 컴포넌트(.screen)가 이 컨테이너를 채우고, 본문 콘텐츠(.screen-scroll)와
+   탭바 내부는 --app-fluid(responsive.css 티어)로 중앙 정렬·확장된다. */
 .app-root {
   position: relative;
   width: 100%;
-  max-width: 480px;
   height: 100vh;
   height: 100dvh;
   margin: 0 auto;
-  background: var(--paper);
+  background: var(--bg, var(--paper));
   overflow: hidden;
   font-family: 'Pretendard', sans-serif;
 }
-.phone-inner { position: absolute; inset: 0; }
+.screen { position: absolute; inset: 0; }
+/* 캔버스형 화면(절대 px 앵커 연출 — 이음이 방 등): 무한정 늘리지 않고 스테이지 폭으로 센터
+   RESP-05: 화면 루트가 아니라 본문 콘텐츠 래퍼에 적용 — 탭바는 루트 직하에서 전폭 유지.
+   position: relative 는 내부 절대배치(px 앵커) 요소들의 컨테이닝 블록을 스테이지 폭으로 한정한다. */
+.stage-body { max-width: var(--stage-max, 560px); margin-inline: auto; position: relative; display: flow-root; }
 
-/* Tab bar */
+/* 하단 고정 요소의 유동 컬럼 정렬 — .tabbar와 동일 공식 (RESP-06/라이브 실측) */
+.pin-bottom {
+  position: absolute; left: 0; right: 0;
+  padding-inline: max(24px, calc((100% - var(--app-fluid, 100%)) / 2));
+}
+
+/* Tab bar — 바는 전폭, 버튼 행은 --app-fluid 컬럼에 맞춰 중앙 정렬 */
 .tabbar {
   position: absolute; left: 0; right: 0; bottom: 0;
   height: var(--tabbar-h, 64px);
   padding-bottom: var(--safe-b, 0px); /* 홈 인디케이터 위로 아이콘을 올린다 */
-  border-top: 2px solid var(--ink);
-  background: var(--paper-2);
+  padding-inline: max(0px, calc((100% - var(--app-fluid, 100%)) / 2));
+  border-top: 0.5px solid var(--ink);
+  background: var(--paper);
   display: grid; grid-template-columns: repeat(5, 1fr);
 }
 .tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   font-family: 'Pretendard'; font-size: 11px; color: var(--pencil); position: relative; }
-.tab .tab-icon { width: 26px; height: 26px; border: 1.5px solid var(--ink); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--paper); }
+.tab .tab-icon { width: 32px; height: 32px; border: 0.5px solid var(--ink); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--paper); }
 .tab.active { color: var(--ink); font-weight: 700; }
 .tab.active .tab-icon { background: var(--accent); color: #fff; border-color: var(--ink); }
 .tab.active::before { content: ''; position: absolute; top: -2px; left: 14%; right: 14%; height: 3px; background: var(--accent); }
@@ -43,19 +68,20 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
 .tab-center { position: relative; }
 .tab-center .tab-icon-lg {
   width: 52px; height: 52px; border-radius: 50%; font-size: 22px;
-  background: var(--accent); color: #fff; border: 2px solid var(--ink);
-  box-shadow: 2px 3px 0 var(--ink);
-  position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+  background: var(--paper); color: var(--ink); border: 1.5px solid var(--ink);
+  box-shadow: 0 2px 6px rgba(58, 36, 20, 0.15);
+  position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
 }
 .tab-center > div:last-child { margin-top: 32px; font-weight: 700; }
 .tab.tab-center.active::before { display: none; }
 
 /* Hand-drawn box */
 .hbox {
-  border: 1.5px solid var(--ink);
+  border: 0.5px solid var(--ink);
   border-radius: 14px;
-  background: #fff;
+  background: var(--paper);
   position: relative;
+  color: var(--ink);
 }
 .hbox.dashed { border-style: dashed; background: transparent; }
 .hbox.filled { background: var(--paper-2); }
@@ -72,13 +98,39 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
 .r-rr { transform: rotate(0.7deg); }
 
 /* Typography */
-.h-display { font-family: 'Pretendard'; font-weight: 700; font-size: 32px; line-height: 1; letter-spacing: -0.5px; }
-.h-title { font-family: 'Pretendard'; font-weight: 700; font-size: 24px; line-height: 1.1; }
-.h-section { font-family: 'Pretendard'; font-weight: 400; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; color: var(--pencil); }
-.h-label { font-family: 'Pretendard'; font-size: 13px; color: var(--pencil); }
-.body { font-family: 'Pretendard'; font-size: 14px; color: var(--ink); }
-.tiny { font-family: 'Pretendard'; font-size: 11px; color: var(--muted); letter-spacing: 0.4px; }
-.handwriting { font-family: 'Pretendard'; font-size: 18px; color: var(--ink-soft); }
+/* A11Y-09: 시맨틱 헤딩(h1/h2) 리셋 — 브라우저 기본 헤딩 마진/폰트를 지워, 화면 최상위
+   제목·섹션 라벨을 div 대신 h1/h2 로 마크업해도 기존 .h-title/.h-section/.h-label/
+   .h-display 등 클래스의 시각이 그대로 유지되게 한다(시각 무변화). */
+h1, h2 { margin: 0; font: inherit; font-size: inherit; font-weight: inherit; }
+.h-display { font-family: 'Pretendard'; font-weight: 700; font-size: var(--text-display); line-height: 1; letter-spacing: -0.5px; }
+.h-title { font-family: 'Pretendard'; font-weight: 700; font-size: var(--text-title); line-height: 1.1; }
+.h-section { font-family: 'Pretendard'; font-weight: 400; font-size: var(--text-section); text-transform: uppercase; letter-spacing: 1px; color: var(--pencil); }
+.h-label { font-family: 'Pretendard'; font-size: var(--text-label); color: var(--pencil); }
+.body { font-family: 'Pretendard'; font-size: var(--text-body); color: var(--ink); }
+.tiny { font-family: 'Pretendard'; font-size: var(--text-tiny); color: var(--pencil); letter-spacing: 0.4px; }
+.handwriting { font-family: 'Pretendard'; font-size: var(--text-handwriting); color: var(--ink-soft); }
+
+/* Nav back arrow — 화면 좌상단 ‹ 뒤로가기 (인라인 span 4곳 통합, C6).
+   font-family 는 전역(body·.app-root=Pretendard) 상속 → 인라인 재지정 불필요.
+   터치 타깃 44px: ::before pseudo-element 히트박스로 확장(레이아웃 영향 0) —
+   글리프 자체는 자연 플로우 크기 유지, min-width/padding/negative-margin 방식은
+   margin 이 padding 만 상쇄하고 min-width 확장은 미보상되어 시각 시프트 유발(리뷰 확인, 2026-07-21). */
+.nav-arrow {
+  position: relative;
+  font-size: 22px;
+  cursor: pointer;
+}
+.nav-arrow::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 44px;
+  min-height: 44px;
+  width: 100%;
+  height: 100%;
+}
 
 /* Placeholder shapes */
 .ph-circle { border: 1.5px solid var(--ink); border-radius: 50%; background: var(--paper-2); display: flex; align-items: center; justify-content: center; }
@@ -91,6 +143,14 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
 .chip.solid { background: var(--ink); color: #fff; }
 .chip.accent { background: var(--accent); color: #fff; border-color: var(--ink); }
 .chip.dashed { border-style: dashed; background: transparent; }
+/* 터치 타깃 44px — 클릭 가능한 칩(.chip-btn 병기, 14곳)의 최소 높이 보장.
+   .chip 뒤에 위치해 padding 을 덮어씀(동일 특이도, 캐스케이드 순서로 승리). */
+.chip-btn { min-height: 44px; padding: 10px 14px; }
+
+/* Mood palette chip — .chip 확장(소프트 그라데이션 감정 칩, 탭 1회 선택). MoodPalette 전용. */
+.chip.mood-chip { padding: 8px 14px; min-height: 40px; font-size: 13px; gap: 6px; transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.chip.mood-chip[aria-pressed="true"] { font-weight: 700; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(58, 36, 20, 0.18); }
+.chip.mood-chip.mood-skip { min-height: 40px; }
 
 /* Button */
 .btn {
@@ -116,21 +176,24 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
 .anno { position: absolute; font-family: 'Pretendard'; font-weight: 500; font-size: 16px; color: var(--accent); display: flex; gap: 6px; align-items: flex-start; }
 .anno svg { flex: none; }
 
-/* Star */
-.star::before { content: '★'; }
-
-/* Squiggly underline */
-.squiggle { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 6'><path d='M0 3 Q 5 0 10 3 T 20 3 T 30 3 T 40 3 T 50 3 T 60 3 T 70 3 T 80 3' fill='none' stroke='%238c4a1f' stroke-width='1.5'/></svg>"); background-repeat: repeat-x; background-position: bottom; background-size: 80px 6px; padding-bottom: 4px; }
+/* Squiggly underline — SVG data-URI 는 CSS 변수를 담지 못해 stroke 를 마스크로 쓰고
+   배경색을 var(--accent) 로 토큰화(TOK-09). stroke 색: 표준 alpha 모드는 임의값이나,
+   구형 WebKit(Safari <15.4) luminance 모드 비가시 방지로 #fff — 렌더(형태·색) = 기존 #8c4a1f(--accent). */
+.squiggle {
+  background-color: var(--accent);
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 6'><path d='M0 3 Q 5 0 10 3 T 20 3 T 30 3 T 40 3 T 50 3 T 60 3 T 70 3 T 80 3' fill='none' stroke='%23fff' stroke-width='1.5'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 6'><path d='M0 3 Q 5 0 10 3 T 20 3 T 30 3 T 40 3 T 50 3 T 60 3 T 70 3 T 80 3' fill='none' stroke='%23fff' stroke-width='1.5'/></svg>");
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  -webkit-mask-position: bottom;
+  mask-position: bottom;
+  -webkit-mask-size: 80px 6px;
+  mask-size: 80px 6px;
+  padding-bottom: 4px;
+}
 
 /* Cat SVG placeholders sized by container */
 .cat-spot { display: inline-flex; align-items: center; justify-content: center; }
-
-/* Flow arrow */
-.flow-arrow { font-family: 'Pretendard'; font-size: 24px; color: var(--accent); display: flex; align-items: center; gap: 4px; }
-
-/* Section meta on canvas */
-.meta-card { background: var(--cream); border: 1.5px solid var(--ink); padding: 10px 14px; border-radius: 6px; font-family: 'Pretendard'; font-size: 12px; box-shadow: 3px 3px 0 rgba(0,0,0,0.08); max-width: 280px; }
-.meta-card b { font-family: 'Pretendard'; font-weight: 700; font-size: 16px; display: block; margin-bottom: 4px; }
 
 /* Bar / progress */
 .bar { height: 8px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 999px; overflow: hidden; position: relative; }
@@ -155,71 +218,14 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
   font-weight: 500;
 }
 
-/* ── Tweaks: Vibe ─────────────────────────────────────────────────────────
-   sketchy (default) → as authored.
-   crisp             → square up: kill rotations, dashed → solid, soft shadow.
-   playful           → exaggerate: bigger tilt + chunkier shadow + tickered sticky.
-   Apply via body[data-vibe="..."] so every screen re-tones in lockstep.
-   ──────────────────────────────────────────────────────────────────────── */
-body[data-vibe="crisp"] .sketch > .r-l,
-body[data-vibe="crisp"] .sketch > .r-r,
-body[data-vibe="crisp"] .sketch > .r-ll,
-body[data-vibe="crisp"] .sketch > .r-rr,
-body[data-vibe="crisp"] .hbox.r-l,
-body[data-vibe="crisp"] .hbox.r-r,
-body[data-vibe="crisp"] .hbox.r-ll,
-body[data-vibe="crisp"] .hbox.r-rr,
-body[data-vibe="crisp"] .sticky,
-body[data-vibe="crisp"] .meta-card { transform: none !important; }
-body[data-vibe="crisp"] .hbox.dashed,
-body[data-vibe="crisp"] .chip.dashed { border-style: solid; }
-body[data-vibe="crisp"] .btn { box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
-body[data-vibe="crisp"] .sticky { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-body[data-vibe="crisp"] .meta-card { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-body[data-vibe="crisp"] .tab-center .tab-icon-lg { box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-body[data-vibe="crisp"] .hbox { border-radius: 10px; }
-
-body[data-vibe="playful"] .r-l  { transform: rotate(-1.4deg); }
-body[data-vibe="playful"] .r-r  { transform: rotate(1.6deg); }
-body[data-vibe="playful"] .r-ll { transform: rotate(-2.2deg); }
-body[data-vibe="playful"] .r-rr { transform: rotate(2.0deg); }
-body[data-vibe="playful"] .sticky { transform: rotate(-3deg); box-shadow: 3px 3px 0 rgba(0,0,0,0.18); }
-body[data-vibe="playful"] .btn { box-shadow: 3px 4px 0 var(--ink); }
-body[data-vibe="playful"] .hbox { border-radius: 18px; border-width: 2px; }
-body[data-vibe="playful"] .chip { border-width: 2px; }
-
-/* ── Tweaks: Density ───────────────────────────────────────────────────────
-   minimal  → hide secondary deco (sticky, squiggle, dashed chips, design notes)
-   standard → as authored
-   detailed → emphasise notes + sticky, add subtle dotted page background
-   ──────────────────────────────────────────────────────────────────────── */
-body[data-density="minimal"] .sticky,
-body[data-density="minimal"] .squiggle,
-body[data-density="minimal"] .chip.dashed,
-body[data-density="minimal"] .note { display: none !important; }
-body[data-density="minimal"] .squiggle { background: none; padding-bottom: 0; }
-
-body[data-density="detailed"] .note {
-  background: rgba(140, 74, 31, 0.07);
-  padding: 4px 8px;
-  border-radius: 4px;
-  border-left: 3px solid var(--accent);
-}
-body[data-density="detailed"] .sticky { transform: rotate(-2deg) scale(1.04); }
-body[data-density="detailed"] .design-canvas {
-  background-image:
-    radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
-    linear-gradient(0deg, #f5f1e8, #f5f1e8);
-  background-size: 18px 18px, 100% 100%;
-}
-
 /* Canvas / page background — soft warm-white, independent of artwork palette */
-html, body { background: #f5f1e8; }
+html, body { background: var(--canvas); }
 
 /* ── Inputs (typing) ──────────────────────────────────────────────────── */
 .input-row {
   position: absolute; left: 0; right: 0; bottom: 0;
   padding: 10px 14px calc(16px + var(--safe-b, 0px));
+  padding-inline: max(14px, calc((100% - var(--app-fluid, 100%)) / 2));
   background: rgba(251,248,243,0.95);
   border-top: 1.5px dashed var(--line, #c9a877);
   display: flex; gap: 8px; align-items: center;
@@ -233,7 +239,7 @@ html, body { background: #f5f1e8; }
   border-radius: 999px;
   padding: 12px 16px;
   font-family: 'Pretendard', 'Pretendard', sans-serif;
-  font-size: 14px;
+  font-size: 16px; /* iOS Safari 자동 줌 방지 — 16px 미만 시 입력 포커스에서 강제 확대 */
   color: var(--ink, #3a2414);
   outline: none;
   min-width: 0;
@@ -241,14 +247,22 @@ html, body { background: #f5f1e8; }
 .input-row input::placeholder { color: var(--muted, #b39570); }
 .input-row input:focus { border-color: var(--accent, #8c4a1f); box-shadow: 0 0 0 2px rgba(140,74,31,0.15); }
 
+/* a11y: 키보드 포커스 가시화 — 마우스 클릭 시엔 미표시, Tab 탐색 시에만 링 표시 (WCAG 2.4.7).
+   input 은 위 :focus 의 border+shadow 를 유지(높은 specificity)하고, 그 외 버튼/탭/링크에 적용. */
+:focus-visible { outline: 2px solid var(--accent, #8c4a1f); outline-offset: 2px; }
+
 /* Chat bubbles — Section 1 soft style (borderless, filled, asymmetric radius) */
 .bubble { padding: 10px 13px; max-width: 280px; box-shadow: 1px 2px 0 rgba(0,0,0,0.05); border: none; }
 .bubble-bot { background: var(--paper-2); color: var(--ink); border-radius: 4px 16px 16px 16px; }
 .bubble-user { background: var(--accent-soft); color: var(--ink); border-radius: 16px 4px 16px 16px; max-width: 260px; }
 
-/* Toast — bottom of phone */
+/* Toast — bottom of phone. 카드형(pill) — 유동 컬럼폭 안에서 24px 마진 유지하며 중앙 정렬
+   (막대형 .tabbar/.input-row 와 달리 배경이 전폭으로 새면 안 되므로 padding-inline 대신
+   max-width + margin-inline:auto 로 공식 적용 — 라이브 실측 R2). */
 .toast {
-  position: absolute; left: 24px; right: 24px; bottom: calc(84px + var(--safe-b, 0px));
+  position: absolute; left: 0; right: 0; bottom: calc(84px + var(--safe-b, 0px));
+  max-width: calc(var(--app-fluid, 100%) - 48px);
+  margin-inline: auto;
   background: var(--ink, #3a2414); color: var(--paper, #f5e6cf);
   border-radius: 12px; padding: 10px 14px;
   font-family: 'Pretendard'; font-size: 13px;
@@ -281,13 +295,15 @@ html, body { background: #f5f1e8; }
 button.chip, button.btn { font-family: inherit; cursor: pointer; }
 button.chip:disabled, button.btn:disabled { cursor: not-allowed; opacity: 0.55; }
 
-/* Scrollable inner area */
-.phone-scroll {
+/* Scrollable inner area — 유동 폭 컬럼(--app-fluid)으로 중앙 정렬, 모바일은 full-bleed */
+.screen-scroll {
   position: absolute; inset: 0;
+  max-width: var(--app-fluid, none);
+  margin-inline: auto;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
 }
-.phone-scroll::-webkit-scrollbar { width: 4px; }
-.phone-scroll::-webkit-scrollbar-thumb { background: rgba(58,36,20,0.18); border-radius: 2px; }
+.screen-scroll::-webkit-scrollbar { width: 4px; }
+.screen-scroll::-webkit-scrollbar-thumb { background: rgba(58,36,20,0.18); border-radius: 2px; }
 

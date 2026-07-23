@@ -67,8 +67,6 @@ export type State = {
   equippedItem: string | null;
 };
 
-const today = new Date();
-
 // ── Seed diary data (on-device) ─────────────────────────────────────────────
 // 달력·통계·일기 디테일이 실제 데이터에 연동되도록 5월 한 달치 시드.
 // 원문은 기기 내(localStorage)에만 — liv-I1 Private-First 정합(서버 DB 미사용).
@@ -244,8 +242,29 @@ function reducer(state: State, action: Action): State {
         selectedDate: saveDate,
       };
     case 'diaries/merge': {
+      // 서버 엔트리로 로컬 풍부 엔트리를 통째로 덮어쓰지 않고 필드 단위로 병합한다.
+      // 로컬에만 있는 check(라이프체크)·tomorrow(내일 다짐)·복합 moods 는 보존하고,
+      // body/keywords 등 서버가 갱신한 필드는 받아들인다.
       const byDate = new Map(state.diaries.map((d) => [diaryDateOf(d), d]));
-      action.entries.forEach((entry) => byDate.set(diaryDateOf(entry), entry));
+      action.entries.forEach((entry) => {
+        const key = diaryDateOf(entry);
+        const local = byDate.get(key);
+        byDate.set(
+          key,
+          local
+            ? {
+                ...local,
+                ...entry,
+                check: local.check ?? entry.check,
+                tomorrow: local.tomorrow ?? entry.tomorrow,
+                moods:
+                  (local.moods?.length ?? 0) > (entry.moods?.length ?? 0)
+                    ? local.moods
+                    : entry.moods,
+              }
+            : entry,
+        );
+      });
       return {
         ...state,
         diaries: [...byDate.values()].sort((a, b) => diaryDateOf(a).localeCompare(diaryDateOf(b))),
@@ -279,6 +298,14 @@ function reducer(state: State, action: Action): State {
 
 const LS_KEY = 'tamaya-state-v2'; // v2: 시드 일기 + selectedDay 추가 (구버전 자동 리셋)
 
+// 완전삭제(purge) 진행 중 persist 억제 — beforeunload/visibilitychange flush(PERF-04)가
+// localStorage.removeItem 직후의 reload 사이에 끼어들어 인메모리 state를 재기록,
+// 삭제를 되돌리는 것을 방지한다 (liv-I1 완전 삭제 보증).
+let persistSuppressed = false;
+export const suppressPersistence = () => {
+  persistSuppressed = true;
+};
+
 const StoreContext = createContext<{
   state: State;
   dispatch: React.Dispatch<Action>;
@@ -301,12 +328,34 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     return init;
   });
 
+  // 저장 debounce(300ms) — 매 dispatch 마다 동기 JSON.stringify→localStorage 하던 것을
+  // 마지막 변경 뒤 한 번만 쓴다. 유실 방지: 탭 백그라운드(visibilitychange hidden)·
+  // 페이지 종료(beforeunload) 시점에 대기 중 저장을 즉시 flush 한다 (PERF-04).
   useEffect(() => {
-    try {
-      localStorage.setItem(LS_KEY, JSON.stringify(state));
-    } catch {
-      // ignore quota
-    }
+    const persist = () => {
+      if (persistSuppressed) return;
+      try {
+        localStorage.setItem(LS_KEY, JSON.stringify(state));
+      } catch {
+        // ignore quota
+      }
+    };
+    const timer = window.setTimeout(persist, 300);
+    const flush = () => {
+      if (persistSuppressed) return;
+      window.clearTimeout(timer);
+      persist();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('beforeunload', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('beforeunload', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [state]);
 
   return (
@@ -403,11 +452,8 @@ export const CHAT_DIARY_INTRO: ChatMsg = {
   text: '오늘도 고생했어.\n천천히 같이 정리해볼까?',
 };
 
-export const todayDayNum = () => today.getDate();
-
 // ── 달력·통계 집계 (on-device diaries에서 파생) ────────────────────────────
 export type Period = '주' | '월' | '전체';
-export const TODAY_DAY = 27; // 프로토타입 기준일 (5월 27일)
 
 export const MOODS_ALL: Mood[] = ['😌', '😊', '😣', '😢', '😡'];
 export const MOOD_LABEL: Record<Mood, string> = {
@@ -417,16 +463,16 @@ export const MOOD_LABEL: Record<Mood, string> = {
   '😢': '슬픔',
   '😡': '짜증',
 };
+// 색 정본 = tokens.css --mood-* (값 1:1 정합) — 소비처(records.tsx background, moodPct
+// color 필드) 전부 CSS 색 컨텍스트 확인됨(canvas 2D 등 var() 미해석 컨텍스트 없음).
 export const MOOD_BAR: Record<Mood, string> = {
-  '😌': '#ead0a6',
-  '😊': '#c9a266',
-  '😣': '#d8a777',
-  '😢': '#fff',
-  '😡': '#fff5e1',
+  '😌': 'var(--mood-calm)',
+  '😊': 'var(--mood-joy)',
+  '😣': 'var(--mood-tired)',
+  '😢': 'var(--mood-sad)',
+  '😡': 'var(--mood-irritated)',
 };
 export const WEEKDAY_KR = ['일', '월', '화', '수', '목', '금', '토'];
-// 5월 1일 2026 = 금요일 → 요일 인덱스(일=0..토=6)
-export const weekdayOf = (day: number) => (4 + day) % 7;
 export const weekdayOfDate = (date: string) => new Date(`${date}T00:00:00`).getDay();
 
 export const formatDateKey = (year: number, month: number, day: number) =>
@@ -455,15 +501,6 @@ export const entriesForMonth = (diaries: DiaryEntry[], year: number, month: numb
   return diaries.filter((d) => monthKeyOf(diaryDateOf(d)) === monthKey);
 };
 
-// 달력 셀용: day → 대표 감정 이모지
-export const moodByDay = (diaries: DiaryEntry[]): Record<number, Mood> => {
-  const m: Record<number, Mood> = {};
-  diaries.forEach((d) => {
-    if (d.moods[0]) m[d.day] = d.moods[0];
-  });
-  return m;
-};
-
 export const moodByDate = (diaries: DiaryEntry[]): Record<string, Mood> => {
   const m: Record<string, Mood> = {};
   diaries.forEach((d) => {
@@ -484,23 +521,32 @@ const HISTORY = {
 export type StatsResult = {
   count: number;
   writeDays: number;
-  target: number;
   weekday: number[];
   moodPct: { mood: Mood; label: string; pct: number; color: string }[];
   life: { food: number; water: number; sleep: number; movement: number; sun: number };
 };
 
+// 실날짜 기준 "오늘 포함 최근 7일" 윈도우 판정. 레거시 TODAY_DAY=27(5월 고정)
+// 프로토타입 상수를 대체 — 주간 카운트·주간 통계가 실제 오늘을 따라가도록 한다.
+export const isWithinLastWeek = (
+  entry: Pick<DiaryEntry, 'day' | 'date'>,
+  now: Date = new Date(),
+): boolean => {
+  const entryKey = diaryDateOf(entry);
+  const todayKey = formatDateKey(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+  const startKey = formatDateKey(start.getFullYear(), start.getMonth() + 1, start.getDate());
+  return entryKey >= startKey && entryKey <= todayKey;
+};
+
 export const statsFor = (diaries: DiaryEntry[], period: Period): StatsResult => {
-  const filtered =
-    period === '주'
-      ? diaries.filter((d) => d.day > TODAY_DAY - 7 && d.day <= TODAY_DAY)
-      : diaries;
+  const filtered = period === '주' ? diaries.filter((d) => isWithinLastWeek(d)) : diaries;
 
   const weekday = [0, 0, 0, 0, 0, 0, 0];
   const mood: Record<Mood, number> = { '😌': 0, '😊': 0, '😣': 0, '😢': 0, '😡': 0 };
   const life = { food: 0, water: 0, sleep: 0, movement: 0, sun: 0 };
   filtered.forEach((d) => {
-    weekday[weekdayOf(d.day)]++;
+    weekday[weekdayOfDate(diaryDateOf(d))]++;
     if (d.moods[0]) mood[d.moods[0]]++;
     (['food', 'water', 'sleep', 'movement', 'sun'] as DailyKey[]).forEach((k) => {
       if (d.check[k]) life[k]++;
@@ -525,6 +571,5 @@ export const statsFor = (diaries: DiaryEntry[], period: Period): StatsResult => 
     color: MOOD_BAR[m],
   })).sort((a, b) => b.pct - a.pct);
 
-  const target = period === '주' ? 7 : period === '월' ? 31 : writeDays;
-  return { count, writeDays, target, weekday, moodPct, life };
+  return { count, writeDays, weekday, moodPct, life };
 };

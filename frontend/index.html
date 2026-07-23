@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#2b1810" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -11,7 +11,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <!-- Pretendard — Design System SSOT 폰트 (Figma Tamaya v3 Typography) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- dynamic-subset: unicode-range 기반 분할 로드 — 실제 사용 글리프만 내려받아 렌더 블로킹 대폭 축소 (PERF-01) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
+  <!-- 스플래시 LCP 이미지 프리로드 — 최초 화면 고양이 아트워크 (PERF-02) -->
+  <link rel="preload" as="image" href="/character/base.webp" type="image/webp" />
   <title>Tamaya — 고양이와 함께 쓰는 감정 일기</title>
   <meta name="description" content="밤마다 고양이 집사 이음이와 대화하며 하루의 감정을 정리하는 감정 일기." />
   <!-- 링크 공유 미리보기 (Open Graph / Twitter) -->

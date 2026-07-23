@@ -1,3 +1,4 @@
+// PRE-SEND GUARD 확인 2026-07-22
 import { apiFetch } from './client';
 import { ensureDeviceToken } from './auth';
 
