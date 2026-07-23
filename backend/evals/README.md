@@ -326,3 +326,31 @@ uv run python -m evals.run_conversation_evaluation --judge-model HCX-007   # jud
   (`reports/{run_id}-conversation-review.md`)을 함께 생성한다. 검수 체크박스로
   judge 판정 동의 여부를 남기는 워크플로우.
 - 결정론 검사: 처방 토큰(`medical_guardrail`), guardrail 차단 여부(termination).
+
+## 평가 자동화
+
+**PR CI (비용 0, 매 PR 자동):**
+- `Backend CI / test`: ruff + 데이터셋 검증 + mock 테스트 전체.
+- `Backend CI / retrieval-eval`: postgres(pgvector) 서비스에 fixture를 시드하고
+  retrieval 평가를 실행, `evals/baselines/retrieval-baseline.json` 대비
+  회귀(hit 상실·RR 하락·신규 leak)면 실패한다. 리포트는 아티팩트로 30일 보관.
+  baseline은 CI(linux)에서 생성한 것이 canonical이다 — 임베딩 부동소수점이
+  플랫폼마다 미세하게 달라 로컬(macOS) 결과와 순위가 다를 수 있다.
+
+**CLOVA 평가 (비용 발생, 수동):**
+- GitHub Actions의 `CLOVA Evaluations` 워크플로를 수동 실행(workflow_dispatch).
+  대상 평가(all 또는 개별)와 repeat을 고르면 리포트가 아티팩트로 90일 보관된다.
+  저장소 secret `CLOVA_API_KEY` 필요. 정기 실행이 필요해지면 schedule(cron)만
+  추가하면 된다.
+
+**리포트 회귀 비교:**
+
+```bash
+uv run python -m evals.compare_reports 이전리포트.json 최신리포트.json --tolerance 5
+```
+
+리포트 종류(retrieval/chunk/generation/e2e/diary/signal/conversation/tool-selection)를
+자동 감지해 핵심 지표를 방향(높을수록/낮을수록 좋음)에 맞게 비교하고, tolerance보다
+크게 나빠지면 exit 1. LLM 평가는 비결정적이므로 tolerance 3~5를 권장한다
+(결정론인 retrieval은 0). 모든 리포트에는 prompt 해시·모델·git commit이 박혀 있어
+"어떤 버전의 프롬프트·모델로 얻은 수치인지" 추적된다.
