@@ -136,7 +136,7 @@ export const S23_Coach = ({ sample = false }: { sample?: boolean } = {}) => {
         </div>
 
         {err && (
-          <div className="tiny" role="alert" style={{ marginTop: 12, color: '#8a2c33' }}>
+          <div className="tiny" role="alert" style={{ marginTop: 12, color: 'var(--danger)' }}>
             ⚠ 백엔드(건강냥이) 연결 실패 — <code>make up · migrate · be</code> 기동 후 다시 시도.
           </div>
         )}

@@ -133,7 +133,7 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
           <div
             className="hbox"
             role={msg.kind === 'ok' ? 'status' : 'alert'}
-            style={{ marginTop: 14, padding: 12, color: msg.kind === 'ok' ? 'var(--accent)' : '#8a2c33' }}
+            style={{ marginTop: 14, padding: 12, color: msg.kind === 'ok' ? 'var(--accent)' : 'var(--danger)' }}
           >
             <div className="body">{msg.kind === 'ok' ? '✓ ' : '⚠ '}{msg.text}</div>
           </div>

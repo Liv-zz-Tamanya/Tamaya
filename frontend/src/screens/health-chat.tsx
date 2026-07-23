@@ -131,7 +131,7 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
         </div>
 
         {err && (
-          <div className="tiny" role="alert" style={{ marginTop: 12, color: '#8a2c33' }}>
+          <div className="tiny" role="alert" style={{ marginTop: 12, color: 'var(--danger)' }}>
             ⚠ 백엔드(건강냥이) 연결 실패 — 건강 기록 시드(<code>seed_demo_signals.py</code>) + 기동 확인.
           </div>
         )}

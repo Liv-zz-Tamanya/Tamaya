@@ -271,12 +271,12 @@ body[data-density="detailed"] .sticky { transform: rotate(-2deg) scale(1.04); }
 body[data-density="detailed"] .design-canvas {
   background-image:
     radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
-    linear-gradient(0deg, #f5f1e8, #f5f1e8);
+    linear-gradient(0deg, var(--canvas), var(--canvas));
   background-size: 18px 18px, 100% 100%;
 }
 
 /* Canvas / page background — soft warm-white, independent of artwork palette */
-html, body { background: #f5f1e8; }
+html, body { background: var(--canvas); }
 
 /* ── Inputs (typing) ──────────────────────────────────────────────────── */
 .input-row {

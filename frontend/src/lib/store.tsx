@@ -411,12 +411,14 @@ export const MOOD_LABEL: Record<Mood, string> = {
   '😢': '슬픔',
   '😡': '짜증',
 };
+// 색 정본 = tokens.css --mood-* (값 1:1 정합) — 소비처(records.tsx background, moodPct
+// color 필드) 전부 CSS 색 컨텍스트 확인됨(canvas 2D 등 var() 미해석 컨텍스트 없음).
 export const MOOD_BAR: Record<Mood, string> = {
-  '😌': '#ead0a6',
-  '😊': '#c9a266',
-  '😣': '#d8a777',
-  '😢': '#fff',
-  '😡': '#fff5e1',
+  '😌': 'var(--mood-calm)',
+  '😊': 'var(--mood-joy)',
+  '😣': 'var(--mood-tired)',
+  '😢': 'var(--mood-sad)',
+  '😡': 'var(--mood-irritated)',
 };
 export const WEEKDAY_KR = ['일', '월', '화', '수', '목', '금', '토'];
 // 5월 1일 2026 = 금요일 → 요일 인덱스(일=0..토=6)

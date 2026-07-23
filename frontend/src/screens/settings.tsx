@@ -160,8 +160,8 @@ export const S22_Settings = () => {
           className="btn block"
           style={{
             marginTop: 20,
-            color: '#8a2c33',
-            borderColor: '#8a2c33',
+            color: 'var(--danger)',
+            borderColor: 'var(--danger)',
             background: '#fff',
             cursor: purging ? 'wait' : 'pointer',
             fontFamily: 'inherit',

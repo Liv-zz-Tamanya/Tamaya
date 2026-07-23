@@ -68,11 +68,11 @@ export const S01_Splash = () => {
         [160, 640],
       ].map(([x, y], i) => (
         <g key={i}>
-          <circle cx={x} cy={y} r="1.5" fill="#f5e6cf" />
+          <circle cx={x} cy={y} r="1.5" fill="var(--paper)" />
           {i % 3 === 0 && (
             <path
               d={`M${x - 4} ${y} L${x + 4} ${y} M${x} ${y - 4} L${x} ${y + 4}`}
-              stroke="#f5e6cf"
+              stroke="var(--paper)"
               strokeWidth="0.5"
             />
           )}
@@ -419,7 +419,7 @@ export const S05_FirstMeet = () => {
         [100, 140],
         [200, 30],
       ].map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r="1.5" fill="#f5e6cf" />
+        <circle key={i} cx={x} cy={y} r="1.5" fill="var(--paper)" />
       ))}
     </svg>
     <div className="screen-scroll" style={{ padding: 'calc(56px + var(--safe-t)) 24px 120px' }}>

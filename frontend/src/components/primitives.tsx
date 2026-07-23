@@ -143,7 +143,7 @@ export const MoodFace = ({ mood, size = 28 }: { mood: string; size?: number }) =
 export const HandArrow = ({
   rotate = 0,
   length = 60,
-  color = '#8c4a1f',
+  color = 'var(--accent)',
 }: {
   rotate?: number;
   length?: number;

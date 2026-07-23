@@ -83,7 +83,7 @@ export const S24_Wellbeing = ({ sample = false }: { sample?: boolean } = {}) => 
 
         {phase === 'error' && (
           <div className="hbox r-l" role="alert" style={{ padding: 18 }}>
-            <div className="body" style={{ color: '#8a2c33' }}>인사이트를 불러오지 못했어요</div>
+            <div className="body" style={{ color: 'var(--danger)' }}>인사이트를 불러오지 못했어요</div>
             <div className="tiny" style={{ marginTop: 6 }}>
               백엔드(건강냥이) 연결을 확인해 주세요 — <code>make up · migrate · be</code>
             </div>

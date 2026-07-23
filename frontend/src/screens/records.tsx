@@ -395,7 +395,7 @@ export const S14_Calendar = () => {
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(26,26,26,0.55)',
+          background: 'var(--scrim)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

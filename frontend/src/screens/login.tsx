@@ -180,7 +180,7 @@ export const S21_Login = () => {
               style={{
                 marginTop: 8,
                 textAlign: 'left',
-                color: hint.ok ? '#2e7d32' : '#b3261e',
+                color: hint.ok ? 'var(--ok)' : 'var(--danger)',
               }}
             >
               {hint.text}

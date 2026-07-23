@@ -322,7 +322,7 @@ export const S07_HomeNight = () => {
             [260, 16],
             [320, 30],
           ].map(([x, y], i) => (
-            <circle key={i} cx={x} cy={y} r="1.2" fill="#f5e6cf" />
+            <circle key={i} cx={x} cy={y} r="1.2" fill="var(--paper)" />
           ))}
         </svg>
         <h2 className="h-section" style={{ color: 'var(--accent-soft)' }}>

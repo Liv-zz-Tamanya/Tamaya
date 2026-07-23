@@ -152,7 +152,7 @@ export const S10_RecapStart = () => {
   <div
     className="screen"
     style={{
-      background: 'linear-gradient(180deg, var(--night) 0%, #4a2f1e 100%)',
+      background: 'linear-gradient(180deg, var(--night) 0%, var(--night-2) 100%)',
       color: 'var(--paper)',
     }}
   >
@@ -173,7 +173,7 @@ export const S10_RecapStart = () => {
         [180, 170],
         [80, 420],
       ].map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r="1.4" fill="#f5e6cf" />
+        <circle key={i} cx={x} cy={y} r="1.4" fill="var(--paper)" />
       ))}
     </svg>
     <div className="screen-scroll" style={{ padding: 'calc(60px + var(--safe-t)) 24px calc(100px + var(--safe-b, 0px))' }}>
@@ -330,7 +330,7 @@ export const S10_RecapStart = () => {
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(20, 12, 8, 0.58)',
+          background: 'var(--scrim)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -847,7 +847,7 @@ export const S13_Reward = () => {
   return (
   <div className="screen">
     <div
-      style={{ position: 'absolute', inset: 0, background: 'rgba(26,26,26,0.55)' }}
+      style={{ position: 'absolute', inset: 0, background: 'var(--scrim)' }}
     />
 
     <div
