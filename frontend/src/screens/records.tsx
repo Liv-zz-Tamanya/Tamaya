@@ -648,7 +648,7 @@ export const S16_Stats = () => {
   const { state } = useStore();
   const s = statsFor(state.diaries, period);
   const maxW = Math.max(...s.weekday, 1);
-  const pct = period === '전체' ? 100 : Math.round((s.writeDays / s.target) * 100);
+  const nowMonth = new Date().getMonth() + 1;
   const life: [string, string, string][] = [
     ['🍚 식사', `${s.life.food}/${s.writeDays}`, s.life.food >= s.writeDays * 0.7 ? '꾸준 ↑' : '보통'],
     ['😴 수면', `${s.life.sleep}/${s.writeDays}`, s.life.sleep >= s.writeDays * 0.6 ? '양호' : '부족 ↓'],
@@ -689,19 +689,16 @@ export const S16_Stats = () => {
           </div>
           <div>
             <div style={{ fontWeight: 700 }}>
-              {period === '전체' ? '일 누적' : `/ ${s.target} 일`}
+              {period === '전체' ? '일 누적' : '일 기록'}
             </div>
-            <div className="tiny squiggle">
+            <div className="tiny">
               {period === '주'
-                ? `이번 주 ${pct}% 작성`
+                ? `이번 주 ${s.writeDays}일 기록했어요`
                 : period === '월'
-                  ? `5월 ${pct}% 작성`
+                  ? `${nowMonth}월 ${s.writeDays}일 기록했어요`
                   : `누적 기록 ${s.count}건`}
             </div>
           </div>
-        </div>
-        <div className="bar" style={{ marginTop: 10 }}>
-          <i style={{ width: Math.min(100, pct) + '%' }} />
         </div>
       </div>
 

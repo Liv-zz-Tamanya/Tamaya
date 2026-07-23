@@ -515,7 +515,6 @@ const HISTORY = {
 export type StatsResult = {
   count: number;
   writeDays: number;
-  target: number;
   weekday: number[];
   moodPct: { mood: Mood; label: string; pct: number; color: string }[];
   life: { food: number; water: number; sleep: number; movement: number; sun: number };
@@ -566,6 +565,5 @@ export const statsFor = (diaries: DiaryEntry[], period: Period): StatsResult => 
     color: MOOD_BAR[m],
   })).sort((a, b) => b.pct - a.pct);
 
-  const target = period === '주' ? 7 : period === '월' ? 31 : writeDays;
-  return { count, writeDays, target, weekday, moodPct, life };
+  return { count, writeDays, weekday, moodPct, life };
 };
