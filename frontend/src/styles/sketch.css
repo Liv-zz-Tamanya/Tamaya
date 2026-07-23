@@ -40,8 +40,6 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
    RESP-05: 화면 루트가 아니라 본문 콘텐츠 래퍼에 적용 — 탭바는 루트 직하에서 전폭 유지.
    position: relative 는 내부 절대배치(px 앵커) 요소들의 컨테이닝 블록을 스테이지 폭으로 한정한다. */
 .stage-body { max-width: var(--stage-max, 560px); margin-inline: auto; position: relative; display: flow-root; }
-/* 캔버스형 화면 구 버전 호환(사용처 없음 — .stage-body 로 대체) */
-.screen--stage { max-width: var(--stage-max, 560px); margin-inline: auto; }
 
 /* 하단 고정 요소의 유동 컬럼 정렬 — .tabbar와 동일 공식 (RESP-06/라이브 실측) */
 .pin-bottom {
@@ -104,13 +102,13 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
    제목·섹션 라벨을 div 대신 h1/h2 로 마크업해도 기존 .h-title/.h-section/.h-label/
    .h-display 등 클래스의 시각이 그대로 유지되게 한다(시각 무변화). */
 h1, h2 { margin: 0; font: inherit; font-size: inherit; font-weight: inherit; }
-.h-display { font-family: 'Pretendard'; font-weight: 700; font-size: 32px; line-height: 1; letter-spacing: -0.5px; }
-.h-title { font-family: 'Pretendard'; font-weight: 700; font-size: 24px; line-height: 1.1; }
-.h-section { font-family: 'Pretendard'; font-weight: 400; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; color: var(--pencil); }
-.h-label { font-family: 'Pretendard'; font-size: 13px; color: var(--pencil); }
-.body { font-family: 'Pretendard'; font-size: 14px; color: var(--ink); }
-.tiny { font-family: 'Pretendard'; font-size: 11px; color: var(--pencil); letter-spacing: 0.4px; }
-.handwriting { font-family: 'Pretendard'; font-size: 18px; color: var(--ink-soft); }
+.h-display { font-family: 'Pretendard'; font-weight: 700; font-size: var(--text-display); line-height: 1; letter-spacing: -0.5px; }
+.h-title { font-family: 'Pretendard'; font-weight: 700; font-size: var(--text-title); line-height: 1.1; }
+.h-section { font-family: 'Pretendard'; font-weight: 400; font-size: var(--text-section); text-transform: uppercase; letter-spacing: 1px; color: var(--pencil); }
+.h-label { font-family: 'Pretendard'; font-size: var(--text-label); color: var(--pencil); }
+.body { font-family: 'Pretendard'; font-size: var(--text-body); color: var(--ink); }
+.tiny { font-family: 'Pretendard'; font-size: var(--text-tiny); color: var(--pencil); letter-spacing: 0.4px; }
+.handwriting { font-family: 'Pretendard'; font-size: var(--text-handwriting); color: var(--ink-soft); }
 
 /* Nav back arrow — 화면 좌상단 ‹ 뒤로가기 (인라인 span 4곳 통합, C6).
    font-family 는 전역(body·.app-root=Pretendard) 상속 → 인라인 재지정 불필요.
@@ -178,21 +176,24 @@ h1, h2 { margin: 0; font: inherit; font-size: inherit; font-weight: inherit; }
 .anno { position: absolute; font-family: 'Pretendard'; font-weight: 500; font-size: 16px; color: var(--accent); display: flex; gap: 6px; align-items: flex-start; }
 .anno svg { flex: none; }
 
-/* Star */
-.star::before { content: '★'; }
-
-/* Squiggly underline */
-.squiggle { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 6'><path d='M0 3 Q 5 0 10 3 T 20 3 T 30 3 T 40 3 T 50 3 T 60 3 T 70 3 T 80 3' fill='none' stroke='%238c4a1f' stroke-width='1.5'/></svg>"); background-repeat: repeat-x; background-position: bottom; background-size: 80px 6px; padding-bottom: 4px; }
+/* Squiggly underline — SVG data-URI 는 CSS 변수를 담지 못해 stroke 를 마스크로 쓰고
+   배경색을 var(--accent) 로 토큰화(TOK-09). stroke 색은 마스크 알파에만 쓰이므로
+   임의값(#000) 유지 — 렌더 결과(형태·색)는 이전 하드코드 #8c4a1f 와 동일(= --accent). */
+.squiggle {
+  background-color: var(--accent);
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 6'><path d='M0 3 Q 5 0 10 3 T 20 3 T 30 3 T 40 3 T 50 3 T 60 3 T 70 3 T 80 3' fill='none' stroke='%23000' stroke-width='1.5'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 6'><path d='M0 3 Q 5 0 10 3 T 20 3 T 30 3 T 40 3 T 50 3 T 60 3 T 70 3 T 80 3' fill='none' stroke='%23000' stroke-width='1.5'/></svg>");
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  -webkit-mask-position: bottom;
+  mask-position: bottom;
+  -webkit-mask-size: 80px 6px;
+  mask-size: 80px 6px;
+  padding-bottom: 4px;
+}
 
 /* Cat SVG placeholders sized by container */
 .cat-spot { display: inline-flex; align-items: center; justify-content: center; }
-
-/* Flow arrow */
-.flow-arrow { font-family: 'Pretendard'; font-size: 24px; color: var(--accent); display: flex; align-items: center; gap: 4px; }
-
-/* Section meta on canvas */
-.meta-card { background: var(--cream); border: 1.5px solid var(--ink); padding: 10px 14px; border-radius: 6px; font-family: 'Pretendard'; font-size: 12px; box-shadow: 3px 3px 0 rgba(0,0,0,0.08); max-width: 280px; }
-.meta-card b { font-family: 'Pretendard'; font-weight: 700; font-size: 16px; display: block; margin-bottom: 4px; }
 
 /* Bar / progress */
 .bar { height: 8px; background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 999px; overflow: hidden; position: relative; }
@@ -215,64 +216,6 @@ h1, h2 { margin: 0; font: inherit; font-size: inherit; font-weight: inherit; }
   line-height: 1.35;
   color: var(--accent);
   font-weight: 500;
-}
-
-/* ── Tweaks: Vibe ─────────────────────────────────────────────────────────
-   sketchy (default) → as authored.
-   crisp             → square up: kill rotations, dashed → solid, soft shadow.
-   playful           → exaggerate: bigger tilt + chunkier shadow + tickered sticky.
-   Apply via body[data-vibe="..."] so every screen re-tones in lockstep.
-   ──────────────────────────────────────────────────────────────────────── */
-body[data-vibe="crisp"] .sketch > .r-l,
-body[data-vibe="crisp"] .sketch > .r-r,
-body[data-vibe="crisp"] .sketch > .r-ll,
-body[data-vibe="crisp"] .sketch > .r-rr,
-body[data-vibe="crisp"] .hbox.r-l,
-body[data-vibe="crisp"] .hbox.r-r,
-body[data-vibe="crisp"] .hbox.r-ll,
-body[data-vibe="crisp"] .hbox.r-rr,
-body[data-vibe="crisp"] .sticky,
-body[data-vibe="crisp"] .meta-card { transform: none !important; }
-body[data-vibe="crisp"] .hbox.dashed,
-body[data-vibe="crisp"] .chip.dashed { border-style: solid; }
-body[data-vibe="crisp"] .btn { box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
-body[data-vibe="crisp"] .sticky { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-body[data-vibe="crisp"] .meta-card { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-body[data-vibe="crisp"] .tab-center .tab-icon-lg { box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-body[data-vibe="crisp"] .hbox { border-radius: 10px; }
-
-body[data-vibe="playful"] .r-l  { transform: rotate(-1.4deg); }
-body[data-vibe="playful"] .r-r  { transform: rotate(1.6deg); }
-body[data-vibe="playful"] .r-ll { transform: rotate(-2.2deg); }
-body[data-vibe="playful"] .r-rr { transform: rotate(2.0deg); }
-body[data-vibe="playful"] .sticky { transform: rotate(-3deg); box-shadow: 3px 3px 0 rgba(0,0,0,0.18); }
-body[data-vibe="playful"] .btn { box-shadow: 3px 4px 0 var(--ink); }
-body[data-vibe="playful"] .hbox { border-radius: 18px; border-width: 2px; }
-body[data-vibe="playful"] .chip { border-width: 2px; }
-
-/* ── Tweaks: Density ───────────────────────────────────────────────────────
-   minimal  → hide secondary deco (sticky, squiggle, dashed chips, design notes)
-   standard → as authored
-   detailed → emphasise notes + sticky, add subtle dotted page background
-   ──────────────────────────────────────────────────────────────────────── */
-body[data-density="minimal"] .sticky,
-body[data-density="minimal"] .squiggle,
-body[data-density="minimal"] .chip.dashed,
-body[data-density="minimal"] .note { display: none !important; }
-body[data-density="minimal"] .squiggle { background: none; padding-bottom: 0; }
-
-body[data-density="detailed"] .note {
-  background: rgba(140, 74, 31, 0.07);
-  padding: 4px 8px;
-  border-radius: 4px;
-  border-left: 3px solid var(--accent);
-}
-body[data-density="detailed"] .sticky { transform: rotate(-2deg) scale(1.04); }
-body[data-density="detailed"] .design-canvas {
-  background-image:
-    radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
-    linear-gradient(0deg, var(--canvas), var(--canvas));
-  background-size: 18px 18px, 100% 100%;
 }
 
 /* Canvas / page background — soft warm-white, independent of artwork palette */

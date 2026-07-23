@@ -97,14 +97,17 @@
   --font-body: 'Pretendard', sans-serif;        /* 본문 */
   --font-system: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
-  /* Figma Typography 스케일(28/24/20/18/16/14/12) 정합 */
-  --text-display: 28px;
+  /* 실사용 스케일(32/24/18/15/14/13/11) 정합 — sketch.css 타이포 클래스
+   * (.h-display/.h-title/.handwriting/.h-section/.body/.h-label/.tiny) 실측 font-size
+   * 기준으로 갱신(TOK-03, 2026-07-23). 이전 Figma 스케일 값은 클래스 실값과 불일치해
+   * 사장돼 있었음 — 반대 방향(클래스를 토큰에 맞춤) 아님, 클래스 실값이 SSOT. */
+  --text-display: 32px;
   --text-title: 24px;
-  --text-handwriting: 20px;
-  --text-section: 18px;
-  --text-body: 16px;
-  --text-label: 14px;
-  --text-tiny: 12px;
+  --text-handwriting: 18px;
+  --text-section: 15px;
+  --text-body: 14px;
+  --text-label: 13px;
+  --text-tiny: 11px;
 
   /* ===== BREAKPOINTS — 풀 반응형 reflow 기준선 ============================
    * ⚠️ @media 는 var() 를 못 받는다. 미디어쿼리엔 아래 '리터럴 값'을 직접 쓰고,
@@ -116,12 +119,6 @@
   --bp-tablet: 768px;
   --bp-desktop: 1024px;
   --bp-wide: 1440px;
-
-  /* ===== LAYOUT =========================================================== */
-  --container-max: 1200px;   /* 데스크톱 전체 폭 한계 */
-  --content-max: 720px;      /* 읽기 콘텐츠 폭 한계 */
-  --app-max: 520px;          /* 모바일-우선 앱 본문 폭 (태블릿 이상서 중앙 정렬) */
-  --sidenav-w: 240px;        /* 데스크톱 사이드 네비 폭 */
 
   /* ===== ELEVATION / Z ==================================================== */
   --z-base: 1;
