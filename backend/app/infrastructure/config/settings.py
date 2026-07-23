@@ -4,6 +4,9 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://aidiary:aidiary@localhost:5432/aidiary"
+    # 평가 전용 DB — 운영 DB와 같은 postgres 인스턴스의 별도 database.
+    # evals/seed_fixtures가 DB명에 "eval"이 없으면 실행을 거부한다(운영 오염 방지).
+    eval_database_url: str = "postgresql+asyncpg://aidiary:aidiary@localhost:5432/aidiary_eval"
     clova_api_key: str = ""
     clova_base_url: str = "https://clovastudio.stream.ntruss.com/v1/openai"
     clova_model: str = "HCX-005"  # B-003: brief HCX-005로 통일

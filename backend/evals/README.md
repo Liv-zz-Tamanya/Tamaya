@@ -136,3 +136,36 @@ baseline 비교는 `case_stability`가 있는 리포트만 지원한다. pass ra
 결과는 기본적으로 `evals/reports/`에 UTF-8 JSON으로 저장된다. baseline mismatch는 Agent나
 데이터셋을 개선하기 전 자연스럽게 발생할 수 있으며 기본 exit code를 실패시키지 않는다.
 테스트는 scripted fake model과 빈 fake query service를 사용하므로 외부 API를 호출하지 않는다.
+
+## 평가 전용 DB fixture (RAG 평가 기반)
+
+`fixtures/`는 RAG 평가(retrieval·chunk·E2E)를 위한 합성 데이터다. 실제 사용자
+데이터가 아니며, 운영 DB와 분리된 평가 전용 DB(`settings.eval_database_url`,
+기본 `aidiary_eval`)에만 시드된다.
+
+- `fixtures/virtual_users.json`: 가상 사용자 3명. device_id는 반드시 `eval-` 접두사.
+  건강 데이터가 전혀 없는 사용자 1명 포함(빈 검색 케이스용).
+- `fixtures/diary_fixtures.jsonl`: 하루치 일기 대화 + 그 대화에서 추출되어야 할
+  정답 Event Chunk(`gold_chunks`). chunk 형식은 `CHUNK_EXTRACT_USER_REQUEST`가
+  규정하는 text/tags/event_type/who/where/when 계약을 따른다. gold chunk는 시드 시
+  `event_chunks` 행이 되고, retrieval 평가의 정답 문서이자 chunk 생성 평가(PR3)의
+  정답 레이블로 재사용된다.
+- `fixtures/health_fixtures.jsonl`: 하루치 건강 chunk. text는 `HealthChunkBuilder`가
+  생성하는 한국어 자연어 형식을 따른다.
+- 사용자 간 유출·hard negative 검사를 위해 서로 다른 사용자에 유사 사건이 의도적으로
+  들어 있다(예: 하나/소라의 "성수동 카페").
+
+검증과 시드:
+
+```bash
+uv run python -m evals.validate_fixtures      # 파일 계약 검사 (DB 접근 없음)
+uv run python -m evals.seed_fixtures          # 시드 — 이미 있는 행은 skip
+uv run python -m evals.seed_fixtures --reset  # eval 데이터 삭제 후 재시드
+uv run python -m evals.seed_fixtures --reset-only
+```
+
+안전장치: 대상 DB명이 운영 `database_url`과 같거나 이름에 `eval`이 없으면 시드가
+거부된다. reset은 fixture의 `eval-` 접두사 device_id 스코프만 삭제한다. 모든 행 id는
+`uuid5`로 결정론 생성되어 재실행해도 중복 삽입되지 않는다. 임베딩은 프로덕션과 동일한
+로컬 sentence-transformers 모델을 사용한다(외부 API·비용 없음). database가 없으면
+자동 생성하고 `CREATE EXTENSION vector` 후 스키마를 만든다.
