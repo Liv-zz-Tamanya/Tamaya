@@ -1,0 +1,18 @@
+# HTTPS 종단 — Let's Encrypt 발급·갱신은 Caddy가 자동 처리 (인증서는 caddy_data 볼륨에 보존).
+{
+	email kimjyun27@gmail.com
+}
+
+tamaya.online {
+	reverse_proxy web:80
+}
+
+# www → apex 통일 (검색엔진·공유 링크 정규화)
+www.tamaya.online {
+	redir https://tamaya.online{uri} permanent
+}
+
+# 도메인이 아닌 호스트(공인 IP 북마크 등)로 들어온 HTTP 요청도 도메인으로 유도
+http:// {
+	redir https://tamaya.online{uri}
+}
