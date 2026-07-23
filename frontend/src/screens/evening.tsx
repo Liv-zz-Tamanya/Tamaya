@@ -788,11 +788,10 @@ export const S12_MoodFinalize = () => {
     </div>
     {toast && <div className="toast" role="status">{toast}</div>}
     <div
+      className="pin-bottom"
       style={{
-        position: 'absolute',
         bottom: 'calc(16px + var(--safe-b, 0px))',
-        left: 18,
-        right: 18,
+        paddingInline: 'max(18px, calc((100% - var(--app-fluid, 100%)) / 2))',
         display: 'flex',
         gap: 8,
       }}
