@@ -219,3 +219,27 @@ uv run python -m evals.run_chunk_evaluation --threshold 0.6
   남긴다 — 임계 근처(0.4~0.55) 항목은 사람이 확인할 것.
 - 프롬프트는 `chunk_extraction_prompt` 모듈로 분리되어 리포트의 `prompt_hash`로
   버전 추적된다.
+
+## RAG 답변 생성 평가
+
+검색을 우회하고 정답 문서(fixture chunk)를 프로덕션 tool 결과 wire 형식 그대로
+컨텍스트에 주입해, "문서가 주어졌을 때 제대로 답하는가"만 격리 측정한다.
+**CLOVA 비용 발생**(케이스당 생성 1회 + judge 1회). DB 미사용.
+
+```bash
+uv run python -m evals.run_generation_evaluation
+uv run python -m evals.run_generation_evaluation --case-id gen-health-201 --repeat 3
+```
+
+- category: `grounded_recall`·`multi_doc_summary`(완전성 채점), `unsupported_bait`
+  (문서에 없는 걸 물어 지어내는지), `no_record_abstention`(빈 검색 결과 — 기록 없다고
+  답해야 통과), `health_boundary`(진단·처방 확장 금지).
+- 결정론 검사: expected_facts 완전성(공백 정규화 + 동의 표현 대안), 처방 토큰
+  (`medical_guardrail.contains_prescriptive_content`).
+- LLM judge: unsupported claim·abstention·진단/처방 판정. **현재 judge는 생성 모델과
+  같은 CLOVA라 자기 채점 편향이 있고, 공감·되묻기를 unsupported로 과잉 판정하는
+  경향이 실측됨** — faithful rate는 참고 지표로 보고 판정 원문(리포트의 raw_response)을
+  사람이 확인할 것. 외부 judge 도입은 PR8에서.
+- 주의: 프로덕션 input guardrail을 의도적으로 우회한다 — guardrail이 뚫렸을 때 생성
+  모델이 마지막 방어선이 되는지 측정하는 평가다(defense in depth).
+- 문서를 주었는데 다시 tool을 호출하려 하면 `re_search`로 기록된다.
