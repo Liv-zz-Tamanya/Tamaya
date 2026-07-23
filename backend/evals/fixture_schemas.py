@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 EVAL_DEVICE_PREFIX = "eval-"
 
-# clova_client.CHUNK_EXTRACT_USER_REQUEST가 규정하는 event_type 어휘와 동일해야 한다.
+# chunk_extraction_prompt.CHUNK_EXTRACT_USER_REQUEST가 규정하는 event_type 어휘와 동일해야 한다.
 EventType = Literal["work", "social", "emotion", "personal", "achievement"]
 
 # scripts/ingest_health_data.HealthChunkBuilder._get_data_types와 동일한 어휘.
