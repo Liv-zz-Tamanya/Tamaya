@@ -177,12 +177,12 @@ h1, h2 { margin: 0; font: inherit; font-size: inherit; font-weight: inherit; }
 .anno svg { flex: none; }
 
 /* Squiggly underline — SVG data-URI 는 CSS 변수를 담지 못해 stroke 를 마스크로 쓰고
-   배경색을 var(--accent) 로 토큰화(TOK-09). stroke 색은 마스크 알파에만 쓰이므로
-   임의값(#000) 유지 — 렌더 결과(형태·색)는 이전 하드코드 #8c4a1f 와 동일(= --accent). */
+   배경색을 var(--accent) 로 토큰화(TOK-09). stroke 색: 표준 alpha 모드는 임의값이나,
+   구형 WebKit(Safari <15.4) luminance 모드 비가시 방지로 #fff — 렌더(형태·색) = 기존 #8c4a1f(--accent). */
 .squiggle {
   background-color: var(--accent);
-  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 6'><path d='M0 3 Q 5 0 10 3 T 20 3 T 30 3 T 40 3 T 50 3 T 60 3 T 70 3 T 80 3' fill='none' stroke='%23000' stroke-width='1.5'/></svg>");
-  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 6'><path d='M0 3 Q 5 0 10 3 T 20 3 T 30 3 T 40 3 T 50 3 T 60 3 T 70 3 T 80 3' fill='none' stroke='%23000' stroke-width='1.5'/></svg>");
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 6'><path d='M0 3 Q 5 0 10 3 T 20 3 T 30 3 T 40 3 T 50 3 T 60 3 T 70 3 T 80 3' fill='none' stroke='%23fff' stroke-width='1.5'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 6'><path d='M0 3 Q 5 0 10 3 T 20 3 T 30 3 T 40 3 T 50 3 T 60 3 T 70 3 T 80 3' fill='none' stroke='%23fff' stroke-width='1.5'/></svg>");
   -webkit-mask-repeat: repeat-x;
   mask-repeat: repeat-x;
   -webkit-mask-position: bottom;
