@@ -919,7 +919,7 @@ export const S13_Reward = () => {
         <i style={{ width: Math.min(100, (state.streak / 14) * 100) + '%', background: 'var(--night)', borderRightColor: 'var(--night)' }} />
       </div>
       <div className="tiny" style={{ textAlign: 'center', marginTop: 6, color: 'var(--pencil)' }}>
-        14일 달성 시 → 새 옷 잠금해제 ({Math.max(0, 14 - state.streak)}일 남음)
+        오늘도 만나서 좋았어
       </div>
       <div className="tiny" style={{ textAlign: 'center', marginTop: 4 }}>
         총 포인트 {state.points} ◉ · 일기 {state.diaries.length}건

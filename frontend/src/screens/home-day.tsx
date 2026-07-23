@@ -41,7 +41,7 @@ export const S06_HomeDay = () => {
   const weekCount = state.diaries.filter((e) => e.day > TODAY_DAY - 7 && e.day <= TODAY_DAY).length;
   const summary: [string, string, string][] = [
     ['오늘 컨디션', cond, latest ? '최근 회고 기준' : '첫 회고를 해봐요'],
-    ['이번 주', `${weekCount} / 7 일`, weekCount >= 3 ? '목표 달성 ✓' : `이번 주 ${weekCount}일 함께했어요`],
+    ['이번 주', `${weekCount}일`, '함께했어요'],
     ['포인트', `◉ ${state.points}`, `보상 ${state.unlockedItems.length}개`],
     ['키우기', state.unlockedItems.length ? `아이템 ${state.unlockedItems.length}` : '시작하기', '보러가기 ›'],
   ];
@@ -370,11 +370,7 @@ export const S07_HomeNight = () => {
           <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
             {state.streak > 0 ? `${state.streak}일 연속!` : '오늘부터 시작해요'}
           </div>
-          <div className="tiny">
-            {state.streak >= 14
-              ? '새 옷 잠금해제 완료 🎁'
-              : `+${14 - state.streak}일이면 새 옷 잠금해제 🎁`}
-          </div>
+          <div className="tiny">오늘도 만나서 좋았어</div>
         </div>
         <div style={{ display: 'flex', gap: 3 }}>
           {Array.from({ length: 7 }, (_, i) => (i < Math.min(state.streak, 7) ? 1 : 0)).map((on, i) => (
@@ -522,7 +518,7 @@ export const S08_DailyCheck = () => {
   const setWater = (n: number) => {
     const before = d.water >= 6;
     dispatch({ type: 'daily/water-set', value: n });
-    if (!before && n >= 6) award('water', '물 6잔 달성', false);
+    if (!before && n >= 6) award('water', '물을 잘 챙겼네요', false);
   };
 
   return (
@@ -720,8 +716,8 @@ export const S08_DailyCheck = () => {
 
       {doneCount === 5 && (
         <div className="hbox accent" style={{ padding: 12, marginTop: 14, textAlign: 'center' }}>
-          <div className="h-title" style={{ fontSize: 18 }}>오늘 5체크 완성! 🎉</div>
-          <div className="tiny">밤 회고 때 더 깊은 분석을 해줄게</div>
+          <div className="h-title" style={{ fontSize: 18 }}>오늘 다섯 가지를 돌봤어요! 🎉</div>
+          <div className="tiny">밤에 오늘 얘기 더 들려줄래?</div>
         </div>
       )}
     </div>

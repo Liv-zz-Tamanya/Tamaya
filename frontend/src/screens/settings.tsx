@@ -70,7 +70,6 @@ export const S22_Settings = () => {
     { label: '이음이 이름', value: state.character.name, onClick: () => nav.go('create-cat') },
     { label: '알림 — 주간 리포트', value: '월요일 09:00' },
     { label: '데이터 — 로컬 저장', value: `일기 ${state.diaries.length}건` },
-    { label: '데이터 — 백업', value: '직접 내보내기' },
     { label: '🐱 밤 코칭 (건강냥)', value: 'BE 연동 · 코칭 대화', onClick: () => nav.go('coach') },
     { label: '📈 웰빙 인사이트', value: 'BE 연동 · 주간 스코어', onClick: () => nav.go('wellbeing') },
     { label: '✚ 건강 기록 Q&A', value: 'BE 연동 · RAG 챗', onClick: () => nav.go('health-chat') },
@@ -176,16 +175,18 @@ export const S22_Settings = () => {
           서버·기기의 내 데이터를 모두 지웁니다 · liv-zz Private-First 약속
         </div>
 
-        <div style={{ marginTop: 10, textAlign: 'center' }}>
-          <button
-            type="button"
-            className="tiny as-button"
-            style={{ cursor: 'pointer', color: 'var(--pencil)' }}
-            onClick={() => dispatch({ type: 'streak/inc' })}
-          >
-            (디버그) +1 스트릭
-          </button>
-        </div>
+        {import.meta.env.DEV && (
+          <div style={{ marginTop: 10, textAlign: 'center' }}>
+            <button
+              type="button"
+              className="tiny as-button"
+              style={{ cursor: 'pointer', color: 'var(--pencil)' }}
+              onClick={() => dispatch({ type: 'streak/inc' })}
+            >
+              (디버그) +1 스트릭
+            </button>
+          </div>
+        )}
       </div>
       <TabBar active="home" />
     </div>
