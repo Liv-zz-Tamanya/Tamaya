@@ -45,3 +45,67 @@ jobs:
         run: uv run pytest -q
         env:
           CLOVA_MOCK_MODE: "true"
+
+  # Retrieval 평가 회귀 게이트 — LLM 호출 없음(로컬 임베딩 + pgvector), 비용 0.
+  # baseline(evals/baselines/retrieval-baseline.json) 대비 hit 상실·RR 하락·
+  # 신규 leak이 생기면 실패한다.
+  retrieval-eval:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: aidiary
+          POSTGRES_PASSWORD: aidiary
+          POSTGRES_DB: aidiary
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aidiary"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      # sentence-transformers 모델(~120MB) 다운로드 캐시
+      - name: Cache embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-paraphrase-multilingual-minilm-l12-v2
+
+      - name: Seed eval database
+        run: uv run python -m evals.seed_fixtures
+        env:
+          CLOVA_MOCK_MODE: "true"
+
+      - name: Run retrieval evaluation with regression gate
+        run: >
+          uv run python -m evals.run_retrieval_evaluation
+          --baseline evals/baselines/retrieval-baseline.json
+          --fail-on-regression
+          --output retrieval-report.json
+        env:
+          CLOVA_MOCK_MODE: "true"
+
+      - name: Upload retrieval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retrieval-report
+          path: backend/retrieval-report.json
+          retention-days: 30
