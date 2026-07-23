@@ -169,3 +169,28 @@ uv run python -m evals.seed_fixtures --reset-only
 `uuid5`로 결정론 생성되어 재실행해도 중복 삽입되지 않는다. 임베딩은 프로덕션과 동일한
 로컬 sentence-transformers 모델을 사용한다(외부 API·비용 없음). database가 없으면
 자동 생성하고 `CREATE EXTENSION vector` 후 스키마를 만든다.
+
+## Retrieval 검색 평가
+
+Agent를 제외하고 검색 service(`DiaryMemoryQueryService`, `HealthRecordQueryService`)를
+직접 호출해 순위 품질을 잰다. LLM 호출이 없고 임베딩은 로컬 모델이므로 비용이 없다.
+전제: 평가 DB에 fixture가 시드되어 있어야 한다.
+
+```bash
+uv run python -m evals.validate_retrieval_dataset   # 데이터셋·fixture 참조 검증
+uv run python -m evals.run_retrieval_evaluation
+uv run python -m evals.run_retrieval_evaluation --case-id ret-diary-001
+uv run python -m evals.run_retrieval_evaluation \
+  --baseline evals/baselines/retrieval-baseline.json --fail-on-regression
+```
+
+- 지표: Hit@1·3·5, Precision@k, Recall@k, MRR(k=`--top-k`, 기본 5). 빈 정답
+  케이스(`empty_retrieval`)는 순위 지표에서 제외하고 "결과 0건" 여부만 검사한다.
+- 검색 결과 UUID는 uuid5 역매핑으로 fixture chunk 라벨로 복원된다. 다른 사용자
+  소유 chunk가 나오면 `leaked_labels`(사용자 간 유출), fixture에 없는 행이 나오면
+  `unknown_ids`로 잡힌다 — 두 카운트는 항상 0이어야 정상이다.
+- category: `direct_recall`, `paraphrase_recall`, `multi_relevant`, `hard_negative`,
+  `cross_user_probe`, `date_reference`(알려진 약점 정량화), `empty_retrieval`.
+- baseline: `evals/baselines/retrieval-baseline.json`(git 추적). 임베딩이 결정론적이라
+  같은 코드·데이터에서 결과가 완전히 재현되며, `--fail-on-regression`으로 회귀를
+  잡는다. 개선 후에는 새 리포트로 baseline 파일을 교체한다.
