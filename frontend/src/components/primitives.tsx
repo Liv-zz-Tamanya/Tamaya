@@ -1,4 +1,4 @@
-import { CSSProperties, ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Route, useNav } from '../lib/router';
 import { MOOD_LABEL, Mood } from '../lib/store';
 
@@ -140,38 +140,6 @@ export const MoodFace = ({ mood, size = 28 }: { mood: string; size?: number }) =
   />
 );
 
-export const HandArrow = ({
-  rotate = 0,
-  length = 60,
-  color = 'var(--accent)',
-}: {
-  rotate?: number;
-  length?: number;
-  color?: string;
-}) => (
-  <svg
-    width={length}
-    height="24"
-    viewBox={`0 0 ${length} 24`}
-    style={{ transform: `rotate(${rotate}deg)` }}
-  >
-    <path
-      d={`M2 12 Q ${length / 3} 4 ${length - 12} 12`}
-      stroke={color}
-      strokeWidth="1.5"
-      fill="none"
-    />
-    <path
-      d={`M${length - 16} 6 L ${length - 10} 12 L ${length - 18} 16`}
-      stroke={color}
-      strokeWidth="1.5"
-      fill="none"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
 export const ImgPh = ({
   w = '100%',
   h = 80,
@@ -208,9 +176,25 @@ export const ImgPh = ({
   </div>
 );
 
-export const Callout = ({ children, style }: { children: ReactNode; style?: CSSProperties }) => (
-  <div className="anno" style={style}>
-    <span>↳</span>
-    <span>{children}</span>
-  </div>
-);
+// 토스트 훅 — 화면마다 복제되던 로컬 flash(setToast + setTimeout 1400)를 통합(Q9/PERF-07).
+// 연타로 flash 가 연속 호출되면 이전 타이머를 clearTimeout 으로 취소해, 앞선 타이머가
+// 뒤 토스트를 조기 소거하던 경합을 없앤다. 렌더(role="status" toast div)는 각 화면 유지.
+export function useToast(): { toast: string | null; flash: (msg: string) => void } {
+  const [toast, setToast] = useState<string | null>(null);
+  const timerRef = useRef<number | undefined>(undefined);
+  const flash = useCallback((msg: string) => {
+    if (timerRef.current !== undefined) window.clearTimeout(timerRef.current);
+    setToast(msg);
+    timerRef.current = window.setTimeout(() => {
+      setToast(null);
+      timerRef.current = undefined;
+    }, 1400);
+  }, []);
+  useEffect(
+    () => () => {
+      if (timerRef.current !== undefined) window.clearTimeout(timerRef.current);
+    },
+    [],
+  );
+  return { toast, flash };
+}

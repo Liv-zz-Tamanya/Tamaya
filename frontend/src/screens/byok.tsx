@@ -7,18 +7,14 @@ import { getClovaSetting, testClovaKey, saveClovaKey, type ClovaSetting } from '
 // 보안 불변식: 원문 키는 요청 본문으로만 가고, 응답·저장소엔 마스킹(••••last4)만 남는다.
 // 건강냥이 BE: /api/v1/settings/clova {GET, /test, PUT}
 
-export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
+export const S25_Byok = () => {
   const nav = useNav();
-  // 와이어프레임 캔버스(#design)에선 "키 등록됨" 상태를 샘플로 보여준다(백엔드 불필요).
-  const [setting, setSetting] = useState<ClovaSetting | null>(
-    sample ? { has_key: true, masked: '••••3f9c' } : null,
-  );
+  const [setting, setSetting] = useState<ClovaSetting | null>(null);
   const [key, setKey] = useState('');
-  const [busy, setBusy] = useState<false | 'test' | 'save' | 'load'>(sample ? false : 'load');
+  const [busy, setBusy] = useState<false | 'test' | 'save' | 'load'>('load');
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
   useEffect(() => {
-    if (sample) return;
     void (async () => {
       try {
         setSetting(await getClovaSetting());
@@ -28,7 +24,7 @@ export const S25_Byok = ({ sample = false }: { sample?: boolean } = {}) => {
         setBusy(false);
       }
     })();
-  }, [sample]);
+  }, []);
 
   const onTest = () => {
     if (!key.trim()) return;

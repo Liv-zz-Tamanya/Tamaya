@@ -1,5 +1,6 @@
-import { KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { BackButton, CatSketch, MoodFace, TabBar } from '../components/primitives';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { BackButton, CatSketch, MoodFace, TabBar, useToast } from '../components/primitives';
+import { ChatInputRow, ChatThread } from '../components/chat';
 import { useNav } from '../lib/router';
 import { scrollBehavior } from '../lib/scroll';
 import {
@@ -469,7 +470,7 @@ export const S07_HomeNight = () => {
 export const S08_DailyCheck = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
-  const [toast, setToast] = useState<string | null>(null);
+  const { toast, flash } = useToast();
 
   const d = state.daily;
   const doneCount = useMemo(() => {
@@ -481,11 +482,6 @@ export const S08_DailyCheck = () => {
     if (d.sun.done) c++;
     return c;
   }, [d]);
-
-  const flash = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 1400);
-  };
 
   const award = (key: DailyKey, label: string, before: boolean) => {
     if (!before) {
@@ -769,13 +765,6 @@ export const S09_AIChat = () => {
     })();
   };
 
-  const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      send();
-    }
-  };
-
   const quick = ['잠이 안 와요', '집이 너무 조용해', '오늘 기분 그저 그래', '루틴 추천'];
 
   return (
@@ -793,34 +782,11 @@ export const S09_AIChat = () => {
           이음이는 자는 중 — 작은 비서가 답해줘요
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {state.aiChat.map((m, i) =>
-            m.role === 'bot' ? (
-              <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-                <div className="ph-circle" style={{ width: 28, height: 28, fontSize: 11, flex: 'none' }}>✦</div>
-                <div className="bubble bubble-bot">
-                  <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
-                </div>
-              </div>
-            ) : (
-              <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <div className="bubble bubble-user">
-                  <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
-                </div>
-              </div>
-            ),
-          )}
-          {typing && (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-              <div className="ph-circle" style={{ width: 28, height: 28, fontSize: 11, flex: 'none' }}>✦</div>
-              <div className="bubble bubble-bot" style={{ padding: '12px 16px' }}>
-                <span className="typing-dot" />
-                <span className="typing-dot" />
-                <span className="typing-dot" />
-              </div>
-            </div>
-          )}
-        </div>
+        <ChatThread
+          msgs={state.aiChat}
+          typing={typing}
+          avatar={<div className="ph-circle" style={{ width: 28, height: 28, fontSize: 11, flex: 'none' }}>✦</div>}
+        />
 
         <h2 className="h-label" style={{ marginTop: 18, marginBottom: 6 }}>자주 묻는 것</h2>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -838,37 +804,13 @@ export const S09_AIChat = () => {
         </div>
       </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          send();
-        }}
-        className="input-row above-tabbar"
-      >
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={onKey}
-          placeholder="비서에게 말 걸기..."
-          aria-label="비서에게 말 걸기"
-          autoFocus
-        />
-        <button
-          type="submit"
-          className="btn primary"
-          style={{
-            padding: 10,
-            width: 42,
-            height: 42,
-            borderRadius: '50%',
-            fontFamily: 'inherit',
-            cursor: 'pointer',
-            flex: 'none',
-          }}
-        >
-          →
-        </button>
-      </form>
+      <ChatInputRow
+        value={input}
+        onChange={setInput}
+        onSend={() => send()}
+        placeholder="비서에게 말 걸기..."
+        ariaLabel="비서에게 말 걸기"
+      />
       <TabBar active="home" />
     </div>
   );

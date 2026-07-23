@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BackButton, TabBar } from '../components/primitives';
+import { ChatInputRow, ChatThread } from '../components/chat';
 import { useNav } from '../lib/router';
 import { scrollBehavior } from '../lib/scroll';
 import { sendHealthChat } from '../lib/api';
@@ -15,19 +16,13 @@ const INTRO: Msg = {
   text: '내 건강 기록을 바탕으로 답해줄게요. 수면·식사·운동·복약 중 궁금한 걸 물어봐요.',
 };
 
-// 와이어프레임 캔버스(#design)용 샘플 Q&A — 내 기록 기반 RAG 답변 예시(백엔드 불필요).
-const SAMPLE_MSGS: Msg[] = [
-  INTRO,
-  { role: 'user', text: '요즘 수면 어때?' },
-  {
-    role: 'bot',
-    text: '최근 7일 기록을 보면 평균 수면이 6시간 10분이에요. 화·수엔 5시간대로 짧았고 주말엔 7시간대로 회복했어요. 취침 시각이 들쭉날쭉한 편이라 같은 시각에 눕는 것부터 맞춰보면 좋겠어요. (내 기록 기반 참고용이에요.)',
-  },
-];
+const HEALTH_AVATAR = (
+  <div className="ph-circle" style={{ width: 28, height: 28, fontSize: 11, flex: 'none' }}>✚</div>
+);
 
-export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) => {
+export const S26_HealthChat = () => {
   const nav = useNav();
-  const [msgs, setMsgs] = useState<Msg[]>(sample ? SAMPLE_MSGS : [INTRO]);
+  const [msgs, setMsgs] = useState<Msg[]>([INTRO]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const [err, setErr] = useState(false);
@@ -40,12 +35,6 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
   const send = (text?: string) => {
     const t = (text ?? input).trim();
     if (!t || typing) return;
-    if (sample) {
-      // 와이어프레임 캔버스 — 네트워크 호출 없이 예시 응답만.
-      setMsgs((m) => [...m, { role: 'user', text: t }, { role: 'bot', text: '(예시 모드) 실제 답변은 건강 기록 연동 후 제공돼요.' }]);
-      setInput('');
-      return;
-    }
     setMsgs((m) => [...m, { role: 'user', text: t }]);
     setInput('');
     setErr(false);
@@ -66,13 +55,6 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
     })();
   };
 
-  const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      send();
-    }
-  };
-
   const quick = ['요즘 수면 어때?', '이번 주 운동량은?', '식사 패턴 알려줘', '복약 잘 지켰어?'];
 
   return (
@@ -86,34 +68,7 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
           내 건강 데이터(RAG) 기반 답변 · 진단 아님, 참고용
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {msgs.map((m, i) =>
-            m.role === 'bot' ? (
-              <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-                <div className="ph-circle" style={{ width: 28, height: 28, fontSize: 11, flex: 'none' }}>✚</div>
-                <div className="bubble bubble-bot">
-                  <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
-                </div>
-              </div>
-            ) : (
-              <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <div className="bubble bubble-user">
-                  <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
-                </div>
-              </div>
-            ),
-          )}
-          {typing && (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-              <div className="ph-circle" style={{ width: 28, height: 28, fontSize: 11, flex: 'none' }}>✚</div>
-              <div className="bubble bubble-bot" style={{ padding: '12px 16px' }}>
-                <span className="typing-dot" />
-                <span className="typing-dot" />
-                <span className="typing-dot" />
-              </div>
-            </div>
-          )}
-        </div>
+        <ChatThread msgs={msgs} typing={typing} avatar={HEALTH_AVATAR} />
 
         <h2 className="h-label" style={{ marginTop: 18, marginBottom: 6 }}>자주 묻는 것</h2>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -137,29 +92,13 @@ export const S26_HealthChat = ({ sample = false }: { sample?: boolean } = {}) =>
         )}
       </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          send();
-        }}
-        className="input-row above-tabbar"
-      >
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={onKey}
-          placeholder="건강 기록에 대해 물어보기..."
-          aria-label="건강 기록에 대해 물어보기"
-          autoFocus
-        />
-        <button
-          type="submit"
-          className="btn primary"
-          style={{ padding: 10, width: 42, height: 42, borderRadius: '50%', fontFamily: 'inherit', cursor: 'pointer', flex: 'none' }}
-        >
-          →
-        </button>
-      </form>
+      <ChatInputRow
+        value={input}
+        onChange={setInput}
+        onSend={() => send()}
+        placeholder="건강 기록에 대해 물어보기..."
+        ariaLabel="건강 기록에 대해 물어보기"
+      />
       <TabBar active="home" />
     </div>
   );

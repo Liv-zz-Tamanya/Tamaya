@@ -67,8 +67,6 @@ export type State = {
   equippedItem: string | null;
 };
 
-const today = new Date();
-
 // ── Seed diary data (on-device) ─────────────────────────────────────────────
 // 달력·통계·일기 디테일이 실제 데이터에 연동되도록 5월 한 달치 시드.
 // 원문은 기기 내(localStorage)에만 — liv-I1 Private-First 정합(서버 DB 미사용).
@@ -418,8 +416,6 @@ export const CHAT_DIARY_INTRO: ChatMsg = {
   text: '오늘도 고생했어.\n천천히 같이 정리해볼까?',
 };
 
-export const todayDayNum = () => today.getDate();
-
 // ── 달력·통계 집계 (on-device diaries에서 파생) ────────────────────────────
 export type Period = '주' | '월' | '전체';
 
@@ -441,8 +437,6 @@ export const MOOD_BAR: Record<Mood, string> = {
   '😡': 'var(--mood-irritated)',
 };
 export const WEEKDAY_KR = ['일', '월', '화', '수', '목', '금', '토'];
-// 5월 1일 2026 = 금요일 → 요일 인덱스(일=0..토=6)
-export const weekdayOf = (day: number) => (4 + day) % 7;
 export const weekdayOfDate = (date: string) => new Date(`${date}T00:00:00`).getDay();
 
 export const formatDateKey = (year: number, month: number, day: number) =>
@@ -469,15 +463,6 @@ export const latestEntry = (diaries: DiaryEntry[]) =>
 export const entriesForMonth = (diaries: DiaryEntry[], year: number, month: number) => {
   const monthKey = `${year}-${pad2(month)}`;
   return diaries.filter((d) => monthKeyOf(diaryDateOf(d)) === monthKey);
-};
-
-// 달력 셀용: day → 대표 감정 이모지
-export const moodByDay = (diaries: DiaryEntry[]): Record<number, Mood> => {
-  const m: Record<number, Mood> = {};
-  diaries.forEach((d) => {
-    if (d.moods[0]) m[d.day] = d.moods[0];
-  });
-  return m;
 };
 
 export const moodByDate = (diaries: DiaryEntry[]): Record<string, Mood> => {

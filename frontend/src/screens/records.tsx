@@ -20,10 +20,8 @@ import {
   formatMonthDay,
   latestEntry,
   moodByDate,
-  moodByDay,
   statsFor,
   weekdayOfDate,
-  weekdayOf,
   useStore,
 } from '../lib/store';
 import { listDiaries, type DiaryResponse } from '../lib/api';

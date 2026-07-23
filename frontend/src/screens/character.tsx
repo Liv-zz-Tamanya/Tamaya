@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BackButton, CatSketch, ImgPh, TabBar } from '../components/primitives';
+import { BackButton, CatSketch, ImgPh, TabBar, useToast } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { MOOD_LABEL, isWithinLastWeek, latestEntry, useStore } from '../lib/store';
 
@@ -8,15 +8,11 @@ import { MOOD_LABEL, isWithinLastWeek, latestEntry, useStore } from '../lib/stor
 export const S18_CatRoom = () => {
   const nav = useNav();
   const { state } = useStore();
-  const [toast, setToast] = useState<string | null>(null);
+  const { toast, flash } = useToast();
   // 친밀도=회고 연속일 비례(읽기) · 배부름/활력=먹이/놀이로 반응(세션 인터랙션). (C)경계 로컬.
   const intimacy = Math.min(100, 20 + state.streak * 6);
   const [satiety, setSatiety] = useState(55);
   const [vitality, setVitality] = useState(65);
-  const flash = (m: string) => {
-    setToast(m);
-    setTimeout(() => setToast(null), 1400);
-  };
   return (
   <div
     className="screen"
@@ -278,11 +274,7 @@ export const S19_Inventory = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
   const [sel, setSel] = useState<string | null>(state.equippedItem);
-  const [toast, setToast] = useState<string | null>(null);
-  const flash = (m: string) => {
-    setToast(m);
-    setTimeout(() => setToast(null), 1400);
-  };
+  const { toast, flash } = useToast();
   return (
   <div className="screen">
     <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(140px + var(--safe-b, 0px))' }}>
@@ -438,11 +430,7 @@ export const S19_Inventory = () => {
 export const S20_Report = () => {
   const nav = useNav();
   const { state } = useStore();
-  const [toast, setToast] = useState<string | null>(null);
-  const flash = (m: string) => {
-    setToast(m);
-    setTimeout(() => setToast(null), 1400);
-  };
+  const { toast, flash } = useToast();
   const weekCount = state.diaries.filter((e) => isWithinLastWeek(e)).length;
   const recent = latestEntry(state.diaries);
   const moodCell = recent ? recent.moods[0] : '🌙';

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { BackButton, CatSketch, MoodFace } from '../components/primitives';
+import { BackButton, CatSketch, MoodFace, useToast } from '../components/primitives';
+import { ChatThread } from '../components/chat';
 import { useNav } from '../lib/router';
 import { scrollBehavior } from '../lib/scroll';
 import {
@@ -540,47 +541,19 @@ export const S11_ChatDiary = () => {
         ))}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-        {state.chatDiary.map((m, i) =>
-          m.role === 'bot' ? (
-            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-              <div
-                className="ph-circle"
-                style={{ width: 30, height: 30, background: 'var(--paper-2)', overflow: 'hidden', flex: 'none' }}
-              >
-                <CatSketch size={32} mood="wink" />
-              </div>
-              <div className="bubble bubble-bot">
-                <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
-                {m.hint && (
-                  <div className="tiny" style={{ marginTop: 4, color: 'var(--accent)' }}>{m.hint}</div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <div className="bubble bubble-user">
-                <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
-              </div>
-            </div>
-          ),
-        )}
-        {typing && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-            <div
-              className="ph-circle"
-              style={{ width: 30, height: 30, background: 'var(--paper-2)', overflow: 'hidden', flex: 'none' }}
-            >
-              <CatSketch size={32} mood="wink" />
-            </div>
-            <div className="bubble bubble-bot" style={{ padding: '12px 16px' }}>
-              <span className="typing-dot" />
-              <span className="typing-dot" />
-              <span className="typing-dot" />
-            </div>
+      <ChatThread
+        msgs={state.chatDiary}
+        typing={typing}
+        avatar={
+          <div
+            className="ph-circle"
+            style={{ width: 30, height: 30, background: 'var(--paper-2)', overflow: 'hidden', flex: 'none' }}
+          >
+            <CatSketch size={32} mood="wink" />
           </div>
-        )}
-      </div>
+        }
+        style={{ marginTop: 14 }}
+      />
     </div>
     <form
       onSubmit={(e) => {
@@ -622,14 +595,10 @@ export const S11_ChatDiary = () => {
 export const S12_MoodFinalize = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
-  const [toast, setToast] = useState<string | null>(null);
+  const { toast, flash } = useToast();
   const generatedDiary = state.chatDiaryGeneratedDiary;
   const diaryMoods = moodsFromEmotion(generatedDiary?.emotion);
   const summaryRows = emotionSummary(generatedDiary?.emotion);
-  const flash = (m: string) => {
-    setToast(m);
-    setTimeout(() => setToast(null), 1400);
-  };
 
   // Pull recent user answers from chat-diary to build a fresh diary preview.
   const userAnswers = state.chatDiary.filter((m) => m.role === 'user').map((m) => m.text);
