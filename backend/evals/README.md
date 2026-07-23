@@ -194,3 +194,28 @@ uv run python -m evals.run_retrieval_evaluation \
 - baseline: `evals/baselines/retrieval-baseline.json`(git 추적). 임베딩이 결정론적이라
   같은 코드·데이터에서 결과가 완전히 재현되며, `--fail-on-regression`으로 회귀를
   잡는다. 개선 후에는 새 리포트로 baseline 파일을 교체한다.
+
+## Event Chunk 생성 평가
+
+diary fixture의 대화를 실제 CLOVA chunk 추출(`extract_event_chunks`)에 넣고 gold
+chunk와 대조한다. **CLOVA 호출 비용이 발생한다**(fixture 12건 × repeat). DB는 쓰지
+않는다. 검색 실패가 chunk 생성 문제인지 retriever 문제인지는 이 리포트와 retrieval
+리포트를 대조해 분리한다.
+
+```bash
+uv run python -m evals.run_chunk_evaluation
+uv run python -m evals.run_chunk_evaluation --fixture-id diary-hana-0602 --repeat 3
+uv run python -m evals.run_chunk_evaluation --threshold 0.6
+```
+
+- 매칭: 문자열이 아니라 **임베딩 cosine 유사도 greedy 1:1**. 같은 사건의 패러프레이즈를
+  매칭하기 위함이다. 기본 threshold 0.55는 MiniLM 보정 결과다(0.65는 동일 사건
+  패러프레이즈 과반을 환각으로 오판). 임베딩 교체 시 재보정 필요.
+- 지표: 사건 Recall(누락), Precision, 병합 의심(누락인데 다른 추출문에 흡수),
+  과분할(매칭된 정답의 중복 추출), 환각 의심(근거 없는 추출), 계약 위반 행,
+  metadata(event_type/who/where/when) 정확도. who/where/when은 양쪽 null이면 "언급
+  없음 계약 준수"로 정답, 표기 차이는 포함 관계로 흡수한다.
+- 매처 자체가 임베딩 품질에 의존하므로 누락·환각 목록에는 best_similarity와 원문을
+  남긴다 — 임계 근처(0.4~0.55) 항목은 사람이 확인할 것.
+- 프롬프트는 `chunk_extraction_prompt` 모듈로 분리되어 리포트의 `prompt_hash`로
+  버전 추적된다.
