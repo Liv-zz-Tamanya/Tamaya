@@ -5,8 +5,8 @@ import { scrollBehavior } from '../lib/scroll';
 import {
   DailyKey,
   MOOD_LABEL,
-  TODAY_DAY,
   WEEKDAY_KR,
+  isWithinLastWeek,
   latestEntry,
   simulateAiReply,
   useStore,
@@ -38,7 +38,7 @@ export const S06_HomeDay = () => {
   // 로컬 store 실값 바인딩(서버 미전송, (C)경계 = 온디바이스 유지) + 빈상태.
   const latest = latestEntry(state.diaries);
   const cond = latest ? `${latest.moods[0]} ${MOOD_LABEL[latest.moods[0]]}` : '😴 기록 전';
-  const weekCount = state.diaries.filter((e) => e.day > TODAY_DAY - 7 && e.day <= TODAY_DAY).length;
+  const weekCount = state.diaries.filter((e) => isWithinLastWeek(e)).length;
   const summary: [string, string, string][] = [
     ['오늘 컨디션', cond, latest ? '최근 회고 기준' : '첫 회고를 해봐요'],
     ['이번 주', `${weekCount}일`, '함께했어요'],
@@ -740,7 +740,7 @@ export const S09_AIChat = () => {
 
   const send = (text?: string) => {
     const t = (text ?? input).trim();
-    if (!t) return;
+    if (!t || typing) return;
     dispatch({ type: 'ai-chat/append', msg: { role: 'user', text: t } });
     setInput('');
     setTyping(true);

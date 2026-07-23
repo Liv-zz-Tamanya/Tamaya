@@ -14,8 +14,8 @@ import {
   CHAT_DIARY_INTRO,
   CHAT_DIARY_SHORT_TURNS,
   CHAT_DIARY_TURNS,
-  TODAY_DAY,
   dateParts,
+  formatDateKey,
   useStore,
 } from '../lib/store';
 import type { ChatDiaryMode, Mood } from '../lib/store';
@@ -380,11 +380,19 @@ export const S11_ChatDiary = () => {
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const initedRef = useRef(false);
   const maxTurns = state.chatDiaryMaxTurns as ChatSessionMaxTurns;
 
   // 로컬 대화가 비어 있으면 서버 세션도 새로 맞춰서 같은 턴 정책으로 시작한다.
   useEffect(() => {
-    if (state.chatDiary.length > 0) return;
+    if (state.chatDiary.length > 0) {
+      // 대화가 채워지면 플래그 해제 → 이후 reset(빈 상태 재진입) 시 재초기화 허용.
+      initedRef.current = false;
+      return;
+    }
+    // StrictMode(dev) 이중 실행 가드: 인트로 2회 append·서버 세션 reset 2회 발사 방지.
+    if (initedRef.current) return;
+    initedRef.current = true;
     setTyping(false);
     setInput('');
     dispatch({ type: 'chat-diary/set-generated-diary', diary: null });
@@ -625,7 +633,11 @@ export const S12_MoodFinalize = () => {
 
   // Pull recent user answers from chat-diary to build a fresh diary preview.
   const userAnswers = state.chatDiary.filter((m) => m.role === 'user').map((m) => m.text);
-  const datePrefix = `5월 ${TODAY_DAY}일`;
+  // 실날짜 기준(레거시 5월 27일 고정 제거). 서버 diary_date 가 없으면 오늘로 저장.
+  const now = new Date();
+  const todayKey = formatDateKey(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const { month: todayMonth, day: todayDay } = dateParts(todayKey);
+  const datePrefix = `${todayMonth}월 ${todayDay}일`;
   const bodyPreview =
     generatedDiary?.content
       ? generatedDiary.content
@@ -656,8 +668,9 @@ export const S12_MoodFinalize = () => {
   }, []);
 
   const save = () => {
-    const diaryDate = generatedDiary?.diary_date;
-    const diaryDay = diaryDate ? dateParts(diaryDate).day : TODAY_DAY;
+    // 서버가 준 diary_date 우선, 없으면 항상 실제 오늘(todayKey)로 저장.
+    const diaryDate = generatedDiary?.diary_date ?? todayKey;
+    const diaryDay = dateParts(diaryDate).day;
     dispatch({
       type: 'diary/save',
       entry: {

@@ -65,12 +65,10 @@ export const S14_Calendar = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
   const [visibleMonth, setVisibleMonth] = useState(() => {
-    const recent = latestEntry(state.diaries);
-    const baseDate = recent
-      ? diaryDateOf(recent)
-      : formatDateKey(new Date().getFullYear(), new Date().getMonth() + 1, 1);
-    const { year, month } = dateParts(baseDate);
-    return new Date(year, month - 1, 1);
+    // 실제 오늘의 달을 기본으로 연다(레거시: latestEntry 기반 → 5월 시드에 고정).
+    // 서버 일기 로드 성공 시 아래 effect 가 서버 최신 일기 달로 점프한다.
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [picker, setPicker] = useState<{ date: string; day: number } | null>(null);
   const [view, setView] = useState<'emoji' | 'heat'>('emoji');
@@ -426,6 +424,22 @@ export const S14_Calendar = () => {
               value={localMoods[picker.date] ?? null}
               onChange={(m) => {
                 setLocalMoods((prev) => ({ ...prev, [picker.date]: m }));
+                // quick-add 감정을 store 에 영속(화면 이동해도 소실 X). picker 는
+                // 일기 없는 날짜에서만 열리므로(openDay) 기존 일기 덮어쓰기 없음.
+                // 서버 미전송 — 로컬 store/localStorage 만 사용(liv-I1). mood-only
+                // 엔트리라 diaries/merge 필드병합 시 서버 풍부 엔트리와 충돌하지 않음.
+                dispatch({
+                  type: 'diary/save',
+                  entry: {
+                    day: picker.day,
+                    date: picker.date,
+                    moods: [m],
+                    keywords: [],
+                    body: '',
+                    check: {},
+                    createdAt: Date.now(),
+                  },
+                });
                 setPicker(null);
               }}
               allowSkip

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { BackButton, CatSketch, ImgPh, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
-import { MOOD_LABEL, TODAY_DAY, latestEntry, useStore } from '../lib/store';
+import { MOOD_LABEL, isWithinLastWeek, latestEntry, useStore } from '../lib/store';
 
 // 18-20 · Cat Room / Inventory · Wardrobe / Weekly Report
 
@@ -443,7 +443,7 @@ export const S20_Report = () => {
     setToast(m);
     setTimeout(() => setToast(null), 1400);
   };
-  const weekCount = state.diaries.filter((e) => e.day > TODAY_DAY - 7 && e.day <= TODAY_DAY).length;
+  const weekCount = state.diaries.filter((e) => isWithinLastWeek(e)).length;
   const recent = latestEntry(state.diaries);
   const moodCell = recent ? recent.moods[0] : '🌙';
   const moodLabel = recent ? MOOD_LABEL[recent.moods[0]] : '기록 전';
