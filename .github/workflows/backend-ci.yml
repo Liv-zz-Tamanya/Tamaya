@@ -1,0 +1,47 @@
+name: Backend CI
+
+# PR과 main push마다 백엔드 테스트·린트·평가 데이터셋 검증을 실행.
+# 전부 mock/결정론적 검사만 수행 — 실제 CLOVA API 호출 없음, 비용 0.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      # linux에서는 uv.lock의 pytorch-cpu 인덱스로 CPU 전용 torch가 설치됨 (pyproject 참고)
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Lint (ruff)
+        run: uv run ruff check .
+
+      - name: Validate eval datasets
+        run: uv run python -m evals.validate_dataset
+        env:
+          CLOVA_MOCK_MODE: "true"
+
+      # CI 러너에는 .env가 없지만, 로컬 .env(CLOVA_MOCK_MODE=false)와 달리
+      # 항상 mock으로 돌도록 명시해 환경 차이로 인한 실패를 차단
+      - name: Run tests
+        run: uv run pytest -q
+        env:
+          CLOVA_MOCK_MODE: "true"

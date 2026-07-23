@@ -78,7 +78,9 @@ async def test_health_mock_chat_with_context_does_not_call_external_api(monkeypa
 
 
 async def test_health_greeting_is_returned_without_external_api(monkeypatch):
-    client = HealthClovaClient(mock=False)
+    # api_key를 명시하지 않으면 settings.clova_api_key에 의존해 환경(.env 유무)에 따라
+    # 결과가 갈림 — CI처럼 키가 없는 환경에서는 클라이언트 생성 자체가 실패한다
+    client = HealthClovaClient(api_key="test-key", mock=False)
 
     async def fail_if_called(*args, **kwargs):  # pragma: no cover
         raise AssertionError("external CLOVA API should not be called for greeting")
