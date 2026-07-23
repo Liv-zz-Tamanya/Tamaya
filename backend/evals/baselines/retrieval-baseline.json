@@ -1,0 +1,1689 @@
+{
+  "run_id": "20260723T071554Z",
+  "started_at": "2026-07-23T07:15:54.237042Z",
+  "completed_at": "2026-07-23T07:16:13.931735Z",
+  "top_k": 5,
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "git_commit": "63e6e4f",
+  "git_dirty": false,
+  "summary": {
+    "case_count": 30,
+    "evaluable_cases": 29,
+    "hit_rate_at_1": 44.8,
+    "hit_rate_at_3": 93.1,
+    "hit_rate_at_5": 96.6,
+    "mean_precision_at_k": 0.234,
+    "mean_recall_at_k": 0.966,
+    "mrr": 0.674,
+    "empty_expected_cases": 1,
+    "empty_check_passed_cases": 1,
+    "leak_violation_cases": 0,
+    "unknown_result_cases": 0
+  },
+  "by_kind": {
+    "diary": {
+      "case_count": 23,
+      "evaluable_cases": 23,
+      "hit_rate_at_1": 43.5,
+      "hit_rate_at_3": 91.3,
+      "hit_rate_at_5": 95.7,
+      "mean_precision_at_k": 0.243,
+      "mean_recall_at_k": 0.957,
+      "mrr": 0.661,
+      "empty_expected_cases": 0,
+      "empty_check_passed_cases": 0,
+      "leak_violation_cases": 0,
+      "unknown_result_cases": 0
+    },
+    "health": {
+      "case_count": 7,
+      "evaluable_cases": 6,
+      "hit_rate_at_1": 50.0,
+      "hit_rate_at_3": 100.0,
+      "hit_rate_at_5": 100.0,
+      "mean_precision_at_k": 0.2,
+      "mean_recall_at_k": 1.0,
+      "mrr": 0.722,
+      "empty_expected_cases": 1,
+      "empty_check_passed_cases": 1,
+      "leak_violation_cases": 0,
+      "unknown_result_cases": 0
+    }
+  },
+  "by_category": {
+    "cross_user_probe": {
+      "case_count": 2,
+      "evaluable_cases": 2,
+      "hit_rate_at_1": 0.0,
+      "hit_rate_at_3": 100.0,
+      "hit_rate_at_5": 100.0,
+      "mean_precision_at_k": 0.2,
+      "mean_recall_at_k": 1.0,
+      "mrr": 0.416,
+      "empty_expected_cases": 0,
+      "empty_check_passed_cases": 0,
+      "leak_violation_cases": 0,
+      "unknown_result_cases": 0
+    },
+    "date_reference": {
+      "case_count": 2,
+      "evaluable_cases": 2,
+      "hit_rate_at_1": 0.0,
+      "hit_rate_at_3": 100.0,
+      "hit_rate_at_5": 100.0,
+      "mean_precision_at_k": 0.3,
+      "mean_recall_at_k": 1.0,
+      "mrr": 0.5,
+      "empty_expected_cases": 0,
+      "empty_check_passed_cases": 0,
+      "leak_violation_cases": 0,
+      "unknown_result_cases": 0
+    },
+    "direct_recall": {
+      "case_count": 10,
+      "evaluable_cases": 10,
+      "hit_rate_at_1": 40.0,
+      "hit_rate_at_3": 80.0,
+      "hit_rate_at_5": 90.0,
+      "mean_precision_at_k": 0.18,
+      "mean_recall_at_k": 0.9,
+      "mrr": 0.587,
+      "empty_expected_cases": 0,
+      "empty_check_passed_cases": 0,
+      "leak_violation_cases": 0,
+      "unknown_result_cases": 0
+    },
+    "empty_retrieval": {
+      "case_count": 1,
+      "evaluable_cases": 0,
+      "hit_rate_at_1": null,
+      "hit_rate_at_3": null,
+      "hit_rate_at_5": null,
+      "mean_precision_at_k": null,
+      "mean_recall_at_k": null,
+      "mrr": null,
+      "empty_expected_cases": 1,
+      "empty_check_passed_cases": 1,
+      "leak_violation_cases": 0,
+      "unknown_result_cases": 0
+    },
+    "hard_negative": {
+      "case_count": 5,
+      "evaluable_cases": 5,
+      "hit_rate_at_1": 80.0,
+      "hit_rate_at_3": 100.0,
+      "hit_rate_at_5": 100.0,
+      "mean_precision_at_k": 0.2,
+      "mean_recall_at_k": 1.0,
+      "mrr": 0.867,
+      "empty_expected_cases": 0,
+      "empty_check_passed_cases": 0,
+      "leak_violation_cases": 0,
+      "unknown_result_cases": 0
+    },
+    "multi_relevant": {
+      "case_count": 4,
+      "evaluable_cases": 4,
+      "hit_rate_at_1": 75.0,
+      "hit_rate_at_3": 100.0,
+      "hit_rate_at_5": 100.0,
+      "mean_precision_at_k": 0.45,
+      "mean_recall_at_k": 1.0,
+      "mrr": 0.875,
+      "empty_expected_cases": 0,
+      "empty_check_passed_cases": 0,
+      "leak_violation_cases": 0,
+      "unknown_result_cases": 0
+    },
+    "paraphrase_recall": {
+      "case_count": 6,
+      "evaluable_cases": 6,
+      "hit_rate_at_1": 33.3,
+      "hit_rate_at_3": 100.0,
+      "hit_rate_at_5": 100.0,
+      "mean_precision_at_k": 0.2,
+      "mean_recall_at_k": 1.0,
+      "mrr": 0.667,
+      "empty_expected_cases": 0,
+      "empty_check_passed_cases": 0,
+      "leak_violation_cases": 0,
+      "unknown_result_cases": 0
+    }
+  },
+  "cases": [
+    {
+      "case_id": "ret-diary-001",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "direct_recall",
+      "query": "지민이랑 성수동 카페 갔던 날 뭐 먹었지?",
+      "relevant_chunk_ids": [
+        "hana-0602-cafe"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0625-jeju",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "hana-0610-dinner",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "hana-0602-cafe",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "hana-0618-mom",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "hana-0618-sick",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.333,
+      "first_relevant_rank": 3,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-002",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "direct_recall",
+      "query": "팀장님한테 칭찬받았던 일 기억나?",
+      "relevant_chunk_ids": [
+        "hana-0610-praise"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0610-praise",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "hana-0610-dinner",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "hana-0625-jeju",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "hana-0602-cafe",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "hana-0602-deadline",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "first_relevant_rank": 1,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-003",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "direct_recall",
+      "query": "몸살 나서 쉬었던 날 어땠지?",
+      "relevant_chunk_ids": [
+        "hana-0618-sick"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0625-jeju",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "hana-0618-sick",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "hana-0610-dinner",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "hana-0618-mom",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "hana-0602-deadline",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.5,
+      "first_relevant_rank": 2,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-004",
+      "kind": "diary",
+      "device_id": "eval-user-doyun",
+      "category": "direct_recall",
+      "query": "한강에서 10km 완주했던 날",
+      "relevant_chunk_ids": [
+        "doyun-0603-run"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "doyun-0603-run",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "doyun-0627-routine",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "doyun-0611-lunch",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "doyun-0619-pt",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "doyun-0619-squat",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "first_relevant_rank": 1,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-005",
+      "kind": "diary",
+      "device_id": "eval-user-doyun",
+      "category": "direct_recall",
+      "query": "준호랑 언성 높아졌던 일",
+      "relevant_chunk_ids": [
+        "doyun-0611-review"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "doyun-0611-lunch",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "doyun-0627-routine",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "doyun-0619-pt",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "doyun-0619-squat",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "doyun-0627-marathon",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": false,
+      "hit_at_5": false,
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank": 0.0,
+      "first_relevant_rank": null,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-006",
+      "kind": "diary",
+      "device_id": "eval-user-sora",
+      "category": "direct_recall",
+      "query": "학회 발표 결과 어땠었지?",
+      "relevant_chunk_ids": [
+        "sora-0621-talk"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "sora-0621-party",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "sora-0613-practice",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "sora-0621-talk",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "sora-0628-cafe",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "sora-0613-walk",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.333,
+      "first_relevant_rank": 3,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-007",
+      "kind": "diary",
+      "device_id": "eval-user-sora",
+      "category": "direct_recall",
+      "query": "실험 실패해서 힘들었던 때",
+      "relevant_chunk_ids": [
+        "sora-0605-fail"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "sora-0613-practice",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "sora-0613-walk",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "sora-0621-party",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "sora-0628-cafe",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "sora-0605-fail",
+          "relevant": true,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": false,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.2,
+      "first_relevant_rank": 5,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-008",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "paraphrase_recall",
+      "query": "친구랑 디저트 먹으러 갔던 날",
+      "relevant_chunk_ids": [
+        "hana-0602-cafe"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0625-jeju",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "hana-0602-cafe",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "hana-0610-dinner",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "hana-0618-mom",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "hana-0610-praise",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.5,
+      "first_relevant_rank": 2,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-009",
+      "kind": "diary",
+      "device_id": "eval-user-doyun",
+      "category": "paraphrase_recall",
+      "query": "다리 상태 걱정했던 적 있었나",
+      "relevant_chunk_ids": [
+        "doyun-0603-knee"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "doyun-0611-lunch",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "doyun-0603-knee",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "doyun-0619-pt",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "doyun-0619-squat",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "doyun-0627-routine",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.5,
+      "first_relevant_rank": 2,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-010",
+      "kind": "diary",
+      "device_id": "eval-user-sora",
+      "category": "paraphrase_recall",
+      "query": "마음이 무거웠는데 걷고 나서 나아졌던 날",
+      "relevant_chunk_ids": [
+        "sora-0613-walk"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "sora-0613-walk",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "sora-0613-practice",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "sora-0621-party",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "sora-0628-cafe",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "sora-0621-talk",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "first_relevant_rank": 1,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-011",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "paraphrase_recall",
+      "query": "아플 때 가족이 챙겨줬던 일",
+      "relevant_chunk_ids": [
+        "hana-0618-mom"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0625-jeju",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "hana-0618-mom",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "hana-0610-dinner",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "hana-0602-cafe",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "hana-0618-sick",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.5,
+      "first_relevant_rank": 2,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-012",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "multi_relevant",
+      "query": "지민이랑 있었던 일들 알려줘",
+      "relevant_chunk_ids": [
+        "hana-0602-cafe",
+        "hana-0625-jeju"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0625-jeju",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "hana-0618-mom",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "hana-0610-praise",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "hana-0610-dinner",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "hana-0602-cafe",
+          "relevant": true,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "first_relevant_rank": 1,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-013",
+      "kind": "diary",
+      "device_id": "eval-user-doyun",
+      "category": "multi_relevant",
+      "query": "달리기 관련해서 기록했던 것들",
+      "relevant_chunk_ids": [
+        "doyun-0603-run",
+        "doyun-0627-marathon",
+        "doyun-0627-routine"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "doyun-0627-marathon",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "doyun-0627-routine",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "doyun-0619-squat",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "doyun-0611-lunch",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "doyun-0603-run",
+          "relevant": true,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.6,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "first_relevant_rank": 1,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-014",
+      "kind": "diary",
+      "device_id": "eval-user-sora",
+      "category": "multi_relevant",
+      "query": "발표 때문에 느꼈던 감정들",
+      "relevant_chunk_ids": [
+        "sora-0613-practice",
+        "sora-0621-talk"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "sora-0613-walk",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "sora-0613-practice",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "sora-0621-party",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "sora-0628-cafe",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "sora-0621-talk",
+          "relevant": true,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.5,
+      "first_relevant_rank": 2,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-015",
+      "kind": "diary",
+      "device_id": "eval-user-doyun",
+      "category": "multi_relevant",
+      "query": "헬스장에서 배운 것",
+      "relevant_chunk_ids": [
+        "doyun-0619-pt",
+        "doyun-0619-squat"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "doyun-0619-pt",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "doyun-0619-squat",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "doyun-0603-knee",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "doyun-0603-run",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "doyun-0627-routine",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "first_relevant_rank": 1,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-016",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "hard_negative",
+      "query": "회식 때 먹은 메뉴가 뭐였지?",
+      "relevant_chunk_ids": [
+        "hana-0610-dinner"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0610-dinner",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "hana-0602-cafe",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "hana-0625-jeju",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "hana-0610-praise",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "hana-0618-sick",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "first_relevant_rank": 1,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-017",
+      "kind": "diary",
+      "device_id": "eval-user-doyun",
+      "category": "hard_negative",
+      "query": "마라톤 대회 신청했던 날",
+      "relevant_chunk_ids": [
+        "doyun-0627-marathon"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "doyun-0627-marathon",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "doyun-0627-routine",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "doyun-0603-run",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "doyun-0619-squat",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "doyun-0611-lunch",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "first_relevant_rank": 1,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-018",
+      "kind": "diary",
+      "device_id": "eval-user-sora",
+      "category": "hard_negative",
+      "query": "카페에서 작업했던 날",
+      "relevant_chunk_ids": [
+        "sora-0628-cafe"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "sora-0628-cafe",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "sora-0621-party",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "sora-0613-walk",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "sora-0613-practice",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "sora-0621-talk",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "first_relevant_rank": 1,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-019",
+      "kind": "diary",
+      "device_id": "eval-user-sora",
+      "category": "hard_negative",
+      "query": "뒤풀이에서 뭐 마셨지?",
+      "relevant_chunk_ids": [
+        "sora-0621-party"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "sora-0621-party",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "sora-0613-walk",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "sora-0613-practice",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "sora-0628-cafe",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "sora-0621-talk",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "first_relevant_rank": 1,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-020",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "cross_user_probe",
+      "query": "성수동 카페에서 보낸 하루",
+      "relevant_chunk_ids": [
+        "hana-0602-cafe"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0625-jeju",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "hana-0602-cafe",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "hana-0610-dinner",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "hana-0610-praise",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "hana-0618-sick",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.5,
+      "first_relevant_rank": 2,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-021",
+      "kind": "diary",
+      "device_id": "eval-user-sora",
+      "category": "cross_user_probe",
+      "query": "성수동 카페 갔던 날",
+      "relevant_chunk_ids": [
+        "sora-0628-cafe"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "sora-0613-walk",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "sora-0621-party",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "sora-0628-cafe",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "sora-0613-practice",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "sora-0621-talk",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.333,
+      "first_relevant_rank": 3,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-022",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "date_reference",
+      "query": "6월 중순쯤 있었던 일",
+      "relevant_chunk_ids": [
+        "hana-0618-sick",
+        "hana-0618-mom"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0625-jeju",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "hana-0618-mom",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "hana-0602-deadline",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "hana-0618-sick",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "hana-0610-dinner",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.5,
+      "first_relevant_rank": 2,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-023",
+      "kind": "diary",
+      "device_id": "eval-user-doyun",
+      "category": "date_reference",
+      "query": "이번 달 초에 운동했던 날",
+      "relevant_chunk_ids": [
+        "doyun-0603-run"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "doyun-0627-routine",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "doyun-0603-run",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "doyun-0627-marathon",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "doyun-0619-pt",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "doyun-0619-squat",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.5,
+      "first_relevant_rank": 2,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-health-001",
+      "kind": "health",
+      "device_id": "eval-user-doyun",
+      "category": "direct_recall",
+      "query": "10km 뛴 날 심박수 어땠지?",
+      "relevant_chunk_ids": [
+        "health-doyun-0603"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "health-doyun-0628",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "health-doyun-0603",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "health-doyun-0619",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "health-doyun-0627",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.5,
+      "first_relevant_rank": 2,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-health-002",
+      "kind": "health",
+      "device_id": "eval-user-doyun",
+      "category": "direct_recall",
+      "query": "PT 받은 날 운동 기록",
+      "relevant_chunk_ids": [
+        "health-doyun-0619"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "health-doyun-0619",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "health-doyun-0627",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "health-doyun-0603",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "health-doyun-0628",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "first_relevant_rank": 1,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-health-003",
+      "kind": "health",
+      "device_id": "eval-user-doyun",
+      "category": "hard_negative",
+      "query": "목표 걸음수 못 채운 날 있었나?",
+      "relevant_chunk_ids": [
+        "health-doyun-0628"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "health-doyun-0619",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "health-doyun-0603",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "health-doyun-0628",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "health-doyun-0627",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.333,
+      "first_relevant_rank": 3,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-health-004",
+      "kind": "health",
+      "device_id": "eval-user-hana",
+      "category": "direct_recall",
+      "query": "계단 많이 오른 날",
+      "relevant_chunk_ids": [
+        "health-hana-0621"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "health-hana-0621",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "health-hana-0620",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "first_relevant_rank": 1,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-health-005",
+      "kind": "health",
+      "device_id": "eval-user-hana",
+      "category": "paraphrase_recall",
+      "query": "별로 안 걸어다닌 날",
+      "relevant_chunk_ids": [
+        "health-hana-0620"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "health-hana-0621",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "health-hana-0620",
+          "relevant": true,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.5,
+      "first_relevant_rank": 2,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-health-006",
+      "kind": "health",
+      "device_id": "eval-user-sora",
+      "category": "empty_retrieval",
+      "query": "지난주 걸음수 알려줘",
+      "relevant_chunk_ids": [],
+      "retrieved": [],
+      "rank_metrics_evaluable": false,
+      "hit_at_1": null,
+      "hit_at_3": null,
+      "hit_at_5": null,
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank": null,
+      "first_relevant_rank": null,
+      "empty_expected": true,
+      "empty_check_passed": true,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-health-007",
+      "kind": "health",
+      "device_id": "eval-user-doyun",
+      "category": "paraphrase_recall",
+      "query": "가장 오래 달린 날 기록",
+      "relevant_chunk_ids": [
+        "health-doyun-0603"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "health-doyun-0603",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "health-doyun-0619",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "health-doyun-0628",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "health-doyun-0627",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "first_relevant_rank": 1,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    }
+  ],
+  "baseline_comparison": null
+}
