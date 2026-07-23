@@ -50,10 +50,9 @@ export const S22_Settings = () => {
       serverMsg = '서버 연결 실패 — 로컬만 삭제(서버는 기동 후 재시도)';
     }
     try {
-      localStorage.removeItem('tamaya-state-v2');
-      localStorage.removeItem('tamaya-auth-token');
-      localStorage.removeItem('tamaya-chat-session');
-      localStorage.removeItem('tamaya-healthchat-session');
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith('tamaya-'))
+        .forEach((k) => localStorage.removeItem(k));
     } catch {
       /* ignore */
     }
