@@ -285,3 +285,23 @@ uv run python -m evals.run_diary_generation_evaluation --fixture-id diary-hana-0
 - 감정 타당성: fixture의 `plausible_emotions` 라벨과 대조(라벨은 사람이 작성).
 - 키워드 근거: 토큰 단위 검사 — 명사구 합성("항공권 예매")은 허용하고, 어느 토큰도
   원문에 없는 키워드만 미근거로 판정.
+
+## 코칭 정성신호 추출 평가
+
+코칭 대화 fixture(`fixtures/coaching_fixtures.jsonl`, DB 시드 안 함)를 실제 CLOVA
+`extract_signal`에 넣어 감정·행동·polarity 추출을 gold 라벨과 대조한다 — 주간·월간
+Insight 원천 데이터 품질 검증. **CLOVA 비용 발생**(10건 × repeat).
+
+```bash
+uv run python -m evals.run_signal_evaluation
+uv run python -m evals.run_signal_evaluation --fixture-id coaching-hana-01 --repeat 3
+```
+
+- behavior 매칭: gold의 surface_forms(표기 대안)와 정규화 포함 관계, greedy 1:1 →
+  micro Precision/Recall/F1. 매칭된 쌍에서 polarity(±1) 정확도.
+- 환각(존재하지 않는 행동): 어느 gold와도 매칭 안 된 추출 행동. fixture에는
+  "하고 싶었는데 못 함"(소망)류 함정과 gold_behaviors가 빈 케이스(빈 배열 계약)가
+  포함되어 있다.
+- 감정: fixture의 plausible_emotions(사람 작성)와 대조. 어휘는 DIARY_EMOTIONS와 동일.
+- 클라이언트가 파싱 실패를 None으로 흡수하는 프로덕션 동작은 extraction_none으로
+  분리 집계된다(전 gold 미검출로 recall에 반영).
