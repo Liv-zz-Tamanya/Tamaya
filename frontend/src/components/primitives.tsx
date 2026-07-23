@@ -92,8 +92,8 @@ type CatProps = {
 // Tamaya 고양이 집사 캐릭터 — Figma "Tamaya v3" 정본 아트워크(3D 렌더 PNG).
 // 2026-06-14: 손그림 SVG → Figma export 에셋으로 교체. props(size·mood·sleeping)는
 // 호환 위해 유지하되, 이미지 아트라 color/accent/accessory 는 무시한다.
-const CHAR_BASE = '/character/base.png';      // 기본 전신(안경+조끼+나비넥타이)
-const CHAR_SLEEPY = '/character/sleepy.png';  // 졸린 표정(머리)
+const CHAR_BASE = '/character/base.webp';      // 기본 전신(안경+조끼+나비넥타이)
+const CHAR_SLEEPY = '/character/sleepy.webp';  // 졸린 표정(머리)
 
 export const CatSketch = ({ size = 110, sleeping = false }: CatProps) => (
   <img
@@ -115,11 +115,11 @@ export const CatSketch = ({ size = 110, sleeping = false }: CatProps) => (
 
 // 감정 표정 아이콘 — Mood(이모지 키) → Figma 표정 에셋. 기존 emoji span 대체.
 const MOOD_SRC: Record<string, string> = {
-  '\u{1F60C}': '/character/calm.png',   // 😌 평온
-  '\u{1F60A}': '/character/happy.png',  // 😊 기쁨
-  '\u{1F623}': '/character/sleepy.png', // 😣 힘듦/지침
-  '\u{1F622}': '/character/sad.png',    // 😢 슬픔
-  '\u{1F621}': '/character/angry.png',  // 😡 화남
+  '\u{1F60C}': '/character/calm.webp',   // 😌 평온
+  '\u{1F60A}': '/character/happy.webp',  // 😊 기쁨
+  '\u{1F623}': '/character/sleepy.webp', // 😣 힘듦/지침
+  '\u{1F622}': '/character/sad.webp',    // 😢 슬픔
+  '\u{1F621}': '/character/angry.webp',  // 😡 화남
 };
 export const MoodFace = ({ mood, size = 28 }: { mood: string; size?: number }) => (
   <img

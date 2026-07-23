@@ -59,6 +59,13 @@ const addDays = (date: string, delta: number) => {
   return formatDateKey(d.getFullYear(), d.getMonth() + 1, d.getDate());
 };
 
+// 서버 일기 fetch 모듈 캐시(60s TTL) — 달력을 재방문할 때마다 100건을 재요청하던 것을
+// 막는다. 최신 달 강제 점프는 세션 최초 1회만 — 그 이후 방문에서는 사용자가 보던 달을
+// 뺏지 않는다 (PERF-05). 로컬 store.diaries 가 표시 정본이라 데이터 표시 로직은 불변.
+const DIARIES_CACHE_TTL = 60_000;
+let diariesCache: { items: DiaryResponse[]; at: number } | null = null;
+let diariesJumped = false;
+
 export const S14_Calendar = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
@@ -88,17 +95,33 @@ export const S14_Calendar = () => {
 
   useEffect(() => {
     let alive = true;
+
+    // 서버 일기 반영 + 최신 달 점프(세션 최초 1회) — fetch/캐시 공통 경로.
+    const apply = (items: DiaryResponse[]) => {
+      if (!alive) return;
+      dispatch({ type: 'diaries/merge', entries: items.map(diaryFromApi) });
+      const latestServerDiary = items[0];
+      if (!diariesJumped && latestServerDiary) {
+        const { year, month } = dateParts(latestServerDiary.diary_date);
+        setVisibleMonth(new Date(year, month - 1, 1));
+        diariesJumped = true;
+      }
+    };
+
+    // TTL 안이면 재요청 없이 캐시로 표시(로딩 flicker 없음).
+    if (diariesCache && Date.now() - diariesCache.at < DIARIES_CACHE_TTL) {
+      apply(diariesCache.items);
+      return () => {
+        alive = false;
+      };
+    }
+
     setLoadingDiaries(true);
     setLoadFailed(false);
     listDiaries({ limit: 100 })
       .then((res) => {
-        if (!alive) return;
-        dispatch({ type: 'diaries/merge', entries: res.items.map(diaryFromApi) });
-        const latestServerDiary = res.items[0];
-        if (latestServerDiary) {
-          const { year, month } = dateParts(latestServerDiary.diary_date);
-          setVisibleMonth(new Date(year, month - 1, 1));
-        }
+        diariesCache = { items: res.items, at: Date.now() };
+        apply(res.items);
       })
       .catch(() => {
         if (alive) setLoadFailed(true);

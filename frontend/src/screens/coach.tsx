@@ -18,7 +18,7 @@ const INTRO: Msg = {
 
 const COACH_AVATAR = (
   <div className="ph-circle" style={{ width: 28, height: 28, flex: 'none', overflow: 'hidden' }}>
-    <img src="/character/head-glasses.png" alt="건강냥" style={{ width: '100%', height: '100%', objectFit: 'contain' }} draggable={false} />
+    <img src="/character/head-glasses.webp" alt="건강냥" style={{ width: '100%', height: '100%', objectFit: 'contain' }} draggable={false} />
   </div>
 );
 

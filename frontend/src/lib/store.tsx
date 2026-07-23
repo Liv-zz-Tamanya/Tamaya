@@ -314,12 +314,32 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     return init;
   });
 
+  // 저장 debounce(300ms) — 매 dispatch 마다 동기 JSON.stringify→localStorage 하던 것을
+  // 마지막 변경 뒤 한 번만 쓴다. 유실 방지: 탭 백그라운드(visibilitychange hidden)·
+  // 페이지 종료(beforeunload) 시점에 대기 중 저장을 즉시 flush 한다 (PERF-04).
   useEffect(() => {
-    try {
-      localStorage.setItem(LS_KEY, JSON.stringify(state));
-    } catch {
-      // ignore quota
-    }
+    const persist = () => {
+      try {
+        localStorage.setItem(LS_KEY, JSON.stringify(state));
+      } catch {
+        // ignore quota
+      }
+    };
+    const timer = window.setTimeout(persist, 300);
+    const flush = () => {
+      window.clearTimeout(timer);
+      persist();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('beforeunload', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('beforeunload', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [state]);
 
   return (

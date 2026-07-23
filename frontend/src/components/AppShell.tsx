@@ -34,6 +34,16 @@ const SCREENS: Record<Route, () => ReactNode> = {
   byok: () => <S25_Byok />, 'health-chat': () => <S26_HealthChat />,
 };
 
+// 두 시각이 같은 '분'인지 판정 — night 경계(분 단위)·자정 넘김(일 단위)·홈 카운트다운
+// 표시(분 단위)가 파생되는 최소 granularity. 이 값이 동일하면 어떤 파생값도 바뀌지
+// 않으므로 setNow 를 bail 해 앱 전체 리렌더를 막는다 (PERF-03, 동작 불변).
+const sameMinute = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate() &&
+  a.getHours() === b.getHours() &&
+  a.getMinutes() === b.getMinutes();
+
 export const AppShell = () => <StoreProvider><AppShellInner /></StoreProvider>;
 
 const AppShellInner = () => {
@@ -54,8 +64,13 @@ const AppShellInner = () => {
 
   const refreshNow = useCallback(() => {
     const next = new Date();
-    setNow(next);
-    setManualWake(isManualWakeActive(getNickname(), next));
+    // 파생값이 바뀔 때만 setState(함수형 + 동일값 bail): 30초 tick·포커스·visibility
+    // 이벤트가 같은 분 안에서 반복돼도 now 참조가 유지돼 앱 전체 리렌더를 건너뛴다.
+    setManualWake((prev) => {
+      const active = isManualWakeActive(getNickname(), next);
+      return prev === active ? prev : active;
+    });
+    setNow((prev) => (sameMinute(prev, next) ? prev : next));
   }, []);
 
   useEffect(() => {
