@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Route, useNav } from '../lib/router';
 import { MOOD_LABEL, Mood } from '../lib/store';
+import { TAB_ICONS } from './tab-icons';
 
 // ── Sketch UI primitives — bartender/barista coffee tone ─────────────────────
 
@@ -37,12 +38,12 @@ export const TabBar = ({
   onHome?: () => void; // shell picks home-day vs home-night
 }) => {
   const nav = useNav();
-  const tabs: { k: TabKey; label: string; icon: string; center?: boolean }[] = [
-    { k: 'cal', label: '달력', icon: '▦' },
-    { k: 'stat', label: '통계', icon: '▮' },
-    { k: 'home', label: '홈', icon: '⌂', center: true },
-    { k: 'cat', label: '키우기', icon: '◖' },
-    { k: 'ins', label: '인사이트', icon: '✦' },
+  const tabs: { k: TabKey; label: string; center?: boolean }[] = [
+    { k: 'cal', label: '달력' },
+    { k: 'stat', label: '통계' },
+    { k: 'home', label: '홈', center: true },
+    { k: 'cat', label: '키우기' },
+    { k: 'ins', label: '인사이트' },
   ];
   const onTab = (k: TabKey) => {
     if (k === 'home') {
@@ -72,7 +73,7 @@ export const TabBar = ({
             padding: 0,
           }}
         >
-          <div className={'tab-icon' + (t.center ? ' tab-icon-lg' : '')} aria-hidden="true">{t.icon}</div>
+          <div className={'tab-icon' + (t.center ? ' tab-icon-lg' : '')} aria-hidden="true">{TAB_ICONS[t.k]}</div>
           <div>{t.label}</div>
         </button>
       ))}
