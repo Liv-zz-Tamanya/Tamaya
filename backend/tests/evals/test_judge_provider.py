@@ -16,6 +16,8 @@ def gemini_key_set(monkeypatch):
 @pytest.fixture
 def gemini_key_unset(monkeypatch):
     monkeypatch.setattr(settings, "gemini_api_key", "")
+    # CI에는 CLOVA 키가 없고, AsyncOpenAI는 빈 api_key로 생성을 거부한다
+    monkeypatch.setattr(settings, "clova_api_key", "test-clova-key")
 
 
 def test_resolves_gemini_when_key_set(gemini_key_set):
