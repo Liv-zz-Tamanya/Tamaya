@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BackButton, CatSketch, MoodFace, TabBar, useToast } from '../components/primitives';
+import { BackButton, MoodFace, TabBar, useToast } from '../components/primitives';
+import { TAB_ICONS } from '../components/tab-icons';
 import { ChatInputRow, ChatThread } from '../components/chat';
 import { useNav } from '../lib/router';
 import { scrollBehavior } from '../lib/scroll';
@@ -38,13 +39,14 @@ export const S06_HomeDay = () => {
   ];
   // 로컬 store 실값 바인딩(서버 미전송, (C)경계 = 온디바이스 유지) + 빈상태.
   const latest = latestEntry(state.diaries);
-  const cond = latest ? `${latest.moods[0]} ${MOOD_LABEL[latest.moods[0]]}` : '😴 기록 전';
+  // v4 S06: 카드 수치는 텍스트만(이모지 없음) — "N / 7 일" · "N pt" · "옷장" 표기
+  const cond = latest ? MOOD_LABEL[latest.moods[0]] : '기록 전';
   const weekCount = state.diaries.filter((e) => isWithinLastWeek(e)).length;
   const summary: [string, string, string][] = [
     ['오늘 컨디션', cond, latest ? '최근 회고 기준' : '첫 회고를 해봐요'],
-    ['이번 주', `${weekCount}일`, '함께했어요'],
-    ['포인트', `◉ ${state.points}`, `보상 ${state.unlockedItems.length}개`],
-    ['키우기', state.unlockedItems.length ? `아이템 ${state.unlockedItems.length}` : '시작하기', '보러가기 ›'],
+    ['이번 주', `${weekCount} / 7 일`, '함께했어요'],
+    ['포인트', `${state.points} pt`, `보상 ${state.unlockedItems.length}개`],
+    ['키우기', '옷장', '이동 ›'],
   ];
   return (
   <div className="screen">
@@ -57,13 +59,10 @@ export const S06_HomeDay = () => {
           marginBottom: 12,
         }}
       >
+        {/* v4 S06: 제목 먼저, 날짜는 아래 — 한 줄 인사 */}
         <div>
-          <div className="tiny">{nav.now.getMonth() + 1}월 {nav.now.getDate()}일 · {WEEKDAY_KR[nav.now.getDay()]}요일</div>
-          <h1 className="h-title" style={{ marginTop: 2 }}>
-            좋은 아침,
-            <br />
-            {state.character.name || '친구'} ☀
-          </h1>
+          <h1 className="h-title">좋은 아침, {state.character.name || '친구'}</h1>
+          <div className="tiny" style={{ marginTop: 4 }}>{nav.now.getMonth() + 1}월 {nav.now.getDate()}일 · {WEEKDAY_KR[nav.now.getDay()]}요일</div>
         </div>
         <div
           style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}
@@ -78,49 +77,38 @@ export const S06_HomeDay = () => {
             ⚙
           </button>
           <span className="chip">Lv.{state.level}</span>
-          <span className="chip">{state.streak}일</span>
+          <span className="chip">🔥 {state.streak}일</span>
         </div>
       </div>
 
+      {/* v4 S06: 자는 중 카드 — 라벨/서브/큰 시간/진행바 미니멀 구성.
+          자는 고양이·말풍선·시계 칩은 v4에 없어 제거, 깨우기 버튼은 실기능이라 유지. */}
       <div className="hbox day r-l" style={{ padding: 16, marginTop: 6 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h2 className="h-section" style={{ color: 'var(--accent)' }}>
-              이음이는 자는 중
-            </h2>
-            <div className="tiny" style={{ marginTop: 4 }}>
-              깨어나기까지 남은 시간
-            </div>
-            <div className="h-title" style={{ marginTop: 2, fontSize: 24 }}>
-              {remaining}
-            </div>
-          </div>
-          <div className="chip" style={{ background: 'var(--paper)' }}>
-            ⏰ {nav.nightOpenTime}
-          </div>
+        <h2 className="h-section" style={{ color: 'var(--accent)' }}>
+          이음이는 자는 중
+        </h2>
+        <div style={{ fontFamily: 'Pretendard', fontWeight: 700, marginTop: 6 }}>
+          깨어나기까지 남은 시간
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 10 }}>
-          <CatSketch size={86} sleeping />
-          <div className="handwriting" style={{ color: 'var(--ink-soft)' }}>
-            "쿠울… 쿠울…
-            <br />
-            이따 만나, 친구"
-          </div>
+        <div className="h-title" style={{ marginTop: 2, fontSize: 26 }}>
+          {remaining}
         </div>
         <div className="bar" style={{ marginTop: 12, background: 'var(--paper-2)' }}>
           <i style={{ width: '55%', background: 'var(--ink)', borderRightColor: 'var(--ink)' }} />
         </div>
-        <div className="tiny" style={{ marginTop: 4 }}>
-          오늘 밤 {formatKoreanTime(nav.nightOpenTime)}에 깨어나요
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+          <div className="tiny">
+            오늘 밤 {formatKoreanTime(nav.nightOpenTime)}에 깨어나요
+          </div>
+          <button
+            type="button"
+            onClick={() => nav.wakeNightChat()}
+            className="btn"
+            style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            이음이 깨우기
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => nav.wakeNightChat()}
-          className="btn"
-          style={{ marginTop: 12, cursor: 'pointer', fontFamily: 'inherit' }}
-        >
-          이음이 깨우기
-        </button>
       </div>
 
       <button
@@ -141,8 +129,9 @@ export const S06_HomeDay = () => {
           <div className="h-section">오늘의 데일리 체크</div>
           <span className="tiny">{dailyDone} / 5</span>
         </div>
+        {/* v4 S06: 이모지 대신 고양이 얼굴 — 완료는 다크 필 */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
-          {checks.map(([ic, l, on], i) => (
+          {checks.map(([, l, on], i) => (
             <div key={i} style={{ textAlign: 'center' }}>
               <div
                 style={{
@@ -155,10 +144,9 @@ export const S06_HomeDay = () => {
                   borderRadius: 14,
                   border: '0.5px solid var(--ink)',
                   background: on ? 'var(--ink)' : 'var(--paper)',
-                  color: on ? 'var(--paper)' : 'var(--ink)',
                 }}
               >
-                {ic}
+                <MoodFace mood={'\u{1F60C}'} size={32} />
               </div>
               <div className="tiny" style={{ marginTop: 4 }}>
                 {l}
@@ -180,22 +168,22 @@ export const S06_HomeDay = () => {
           alignItems: 'center',
           gap: 12,
           cursor: 'pointer',
-          background: 'var(--pencil)',
-          color: 'var(--paper)',
+          background: 'var(--banner)', /* v4 S06: AI 코칭 배너 = 그레이-탄 토큰 */
+          color: 'var(--ink)',
           width: '100%',
           textAlign: 'left',
         }}
       >
-        <div className="ph-circle" style={{ width: 40, height: 40, background: 'var(--paper)', color: 'var(--ink)' }}>
+        <div className="ph-circle" style={{ width: 40, height: 40, background: 'var(--night)', color: 'var(--cream)' }}>
           ✦
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: 'Pretendard', fontWeight: 700, color: 'var(--paper)' }}>
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700, color: 'var(--ink)' }}>
             AI 코칭에게 물어봐요
           </div>
-          <div className="tiny" style={{ color: 'var(--paper)' }}>"점심 뭐 먹지?" "잠이 안 와요"</div>
+          <div className="tiny" style={{ color: 'var(--ink-soft)' }}>"점심 뭐 먹지?" "잠이 안 와요"</div>
         </div>
-        <span className="handwriting" style={{ fontSize: 24, color: 'var(--paper)' }} aria-hidden="true">
+        <span className="handwriting" style={{ fontSize: 24, color: 'var(--ink)' }} aria-hidden="true">
           ›
         </span>
       </button>
@@ -286,7 +274,7 @@ export const S07_HomeNight = () => {
           <h1 className="h-title" style={{ marginTop: 2, color: 'var(--paper)' }}>
             이음이가
             <br />
-            깨어났어요 ☾
+            깨어났어요
           </h1>
         </div>
         <div
@@ -329,22 +317,12 @@ export const S07_HomeNight = () => {
         <h2 className="h-section" style={{ color: 'var(--accent-soft)' }}>
           저녁 회고 · 매일 밤
         </h2>
+        {/* v4 S07: 카피 한 줄, 고양이 얼굴은 박스 없이 카드 위에 바로 */}
         <div className="h-title" style={{ color: 'var(--paper)', marginTop: 2, fontSize: 22 }}>
-          "오늘 하루, 잠깐
-          <br />
-          같이 돌아볼까?"
+          "오늘 하루, 잠깐 돌아볼까?"
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, marginTop: 14 }}>
-          <div
-            style={{
-              background: 'var(--paper)',
-              borderRadius: 12,
-              padding: 8,
-              border: '1.5px solid var(--ink)',
-            }}
-          >
-            <CatSketch size={70} mood="wink" />
-          </div>
+          <MoodFace mood={'\u{1F60C}'} size={84} />
           <button
             type="button"
             onClick={() => nav.go('recap-start')}
@@ -366,7 +344,10 @@ export const S07_HomeNight = () => {
           gap: 12,
         }}
       >
-        <div style={{ fontFamily: 'Pretendard', fontWeight: 800, fontSize: 34, color: 'var(--accent)', lineHeight: 1 }}>{state.streak}<span style={{ fontSize: 13, color: 'var(--pencil)', marginLeft: 2 }}>일</span></div>
+        {/* v4 S07: 큰 숫자 대신 불꽃 아이콘 + 볼드 카피 */}
+        <div className="ph-circle" style={{ width: 40, height: 40, background: 'var(--night)', color: 'var(--cream)', fontSize: 18, flex: 'none' }} aria-hidden="true">
+          🔥
+        </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>
             {state.streak > 0 ? `${state.streak}일 연속!` : '오늘부터 시작해요'}
@@ -389,46 +370,15 @@ export const S07_HomeNight = () => {
         </div>
       </div>
 
-      <div className="hbox r-l" style={{ padding: 12, marginTop: 12 }}>
-        <h2 className="h-section" style={{ marginBottom: 8 }}>
-          오늘 미리 표시한 감정
-        </h2>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {(
-            [
-              ['😌', true],
-              ['😊', true],
-              ['😣', false],
-              ['😢', false],
-              ['😡', false],
-            ] as [string, boolean][]
-          ).map(([e, on], i) => (
-            <div
-              key={i}
-              className={'mood-blob ' + (on ? '' : 'r-l')}
-              style={{
-                width: 38,
-                height: 38,
-                background: on ? 'var(--paper-2)' : '#fff',
-                opacity: on ? 1 : 0.4,
-              }}
-            >
-              <MoodFace mood={e} size={26} />
-            </div>
-          ))}
-        </div>
-        <div className="tiny" style={{ marginTop: 8 }}>
-          회고 대화 중 더 정확히 적어줘요
-        </div>
-      </div>
-
+      {/* v4 S07: "오늘 미리 표시한 감정" 카드는 목업 전용(하드코딩)이라 제거 */}
       <div style={{ marginTop: 12 }}>
+        {/* v4 S07: 행 아이콘은 탭바와 동일 글리프(TAB_ICONS), 서브카피 v4 정합 */}
         {(
           [
-            ['◰', '캘린더', '지난 일기 보기', 'calendar'],
-            ['◖', '이음이 방', '꾸미고 먹이주기', 'cat-room'],
-            ['✦', '이번 주 인사이트', 'AI 분석', 'insights'],
-          ] as [string, string, string, 'calendar' | 'cat-room' | 'insights'][]
+            ['cal', '캘린더', '지난 일기 보기', 'calendar'],
+            ['cat', '이음이 방', '이음이 보러가기', 'cat-room'],
+            ['ins', '이번 주 인사이트', 'AI 분석과 함께하기', 'insights'],
+          ] as ['cal' | 'cat' | 'ins', string, string, 'calendar' | 'cat-room' | 'insights'][]
         ).map(([ic, t, s, route], i) => (
           <button
             key={i}
@@ -449,9 +399,9 @@ export const S07_HomeNight = () => {
           >
             <div
               className="ph-square"
-              style={{ width: 36, height: 36, fontFamily: 'Pretendard', fontSize: 16, borderRadius: 14 }}
+              style={{ width: 36, height: 36, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              {ic}
+              {TAB_ICONS[ic]}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>{t}</div>
