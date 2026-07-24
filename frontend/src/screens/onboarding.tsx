@@ -90,25 +90,15 @@ export const S01_Splash = () => {
         gap: 26,
       }}
     >
-      {/* v4 S01: 원 안에 전신이 아니라 상반신 크롭 — 원이 뷰포트, 이미지는 위쪽 정렬 */}
       <div
         style={{
-          width: 164,
-          height: 164,
           background: 'var(--paper-3)',
           borderRadius: '50%',
+          padding: 18,
           border: '2px solid var(--ink)',
-          overflow: 'hidden',
-          display: 'flex',
-          justifyContent: 'center',
         }}
       >
-        <img
-          src="/character/base.webp"
-          alt="이음이"
-          style={{ width: 136, height: 'auto', marginTop: 16, userSelect: 'none', pointerEvents: 'none' }}
-          draggable={false}
-        />
+        <CatSketch size={128} mood="wink" />
       </div>
       <div style={{ textAlign: 'center' }}>
         <h1 className="h-display" style={{ fontSize: 52, color: 'var(--paper)' }}>
