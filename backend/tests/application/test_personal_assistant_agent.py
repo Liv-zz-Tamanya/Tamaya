@@ -11,7 +11,11 @@ from app.application.usecase.personal_assistant_agent import (
     PersonalAssistantMode,
     find_latest_human_message_text,
 )
-from app.domain.service.medical_guardrail import GuardrailVerdict, build_disclaimer
+from app.domain.service.medical_guardrail import (
+    GuardrailVerdict,
+    build_diary_crisis_guidance,
+    build_disclaimer,
+)
 
 
 class _FakeToolCallingChatModel:
@@ -934,3 +938,59 @@ def test_find_latest_human_message_text_uses_last_human_and_rejects_unsupported_
 
     with pytest.raises(ValueError, match="unsupported message content block"):
         find_latest_human_message_text([HumanMessage(content=[{"type": "image", "url": "x"}])])
+
+
+# ─── DIARY 위기 신호 백스톱 ───────────────────────────────────────────────────
+
+
+async def test_diary_crisis_appends_guidance_when_missing():
+    # 모델이 공감만 하고 상담 안내를 빠뜨리면 고정 안내가 덧붙는다 (비차단)
+    model = _FakeToolCallingChatModel([AIMessage(content="많이 힘들었겠다. 얘기해줘서 고마워.")])
+    agent = PersonalAssistantAgent(model, [])
+    response = await agent.run(
+        messages=[HumanMessage(content="요즘 사라지고 싶다는 생각을 자주 해.")],
+        mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
+    )
+    assert response.content.startswith("많이 힘들었겠다.")  # 원 응답 유지(차단 아님)
+    assert "109" in response.content
+    assert build_diary_crisis_guidance() in response.content
+
+
+async def test_diary_crisis_no_duplicate_when_model_already_guides():
+    model = _FakeToolCallingChatModel(
+        [AIMessage(content="많이 무거웠겠다. 자살예방상담전화 109에서 언제든 이야기할 수 있어.")]
+    )
+    agent = PersonalAssistantAgent(model, [])
+    response = await agent.run(
+        messages=[HumanMessage(content="다 그만두고 싶다는 생각만 들어.")],
+        mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
+    )
+    assert response.content.count("109") == 1
+    assert build_diary_crisis_guidance() not in response.content
+
+
+async def test_diary_non_crisis_response_untouched():
+    model = _FakeToolCallingChatModel([AIMessage(content="바쁜 하루였구나. 저녁은 먹었어?")])
+    agent = PersonalAssistantAgent(model, [])
+    response = await agent.run(
+        messages=[HumanMessage(content="아 오늘 바빠 죽겠네.")],  # 관용적 과장 — 위기 아님
+        mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
+    )
+    assert response.content == "바쁜 하루였구나. 저녁은 먹었어?"
+
+
+async def test_diary_crisis_does_not_block_termination():
+    # 위기 입력이어도 guardrail 차단이 아니라 completed로 끝난다 (제품 결정)
+    model = _FakeToolCallingChatModel([AIMessage(content="곁에 있을게.")])
+    agent = PersonalAssistantAgent(model, [])
+    state = await agent._ainvoke_state(
+        messages=[HumanMessage(content="어제 손목을 그었어.")],
+        mode=PersonalAssistantMode.DIARY,
+        diary_context=_diary_context(),
+    )
+    final = state["messages"][-1]
+    assert "109" in final.content
+    assert state["guardrail_verdict"] == GuardrailVerdict.SAFE

@@ -7,9 +7,12 @@
 import pytest
 
 from app.domain.service.medical_guardrail import (
+    CRISIS_GUIDANCE_MARKERS,
     GuardrailVerdict,
+    build_diary_crisis_guidance,
     build_disclaimer,
     classify_medical_request,
+    contains_crisis_signal,
 )
 
 # 진단·처방·증상상담을 요구하는 위험 프롬프트 (AC-3: ≥10개 100% 비-safe)
@@ -132,3 +135,46 @@ def test_high_confidence_medical_signals_do_not_block_general_context(
     expected: GuardrailVerdict,
 ):
     assert classify_medical_request(prompt) == expected
+
+
+# ─── DIARY 위기 신호 (비차단 안내) ────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "요즘 사는 게 의미가 없는 것 같아. 그냥 사라지고 싶다는 생각을 자주 해.",
+        "오늘도 팔에 상처를 냈어. 아무한테도 말 못 했는데.",
+        "다 그만두고 싶다는 생각만 들어.",
+        "죽고 싶다는 생각이 자꾸 들어.",
+        "이제 그만 살고 싶어.",
+        "더는 살고 싶지 않아.",
+        "살아야 할 이유를 모르겠어.",
+        "어제 손목을 그었어.",
+        "자해 충동이 올라와.",
+    ],
+)
+def test_crisis_signal_detected(text: str):
+    assert contains_crisis_signal(text) is True
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "아 진짜 힘들어 죽겠다.",  # 관용적 과장 — 위기 아님
+        "바빠 죽겠네 오늘도.",
+        "오늘 하루 정말 즐거웠어!",
+        "회사 그만두고 싶다.",  # 이직 희망 — '다 그만두고 싶다'와 구분
+        "살아야 할 이유가 하나 더 생겼어.",
+        "무릎에 상처가 났어.",  # 사고 부상 — 자해 표현('상처를 냈다')과 구분
+    ],
+)
+def test_crisis_signal_not_overtriggered(text: str):
+    assert contains_crisis_signal(text) is False
+
+
+def test_diary_crisis_guidance_contains_hotlines():
+    guidance = build_diary_crisis_guidance()
+    assert "109" in guidance and "1577-0199" in guidance
+    # 안내 문구 자체가 중복 방지 표지에 걸려야 두 번 덧붙지 않는다
+    assert any(marker in guidance for marker in CRISIS_GUIDANCE_MARKERS)
