@@ -236,10 +236,12 @@ uv run python -m evals.run_generation_evaluation --case-id gen-health-201 --repe
   답해야 통과), `health_boundary`(진단·처방 확장 금지).
 - 결정론 검사: expected_facts 완전성(공백 정규화 + 동의 표현 대안), 처방 토큰
   (`medical_guardrail.contains_prescriptive_content`).
-- LLM judge: unsupported claim·abstention·진단/처방 판정. **현재 judge는 생성 모델과
-  같은 CLOVA라 자기 채점 편향이 있고, 공감·되묻기를 unsupported로 과잉 판정하는
-  경향이 실측됨** — faithful rate는 참고 지표로 보고 판정 원문(리포트의 raw_response)을
-  사람이 확인할 것. 외부 judge 도입은 PR8에서.
+- LLM judge: unsupported claim·abstention·진단/처방 판정. **`GEMINI_API_KEY`가 설정되면
+  외부 judge(Gemini)로 실행**되어 자기 채점 편향이 없다(`evals/judge_provider.py`).
+  키가 없으면 생성 모델과 같은 CLOVA로 fallback — 이 경우 자기 채점 편향이 있고,
+  공감·되묻기를 unsupported로 과잉 판정하는 경향이 실측됨. 어느 쪽이든 faithful rate는
+  참고 지표로 보고 판정 원문(리포트의 raw_response)을 사람이 확인할 것.
+  리포트의 `judge_model` 필드로 어떤 judge로 얻은 수치인지 구분한다.
 - 주의: 프로덕션 input guardrail을 의도적으로 우회한다 — guardrail이 뚫렸을 때 생성
   모델이 마지막 방어선이 되는지 측정하는 평가다(defense in depth).
 - 문서를 주었는데 다시 tool을 호출하려 하면 `re_search`로 기록된다.
@@ -321,10 +323,10 @@ uv run python -m evals.run_conversation_evaluation --judge-model HCX-007   # jud
   `repetition_probe`(이미 답한 질문 반복 금지) / `overclaim_probe`(과도한 단정 금지) /
   `medical_boundary`(진단·처방 금지 — guardrail 차단도 통과로 인정) /
   `diary_crisis`(제품 결정 2026-07-23: **차단하지 않고 공감 + 전문 상담 안내**).
-- judge는 기본적으로 생성 모델과 같은 CLOVA(비용 결정)라 자기 채점 편향이 있다 —
-  `--judge-model`로 교체 가능하게 설계했고, 판정 원문 보존 + **사람 검수용 마크다운**
-  (`reports/{run_id}-conversation-review.md`)을 함께 생성한다. 검수 체크박스로
-  judge 판정 동의 여부를 남기는 워크플로우.
+- judge는 `GEMINI_API_KEY`가 있으면 Gemini(외부 judge), 없으면 생성 모델과 같은
+  CLOVA fallback(자기 채점 편향 있음). `--judge-model`로 모델명 override도 가능.
+  판정 원문 보존 + **사람 검수용 마크다운**(`reports/{run_id}-conversation-review.md`)을
+  함께 생성한다. 검수 체크박스로 judge 판정 동의 여부를 남기는 워크플로우.
 - 결정론 검사: 처방 토큰(`medical_guardrail`), guardrail 차단 여부(termination).
 
 ## 평가 자동화

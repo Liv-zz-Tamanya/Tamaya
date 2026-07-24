@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     personal_assistant_model_retry_max_backoff_seconds: float = Field(default=2.0, ge=0)
     # DEC-022.4: Mock mode — NCP API 키 수령 전 true (디폴트 true)
     clova_mock_mode: bool = True
+    # 평가 LLM judge 전용(런타임 미사용) — 키가 있으면 judge만 Gemini로 전환해
+    # 자기 채점 편향을 피한다. evals/judge_provider.py 참고.
+    gemini_api_key: str = ""
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    gemini_model: str = "gemini-2.5-flash"
     # DEC-022.4: 카카오 REST API 앱 키 (사용자 발급 후 .env에 설정)
     kakao_app_key: str = ""
     # DEC-023: JWT 서명 시크릿 (프로덕션에서는 반드시 강력한 랜덤값으로 교체)

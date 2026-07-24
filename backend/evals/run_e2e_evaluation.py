@@ -266,14 +266,14 @@ async def _evaluate_run(
 
 
 def build_e2e_report(
-    results: list[E2ECaseResult], started_at: datetime, repeat: int, top_k: int
+    results: list[E2ECaseResult], started_at: datetime, repeat: int, top_k: int, judge_model: str | None = None
 ) -> E2ERunReport:
     return E2ERunReport(
         run_id=started_at.strftime("%Y%m%dT%H%M%SZ"),
         started_at=started_at,
         completed_at=datetime.now(UTC),
         model=settings.clova_model,
-        judge_model=settings.clova_model,
+        judge_model=judge_model or settings.clova_model,
         prompt_hash=_hash_json(
             _prompt_payload([PersonalAssistantMode.DIARY, PersonalAssistantMode.HEALTH])
         ),
@@ -381,7 +381,7 @@ async def _run(args: argparse.Namespace) -> int:
             results = await run_e2e_cases(
                 cases, fixtures, model, judge, diary_query, health_query, repeat=args.repeat
             )
-        report = build_e2e_report(results, started_at, args.repeat, DEFAULT_TOP_K)
+        report = build_e2e_report(results, started_at, args.repeat, DEFAULT_TOP_K, judge.model)
     finally:
         await engine.dispose()
 

@@ -1,8 +1,8 @@
 """답변 검수 LLM judge — 문서 대비 unsupported claim, abstention, 진단·처방 판정.
 
-현재 judge 모델은 생성 모델과 같은 CLOVA다(자기 채점 편향 가능). 로드맵 PR8에서
-외부 judge 모델·사람 검수와 병행할 때까지는 근거 대조(추출형 판정)에만 사용하고,
-판정 원문을 리포트에 남겨 사람이 재검증할 수 있게 한다.
+judge 모델은 GEMINI_API_KEY가 설정되면 외부 judge(Gemini), 없으면 생성 모델과
+같은 CLOVA fallback이다(자기 채점 편향 가능 — evals/judge_provider.py 참고).
+어느 쪽이든 판정 원문을 리포트에 남겨 사람이 재검증할 수 있게 한다.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import json
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 
-from app.infrastructure.config.settings import settings
+from evals.judge_provider import resolve_judge_provider
 
 JUDGE_SYSTEM_PROMPT = """너는 AI 답변 검수자야. 사용자 질문, 제공된 기록 문서, AI 답변을 보고 아래 항목을 판정해.
 
@@ -86,15 +86,16 @@ def parse_judge_response(content: str) -> JudgeVerdict:
 
 class GenerationJudge:
     def __init__(self, api_key: str | None = None, model: str | None = None) -> None:
+        provider = resolve_judge_provider()
         self._client = AsyncOpenAI(
-            api_key=api_key if api_key is not None else settings.clova_api_key,
-            base_url=settings.clova_base_url,
+            api_key=api_key if api_key is not None else provider.api_key,
+            base_url=provider.base_url,
         )
-        self._model = model or settings.clova_model
+        self.model = model or provider.model
 
     async def judge(self, documents: str, question: str, answer: str) -> JudgeVerdict:
         response = await self._client.chat.completions.create(
-            model=self._model,
+            model=self.model,
             messages=[
                 {"role": "system", "content": JUDGE_SYSTEM_PROMPT},
                 {"role": "user", "content": build_judge_user_message(documents, question, answer)},

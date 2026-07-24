@@ -191,7 +191,8 @@ def write_review_markdown(report: ConversationRunReport, output: Path) -> None:
     lines = [
         f"# 대화 품질 사람 검수 — run {report.run_id}",
         "",
-        f"- 생성 모델: {report.model} / judge: {report.judge_model} (자기 채점 한계 있음 — 판정을 그대로 믿지 말 것)",
+        f"- 생성 모델: {report.model} / judge: {report.judge_model}"
+        + (" (자기 채점 한계 있음 — 판정을 그대로 믿지 말 것)" if report.judge_model == report.model else " (외부 judge)"),
         "- 각 케이스의 judge 판정이 타당한지 확인하고 체크하세요.",
         "",
     ]
