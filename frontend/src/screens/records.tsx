@@ -272,8 +272,8 @@ export const S14_Calendar = () => {
                   /* v4 S14: 셀 = 이모지 원이 아니라 무드별 고양이 얼굴. 오늘만 액센트 링. */
                   <div
                     style={{
-                      width: 30,
-                      height: 30,
+                      width: 36,
+                      height: 36,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -282,17 +282,28 @@ export const S14_Calendar = () => {
                       background: today ? 'var(--paper-2)' : 'transparent',
                     }}
                   >
-                    <MoodFace mood={mood} size={28} />
+                    <MoodFace mood={mood} size={32} />
                   </div>
                 ) : (
+                  /* 빈 날짜 점선 원은 v4처럼 얼굴보다 작게 — 래퍼로 행 높이는 통일 */
                   <div
                     style={{
-                      width: 30,
-                      height: 30,
-                      border: '1px dashed var(--line)',
-                      borderRadius: '50%',
+                      width: 36,
+                      height: 36,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
-                  />
+                  >
+                    <div
+                      style={{
+                        width: 22,
+                        height: 22,
+                        border: '1px dashed var(--line)',
+                        borderRadius: '50%',
+                      }}
+                    />
+                  </div>
                 )}
                 <span
                   className="tiny"
@@ -351,10 +362,11 @@ export const S14_Calendar = () => {
         }}
       >
         {moodCounts.map((x, i) => (
+          /* v4 S14 범례: 이모지 대신 무드 고양이 얼굴 */
           <div key={i} className="chip" style={{ background: 'var(--paper)' }}>
-            <span>{x.m}</span>
+            <MoodFace mood={x.m} size={20} />
             <span style={{ fontSize: 11, color: 'var(--pencil)' }}>
-              {x.label} ×{x.n}
+              {x.label} {x.n}
             </span>
           </div>
         ))}
