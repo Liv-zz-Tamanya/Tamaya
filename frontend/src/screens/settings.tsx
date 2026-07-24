@@ -61,6 +61,9 @@ export const S22_Settings = () => {
     location.reload();
   };
 
+  // v4 S22 절충(2026-07-24): Figma 레이아웃(카드 리스트·현재 상태·하단 위험 버튼)을
+  // 따르되 항목은 실기능만 — 목업 전용 정적 row(주간 리포트 알림·로컬 저장·백업)는
+  // 기능이 생길 때 추가한다.
   const rows: {
     label: string;
     value: string;
@@ -68,14 +71,49 @@ export const S22_Settings = () => {
     danger?: boolean;
   }[] = [
     { label: '이음이 이름', value: state.character.name, onClick: () => nav.go('create-cat') },
-    { label: '알림 — 주간 리포트', value: '월요일 09:00' },
-    { label: '데이터 — 로컬 저장', value: `일기 ${state.diaries.length}건` },
-    { label: '🐱 밤 코칭 (건강냥)', value: 'BE 연동 · 코칭 대화', onClick: () => nav.go('coach') },
-    { label: '📈 웰빙 인사이트', value: 'BE 연동 · 주간 스코어', onClick: () => nav.go('wellbeing') },
-    { label: '✚ 건강 기록 Q&A', value: 'BE 연동 · RAG 챗', onClick: () => nav.go('health-chat') },
-    { label: '🔑 CLOVA 키 (BYOK)', value: 'BE 연동 · 키 설정', onClick: () => nav.go('byok') },
-    { label: '버전', value: 'v1.0 · healthcat-backend' },
+    { label: '밤 코칭 (건강냥)', value: '코칭 대화', onClick: () => nav.go('coach') },
+    { label: '웰빙 인사이트', value: '주간 스코어', onClick: () => nav.go('wellbeing') },
+    { label: '건강 기록 Q&A', value: '내 기록 기반 질문', onClick: () => nav.go('health-chat') },
+    { label: 'CLOVA 키 (BYOK)', value: '키 설정', onClick: () => nav.go('byok') },
+    { label: '버전', value: 'v1.0 · tamaya.online' },
   ];
+
+  const rowNodes = rows.map((r, i) => {
+    const rowContent = (
+      <>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>{r.label}</div>
+          <div className="tiny" style={{ marginTop: 3, color: 'var(--pencil)' }}>{r.value}</div>
+        </div>
+        {r.onClick && (
+          <span style={{ fontSize: 22, color: 'var(--ink)' }} aria-hidden="true">›</span>
+        )}
+      </>
+    );
+    const rowStyle = {
+      padding: '12px 14px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      cursor: r.onClick ? 'pointer' : 'default',
+    };
+    return r.onClick ? (
+      <button
+        key={i}
+        type="button"
+        onClick={r.onClick}
+        className="hbox as-button"
+        aria-label={`${r.label} — ${r.value}`}
+        style={{ ...rowStyle, width: '100%', textAlign: 'left' as const }}
+      >
+        {rowContent}
+      </button>
+    ) : (
+      <div key={i} className="hbox" style={rowStyle}>
+        {rowContent}
+      </div>
+    );
+  });
 
   return (
     <div className="screen">
@@ -86,6 +124,7 @@ export const S22_Settings = () => {
         </div>
 
         <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {rowNodes[0]}
           <div className="hbox" style={{ padding: '12px 14px' }}>
             <div style={{ fontWeight: 700, fontSize: 14 }}>밤 채팅 시작 시간</div>
             <div className="tiny" style={{ marginTop: 3, color: 'var(--pencil)' }}>매일 설정한 시간부터 다음 날 06:00까지</div>
@@ -106,49 +145,15 @@ export const S22_Settings = () => {
             </div>
             {saveStatus && <div className="tiny" role="status" style={{ marginTop: 6, color: 'var(--pencil)' }}>{saveStatus}</div>}
           </div>
-          {rows.map((r, i) => {
-            const rowContent = (
-              <>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{r.label}</div>
-                  <div className="tiny" style={{ marginTop: 3, color: 'var(--pencil)' }}>{r.value}</div>
-                </div>
-                {r.onClick && (
-                  <span style={{ fontSize: 22, color: 'var(--ink)' }} aria-hidden="true">›</span>
-                )}
-              </>
-            );
-            const rowStyle = {
-              padding: '12px 14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              cursor: r.onClick ? 'pointer' : 'default',
-            };
-            return r.onClick ? (
-              <button
-                key={i}
-                type="button"
-                onClick={r.onClick}
-                className="hbox as-button"
-                aria-label={`${r.label} — ${r.value}`}
-                style={{ ...rowStyle, width: '100%', textAlign: 'left' as const }}
-              >
-                {rowContent}
-              </button>
-            ) : (
-              <div key={i} className="hbox" style={rowStyle}>
-                {rowContent}
-              </div>
-            );
-          })}
+          {rowNodes.slice(1)}
         </div>
 
         <div style={{ marginTop: 20 }}>
           <h2 className="h-label" style={{ marginBottom: 8 }}>현재 상태</h2>
+          {/* v4 S22: 첫 줄 볼드 요약 + 연한 둘째 줄 */}
           <div className="hbox" style={{ padding: '12px 14px' }}>
-            <div className="tiny" style={{ marginBottom: 5, color: 'var(--ink)' }}>
-              포인트 · {state.points} ◉ / 스트릭 {state.streak}일 / Lv.{state.level}
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 5 }}>
+              포인트 {state.points} pt / 연속 달성 {state.streak}일 / Lv.{state.level}
             </div>
             <div className="tiny" style={{ color: 'var(--pencil)' }}>아이템 {state.unlockedItems.length}개 · 입는중 {state.equippedItem ?? '없음'}</div>
           </div>
@@ -163,7 +168,7 @@ export const S22_Settings = () => {
             marginTop: 20,
             color: 'var(--danger)',
             borderColor: 'var(--danger)',
-            background: '#fff',
+            background: 'var(--cream)', /* v4: 흰색 대신 크림 필 */
             cursor: purging ? 'wait' : 'pointer',
             fontFamily: 'inherit',
             opacity: purging ? 0.6 : 1,
