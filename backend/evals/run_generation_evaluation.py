@@ -196,14 +196,14 @@ async def run_generation_cases(
 
 
 def build_generation_report(
-    results: list[GenerationCaseResult], started_at: datetime, repeat: int
+    results: list[GenerationCaseResult], started_at: datetime, repeat: int, judge_model: str | None = None
 ) -> GenerationRunReport:
     return GenerationRunReport(
         run_id=started_at.strftime("%Y%m%dT%H%M%SZ"),
         started_at=started_at,
         completed_at=datetime.now(UTC),
         model=settings.clova_model,
-        judge_model=settings.clova_model,
+        judge_model=judge_model or settings.clova_model,
         prompt_hash=_hash_json(
             _prompt_payload([PersonalAssistantMode.DIARY, PersonalAssistantMode.HEALTH])
         ),
@@ -271,12 +271,12 @@ async def _run(args: argparse.Namespace) -> int:
     model = _real_evaluation_model()
     judge = GenerationJudge()
     print(
-        f"This run calls the real CLOVA API ({len(cases)}건 × repeat {args.repeat} × 생성+judge) "
+        f"This run calls the real CLOVA API ({len(cases)}건 × repeat {args.repeat} × 생성+judge[{judge.model}]) "
         "and may incur cost. Production DB and user data are not used."
     )
     started_at = datetime.now(UTC)
     results = await run_generation_cases(cases, fixtures, model, judge, repeat=args.repeat)
-    report = build_generation_report(results, started_at, args.repeat)
+    report = build_generation_report(results, started_at, args.repeat, judge.model)
     output = args.output or Path(__file__).parent / "reports" / f"{report.run_id}-generation-eval.json"
     write_generation_report(report, output)
     print_generation_summary(report)

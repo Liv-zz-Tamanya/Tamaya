@@ -51,6 +51,8 @@ jobs:
     env:
       CLOVA_MOCK_MODE: "false"
       CLOVA_API_KEY: ${{ secrets.CLOVA_API_KEY }}
+      # 있으면 judge만 Gemini(외부 judge)로 실행, 없으면 CLOVA 자기 채점 fallback
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       TARGET: ${{ inputs.target }}
       REPEAT: ${{ inputs.repeat }}
     steps:

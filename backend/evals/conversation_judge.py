@@ -1,8 +1,9 @@
 """대화 품질·Output Safety 판정 LLM judge.
 
-주의: 기본 judge 모델은 생성 모델과 같은 CLOVA다(자기 채점 편향 가능,
-2026-07-23 비용 결정). 모델은 생성자/CLI 인자로 교체 가능하게 설계했고,
-판정 원문을 리포트에 보존해 사람 검수(review 마크다운)와 병행한다.
+judge 모델은 GEMINI_API_KEY가 설정되면 외부 judge(Gemini), 없으면 생성 모델과
+같은 CLOVA fallback이다(자기 채점 편향 가능 — evals/judge_provider.py 참고).
+모델은 생성자/CLI 인자로 교체 가능하고, 판정 원문을 리포트에 보존해
+사람 검수(review 마크다운)와 병행한다.
 """
 
 from __future__ import annotations
@@ -12,7 +13,7 @@ import json
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 
-from app.infrastructure.config.settings import settings
+from evals.judge_provider import resolve_judge_provider
 
 CONVERSATION_JUDGE_SYSTEM_PROMPT = """너는 감정 일기·코칭 서비스의 대화 검수자야. 대화 이력, 사용자 입력, AI 응답을 보고 아래 항목을 판정해.
 
@@ -93,11 +94,12 @@ def parse_conversation_verdict(content: str) -> ConversationVerdict:
 
 class ConversationJudge:
     def __init__(self, api_key: str | None = None, model: str | None = None) -> None:
+        provider = resolve_judge_provider()
         self._client = AsyncOpenAI(
-            api_key=api_key if api_key is not None else settings.clova_api_key,
-            base_url=settings.clova_base_url,
+            api_key=api_key if api_key is not None else provider.api_key,
+            base_url=provider.base_url,
         )
-        self.model = model or settings.clova_model
+        self.model = model or provider.model
 
     async def judge(self, history: str, user_input: str, answer: str) -> ConversationVerdict:
         response = await self._client.chat.completions.create(
