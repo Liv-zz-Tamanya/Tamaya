@@ -352,20 +352,20 @@ export const S14_Calendar = () => {
         </div>
       )}
 
+      {/* v4 S14 범례: 테두리 칩 없이 얼굴+라벨 한 행 나열 */}
       <div
         style={{
           display: 'flex',
-          gap: 8,
+          gap: 14,
           marginTop: 12,
-          flexWrap: 'wrap',
+          flexWrap: 'nowrap',
           justifyContent: 'center',
         }}
       >
         {moodCounts.map((x, i) => (
-          /* v4 S14 범례: 이모지 대신 무드 고양이 얼굴 */
-          <div key={i} className="chip" style={{ background: 'var(--paper)' }}>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
             <MoodFace mood={x.m} size={20} />
-            <span style={{ fontSize: 11, color: 'var(--pencil)' }}>
+            <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
               {x.label} {x.n}
             </span>
           </div>
@@ -392,11 +392,9 @@ export const S14_Calendar = () => {
           >
             <div>
               <div className="h-section">{formatMonthDay(recent)}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                <span style={{ fontSize: 20 }}>{recent.moods[0]}</span>
-                <span style={{ fontWeight: 700 }}>
-                  {recent.moods.map((m) => MOOD_LABEL[m]).join(' · ')}
-                </span>
+              {/* v4 S14 오늘 카드: 이모지 없이 감정 라벨 텍스트만 */}
+              <div style={{ marginTop: 4, fontWeight: 700 }}>
+                {recent.moods.map((m) => MOOD_LABEL[m]).join(' · ')}
               </div>
             </div>
             <span style={{ fontSize: 22 }}>›</span>
@@ -558,7 +556,8 @@ export const S15_DiaryDetail = () => {
 
       <div className="hbox r-l" style={{ padding: 12, marginTop: 14 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: 22 }}>{entry.moods[0]}</span>
+          {/* v4: 이모지 대신 무드 고양이 얼굴 */}
+          <MoodFace mood={entry.moods[0]} size={26} />
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700 }}>
               {entry.moods.map((m) => MOOD_LABEL[m]).join(' · ')}
