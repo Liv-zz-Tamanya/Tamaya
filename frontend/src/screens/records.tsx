@@ -258,12 +258,12 @@ export const S14_Calendar = () => {
                 aria-label={`${month}월 ${day}일${mood ? ' · ' + MOOD_LABEL[mood] : ' · 기록 없음, 탭해서 감정 추가'}${today ? ' · 오늘' : ''}`}
                 className="as-button"
                 style={{
-                  aspectRatio: 1,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
                   width: '100%',
+                  padding: '3px 0',
                   position: 'relative',
                   cursor: 'pointer',
                 }}
@@ -272,8 +272,8 @@ export const S14_Calendar = () => {
                   /* v4 S14: 셀 = 이모지 원이 아니라 무드별 고양이 얼굴. 오늘만 액센트 링. */
                   <div
                     style={{
-                      width: 36,
-                      height: 36,
+                      width: 40,
+                      height: 40,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -282,14 +282,14 @@ export const S14_Calendar = () => {
                       background: today ? 'var(--paper-2)' : 'transparent',
                     }}
                   >
-                    <MoodFace mood={mood} size={32} />
+                    <MoodFace mood={mood} size={38} />
                   </div>
                 ) : (
                   /* 빈 날짜 점선 원은 v4처럼 얼굴보다 작게 — 래퍼로 행 높이는 통일 */
                   <div
                     style={{
-                      width: 36,
-                      height: 36,
+                      width: 40,
+                      height: 40,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
