@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { BackButton, TabBar } from '../components/primitives';
+import { BackButton, MoodFace, TabBar } from '../components/primitives';
 import { MoodHeatmap } from '../components/mood-heatmap';
 import { MoodPalette } from '../components/mood-palette';
 import { useNav } from '../lib/router';
@@ -269,30 +269,41 @@ export const S14_Calendar = () => {
                 }}
               >
                 {mood ? (
+                  /* v4 S14: 셀 = 이모지 원이 아니라 무드별 고양이 얼굴. 오늘만 액센트 링. */
                   <div
                     style={{
-                      width: 30,
-                      height: 30,
-                      border: today ? '2px solid var(--accent)' : '1.5px solid var(--ink)',
-                      borderRadius: '50%',
+                      width: 36,
+                      height: 36,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: today ? 'var(--paper-2)' : '#fff',
-                      fontSize: 14,
+                      border: today ? '2px solid var(--accent)' : 'none',
+                      borderRadius: '50%',
+                      background: today ? 'var(--paper-2)' : 'transparent',
                     }}
                   >
-                    {mood}
+                    <MoodFace mood={mood} size={32} />
                   </div>
                 ) : (
+                  /* 빈 날짜 점선 원은 v4처럼 얼굴보다 작게 — 래퍼로 행 높이는 통일 */
                   <div
                     style={{
-                      width: 30,
-                      height: 30,
-                      border: '1px dashed var(--line)',
-                      borderRadius: '50%',
+                      width: 36,
+                      height: 36,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
-                  />
+                  >
+                    <div
+                      style={{
+                        width: 22,
+                        height: 22,
+                        border: '1px dashed var(--line)',
+                        borderRadius: '50%',
+                      }}
+                    />
+                  </div>
                 )}
                 <span
                   className="tiny"
@@ -341,20 +352,21 @@ export const S14_Calendar = () => {
         </div>
       )}
 
+      {/* v4 S14 범례: 테두리 칩 없이 얼굴+라벨 한 행 나열 */}
       <div
         style={{
           display: 'flex',
-          gap: 8,
+          gap: 14,
           marginTop: 12,
-          flexWrap: 'wrap',
+          flexWrap: 'nowrap',
           justifyContent: 'center',
         }}
       >
         {moodCounts.map((x, i) => (
-          <div key={i} className="chip" style={{ background: 'var(--paper)' }}>
-            <span>{x.m}</span>
-            <span style={{ fontSize: 11, color: 'var(--pencil)' }}>
-              {x.label} ×{x.n}
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
+            <MoodFace mood={x.m} size={20} />
+            <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+              {x.label} {x.n}
             </span>
           </div>
         ))}
@@ -380,11 +392,9 @@ export const S14_Calendar = () => {
           >
             <div>
               <div className="h-section">{formatMonthDay(recent)}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                <span style={{ fontSize: 20 }}>{recent.moods[0]}</span>
-                <span style={{ fontWeight: 700 }}>
-                  {recent.moods.map((m) => MOOD_LABEL[m]).join(' · ')}
-                </span>
+              {/* v4 S14 오늘 카드: 이모지 없이 감정 라벨 텍스트만 */}
+              <div style={{ marginTop: 4, fontWeight: 700 }}>
+                {recent.moods.map((m) => MOOD_LABEL[m]).join(' · ')}
               </div>
             </div>
             <span style={{ fontSize: 22 }}>›</span>
@@ -546,7 +556,8 @@ export const S15_DiaryDetail = () => {
 
       <div className="hbox r-l" style={{ padding: 12, marginTop: 14 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: 22 }}>{entry.moods[0]}</span>
+          {/* v4: 이모지 대신 무드 고양이 얼굴 */}
+          <MoodFace mood={entry.moods[0]} size={26} />
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700 }}>
               {entry.moods.map((m) => MOOD_LABEL[m]).join(' · ')}
