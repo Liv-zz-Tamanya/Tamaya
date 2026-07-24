@@ -352,20 +352,21 @@ export const S14_Calendar = () => {
         </div>
       )}
 
-      {/* v4 S14 범례: 테두리 칩 없이 얼굴+라벨 한 행 나열 */}
+      {/* v4 S14 범례: 테두리 칩 없이 얼굴+라벨 한 행 나열.
+          컴팩트 사이징으로 일반 폭에선 한 행 유지 — wrap 은 초소형 화면 오버플로 방지용. */}
       <div
         style={{
           display: 'flex',
-          gap: 14,
+          gap: 10,
           marginTop: 12,
-          flexWrap: 'nowrap',
+          flexWrap: 'wrap',
           justifyContent: 'center',
         }}
       >
         {moodCounts.map((x, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
-            <MoodFace mood={x.m} size={20} />
-            <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}>
+            <MoodFace mood={x.m} size={18} />
+            <span style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
               {x.label} {x.n}
             </span>
           </div>
