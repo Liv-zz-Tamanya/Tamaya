@@ -6,7 +6,8 @@
    var(--paper) 등은 tokens.css :root 에서 전역 해석된다.
    폰트는 2026-06-14 Pretendard 단일로 통일(var(--font-body)=Pretendard). */
 
-html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif; color: var(--ink); }
+/* 앱 컬럼(--app-max) 바깥 영역 — 아트워크 팔레트와 독립된 페이지 배경 */
+html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif; color: var(--ink); background: var(--canvas); }
 
 /* 클릭 가능한 div/span → <button> 시맨틱 전환용 리셋 유틸 (A11Y-02/03/06/07/08) — 파일 최상단에
    둬서 캐스케이드상 이 규칙이 항상 먼저 오게 한다: .hbox·.chip·.nav-arrow 등 뒤에 오는 클래스가
@@ -22,18 +23,20 @@ html, body { margin: 0; font-family: var(--font-body), 'Pretendard', sans-serif;
   position: relative;
 }
 
-/* App viewport — 유동 폭 웹앱 (폰 목업 캡 없음).
-   화면 컴포넌트(.screen)가 이 컨테이너를 채우고, 본문 콘텐츠(.screen-scroll)와
-   탭바 내부는 --app-fluid(responsive.css 티어)로 중앙 정렬·확장된다. */
+/* App viewport — 모바일 고정 폭 셸 (2026-07-24 웹앱 전환).
+   데스크톱에서도 --app-max 폭의 모바일 화면을 중앙에 그대로 보여준다(폰 프레임·
+   가짜 상태바 없음 — 폭만 캡). 내부는 항상 모바일 full-bleed(--app-fluid=100%). */
 .app-root {
   position: relative;
   width: 100%;
+  max-width: var(--app-max, 430px);
   height: 100vh;
   height: 100dvh;
   margin: 0 auto;
   background: var(--bg, var(--paper));
   overflow: hidden;
   font-family: 'Pretendard', sans-serif;
+  box-shadow: 0 0 24px rgba(58, 36, 20, 0.08); /* --canvas 배경과의 경계 — 데스크톱에서만 체감 */
 }
 .screen { position: absolute; inset: 0; }
 /* 캔버스형 화면(절대 px 앵커 연출 — 이음이 방 등): 무한정 늘리지 않고 스테이지 폭으로 센터
