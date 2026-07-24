@@ -109,12 +109,14 @@
   --text-label: 13px;
   --text-tiny: 11px;
 
-  /* ===== BREAKPOINTS — 풀 반응형 reflow 기준선 ============================
-   * ⚠️ @media 는 var() 를 못 받는다. 미디어쿼리엔 아래 '리터럴 값'을 직접 쓰고,
-   *    이 토큰은 JS(matchMedia)·문서 기준값으로 쓴다. 값 바꾸면 양쪽 동기화.
-   *    mobile  : ~479px  (단일 컬럼, 하단 탭바)
-   *    tablet  : 480~1023px (넓은 단일 컬럼)
-   *    desktop : 1024px~ (사이드 네비 + 2컬럼 reflow) */
+  /* ===== APP SHELL — 모바일 고정 폭 (2026-07-24 웹앱 전환 결정) ==============
+   * 데스크톱에서도 Section 1 목업과 같은 모바일 화면을 보여준다:
+   * .app-root 가 이 폭으로 캡되어 중앙 정렬, 바깥은 --canvas 배경. */
+  --app-max: 430px;
+
+  /* ===== BREAKPOINTS — JS(matchMedia)·문서 기준값 ============================
+   * 모바일 고정 셸 전환으로 뷰포트 기반 확장 미디어쿼리는 제거됨(responsive.css).
+   * 토큰은 후속 결정 대비 기준값으로 유지. */
   --bp-mobile: 480px;
   --bp-tablet: 768px;
   --bp-desktop: 1024px;

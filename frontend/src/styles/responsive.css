@@ -1,19 +1,14 @@
 /* ============================================================================
  * responsive.css — 반응형 유틸리티 (실동작 기준)
  * ----------------------------------------------------------------------------
- * 실제 배선된 전략: 모바일→태블릿→데스크톱 "유동 컬럼(fluid column)" 확장.
- *   전 구간 공통: 단일 컬럼 · 하단 고정 탭바(TabBar, 전 구간 유지 — 데스크톱도 동일).
- *   본문 컬럼 폭(--app-fluid)만 브레이크포인트별로 넓어진다:
- *     mobile (~767px)    : 100% full-bleed
- *     tablet (768~1023px): min(88vw, 700px) 중앙 정렬
- *     desktop(1024~1439) : min(76vw, 840px) 중앙 정렬 (+ --stage-max 600px)
- *     wide   (1440px~)   : 900px 중앙 정렬
- *   사이드 네비 2컬럼 reflow는 미배선 상태(사용처 0) — 후속 결정 대기(RESP-07 옵션 a 채택,
- *   b안=사이드 네비는 보류).
+ * 전략(2026-07-24 웹앱 전환): "모바일 고정 폭 셸".
+ *   데스크톱에서도 앱은 --app-max(tokens.css, 430px) 컬럼으로 캡·중앙 정렬되고
+ *   (.app-root, sketch.css), 내부 콘텐츠는 전 구간 모바일 full-bleed
+ *   (--app-fluid=100%)로 흐른다 — Section 1 목업이 모든 뷰포트에서 동일하게 보인다.
+ *   이전의 뷰포트 티어별 컬럼 확장(768/1024/1440 미디어쿼리)은 이 결정으로 제거됨.
  *
  * 이 파일은 실제 화면(S01~S22)이 소비하는 유틸리티만 남긴다(사용처 0 규칙 제거는
- * grep 증빙 후 CUR/FE 합의로 진행). 브레이크포인트 리터럴은 tokens.css --bp-* 와
- * 동기화(미디어쿼리는 리터럴 필요).
+ * grep 증빙 후 CUR/FE 합의로 진행).
  * ========================================================================== */
 
 /* ── 1. 박스 모델 정규화 ──────────────────────────────────────────────── */
@@ -32,26 +27,11 @@
 .fluid-display { font-size: clamp(26px, 6vw, var(--text-display)); }
 .fluid-title   { font-size: clamp(20px, 4.5vw, var(--text-title)); }
 
-/* ── 4. 브레이크포인트 (리터럴 = tokens.css --bp-* 와 동기화) ─────────────── */
-
-/* --app-fluid: 화면 본문 컬럼의 유동 폭 — 모바일 full-bleed → 웹에서 비율 확장.
-   .screen-scroll·.tabbar·.pin-bottom·.stage-body(sketch.css)가 소비한다. */
+/* ── 4. 본문 컬럼 폭 ─────────────────────────────────────────────────────
+   --app-fluid: 항상 100% — 셸(.app-root)이 이미 --app-max로 캡되므로 내부는
+   모바일 full-bleed 고정. 소비처(.screen-scroll·.tabbar·.pin-bottom·.stage-body)의
+   중앙 정렬 공식은 유지된다(100%일 때 자연히 no-op). */
 :root { --app-fluid: 100%; }
-
-/* ≥ tablet (768px) — 본문 컬럼 유동 확장 시작 */
-@media (min-width: 768px) {
-  :root { --app-fluid: min(88vw, 700px); }
-}
-
-/* ≥ desktop (1024px) — 본문 컬럼 추가 확장 + 스테이지 캡 상향 */
-@media (min-width: 1024px) {
-  :root { --app-fluid: min(76vw, 840px); --stage-max: 600px; }
-}
-
-/* ≥ wide (1440px) — 콘텐츠 여백 확대 */
-@media (min-width: 1440px) {
-  :root { --app-fluid: 900px; }
-}
 
 /* ── 5. 접근성 — 모션 감소 선호 존중 ─────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
