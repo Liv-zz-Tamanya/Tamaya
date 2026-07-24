@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { BackButton, TabBar } from '../components/primitives';
+import { BackButton, MoodFace, TabBar } from '../components/primitives';
 import { MoodHeatmap } from '../components/mood-heatmap';
 import { MoodPalette } from '../components/mood-palette';
 import { useNav } from '../lib/router';
@@ -269,20 +269,20 @@ export const S14_Calendar = () => {
                 }}
               >
                 {mood ? (
+                  /* v4 S14: 셀 = 이모지 원이 아니라 무드별 고양이 얼굴. 오늘만 액센트 링. */
                   <div
                     style={{
                       width: 30,
                       height: 30,
-                      border: today ? '2px solid var(--accent)' : '1.5px solid var(--ink)',
-                      borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: today ? 'var(--paper-2)' : '#fff',
-                      fontSize: 14,
+                      border: today ? '2px solid var(--accent)' : 'none',
+                      borderRadius: '50%',
+                      background: today ? 'var(--paper-2)' : 'transparent',
                     }}
                   >
-                    {mood}
+                    <MoodFace mood={mood} size={28} />
                   </div>
                 ) : (
                   <div
