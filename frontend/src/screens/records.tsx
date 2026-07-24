@@ -258,12 +258,12 @@ export const S14_Calendar = () => {
                 aria-label={`${month}월 ${day}일${mood ? ' · ' + MOOD_LABEL[mood] : ' · 기록 없음, 탭해서 감정 추가'}${today ? ' · 오늘' : ''}`}
                 className="as-button"
                 style={{
+                  aspectRatio: 1,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
                   width: '100%',
-                  padding: '3px 0',
                   position: 'relative',
                   cursor: 'pointer',
                 }}
@@ -272,8 +272,8 @@ export const S14_Calendar = () => {
                   /* v4 S14: 셀 = 이모지 원이 아니라 무드별 고양이 얼굴. 오늘만 액센트 링. */
                   <div
                     style={{
-                      width: 40,
-                      height: 40,
+                      width: 36,
+                      height: 36,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -282,14 +282,14 @@ export const S14_Calendar = () => {
                       background: today ? 'var(--paper-2)' : 'transparent',
                     }}
                   >
-                    <MoodFace mood={mood} size={38} />
+                    <MoodFace mood={mood} size={32} />
                   </div>
                 ) : (
                   /* 빈 날짜 점선 원은 v4처럼 얼굴보다 작게 — 래퍼로 행 높이는 통일 */
                   <div
                     style={{
-                      width: 40,
-                      height: 40,
+                      width: 36,
+                      height: 36,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -352,21 +352,20 @@ export const S14_Calendar = () => {
         </div>
       )}
 
-      {/* v4 S14 범례: 테두리 칩 없이 얼굴+라벨 한 행 나열.
-          컴팩트 사이징으로 일반 폭에선 한 행 유지 — wrap 은 초소형 화면 오버플로 방지용. */}
+      {/* v4 S14 범례: 테두리 칩 없이 얼굴+라벨 한 행 나열 */}
       <div
         style={{
           display: 'flex',
-          gap: 10,
+          gap: 14,
           marginTop: 12,
-          flexWrap: 'wrap',
+          flexWrap: 'nowrap',
           justifyContent: 'center',
         }}
       >
         {moodCounts.map((x, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}>
-            <MoodFace mood={x.m} size={18} />
-            <span style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
+            <MoodFace mood={x.m} size={20} />
+            <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
               {x.label} {x.n}
             </span>
           </div>
