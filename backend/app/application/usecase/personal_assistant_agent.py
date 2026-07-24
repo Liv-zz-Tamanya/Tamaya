@@ -37,9 +37,12 @@ from app.application.service.personal_assistant_timeout import (
 )
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
 from app.domain.service.medical_guardrail import (
+    CRISIS_GUIDANCE_MARKERS,
     GuardrailVerdict,
+    build_diary_crisis_guidance,
     build_disclaimer,
     classify_medical_request,
+    contains_crisis_signal,
     contains_prescriptive_content,
 )
 
@@ -287,7 +290,7 @@ class PersonalAssistantAgent:
 
     def _output_guardrail_node(self, state: PersonalAssistantState) -> dict:
         if state["mode"] == PersonalAssistantMode.DIARY:
-            return {}
+            return self._diary_crisis_guidance_update(state)
 
         last_message = state["messages"][-1]
         if not isinstance(last_message, AIMessage) or last_message.tool_calls:
@@ -296,6 +299,40 @@ class PersonalAssistantAgent:
         if not contains_prescriptive_content(_ai_message_text(last_message)):
             return {}
 
+        return self._replace_with_advice_disclaimer(last_message)
+
+    def _diary_crisis_guidance_update(self, state: PersonalAssistantState) -> dict:
+        """diary 위기 신호 백스톱 — 차단하지 않고 상담 안내를 보장한다.
+
+        프롬프트 규칙(DIARY_CRISIS_RULES)이 1차 방어이고, 이 노드는 감지된 위기
+        입력에 대해 응답에 안내가 빠졌을 때만 고정 문구를 덧붙인다(결정론).
+        termination은 completed 그대로 둔다 — 정책상 위기 입력은 차단하지 않는다.
+        """
+        latest_user_text = find_latest_human_message_text(state["messages"])
+        if not contains_crisis_signal(latest_user_text):
+            return {}
+
+        trace = get_active_agent_execution_trace()
+        if trace is not None:
+            trace.record_guardrail_verdict("diary_crisis")
+
+        last_message = state["messages"][-1]
+        if not isinstance(last_message, AIMessage) or last_message.tool_calls:
+            raise RuntimeError("output_guardrail requires final AIMessage")
+
+        response_text = _ai_message_text(last_message)
+        if any(marker in response_text for marker in CRISIS_GUIDANCE_MARKERS):
+            return {}
+        return {
+            "messages": [
+                AIMessage(
+                    content=f"{response_text}\n\n{build_diary_crisis_guidance()}",
+                    id=last_message.id,
+                )
+            ]
+        }
+
+    def _replace_with_advice_disclaimer(self, last_message: AIMessage) -> dict:
         content = build_disclaimer(GuardrailVerdict.ADVICE_BOUNDARY)
         if not content:
             raise RuntimeError("output_guardrail produced empty disclaimer")

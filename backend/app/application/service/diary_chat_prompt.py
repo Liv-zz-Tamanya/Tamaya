@@ -22,6 +22,17 @@ CHAT_FINALIZE_HINT = (
     "오늘 이야기를 '오늘 이야기를 일기로 정리해볼까?' 처럼 한 문장으로 자연스럽게 마무리 제안하며 대화를 닫아."
 )
 
+# 위기 신호(자해·자살 등) 대응 규칙 — 항상 포함. 결정론 백스톱(medical_guardrail의
+# contains_crisis_signal + 안내 덧붙임)과 이중으로 동작한다(defense in depth).
+DIARY_CRISIS_RULES = """
+
+[위기 신호 대응 — 다른 모든 규칙보다 우선]
+- 사용자가 자해, 자살, 삶을 놓고 싶다는 신호를 보이면 절대 가볍게 넘기지 마.
+- 대화를 끊거나 일기 작성을 강요하지 말고, 먼저 충분히 공감하며 이야기를 받아줘.
+- 그리고 응답 안에 자연스럽게 전문 도움을 안내해: 자살예방상담전화 109(24시간), 정신건강 위기상담 1577-0199.
+- 진단하거나 설교하지 말고, 혼자가 아니라는 걸 전해줘. 질문 규칙보다 이 안내가 먼저야.
+""".rstrip()
+
 DIARY_TOOL_RULES = """
 
 [과거 기억 Tool 사용 규칙]
@@ -86,4 +97,5 @@ def build_diary_chat_system_prompt(
         )
     if tool_calling_enabled:
         prompt += DIARY_TOOL_RULES
+    prompt += DIARY_CRISIS_RULES
     return prompt
