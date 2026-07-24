@@ -120,6 +120,46 @@ def build_disclaimer(verdict: GuardrailVerdict) -> str:
     return ""
 
 
+# ─── DIARY 위기 신호 (비차단 안내) ────────────────────────────────────────────
+# 제품 결정(2026-07-23): diary 모드에서 위기 신호는 차단하지 않는다 — 일기는 감정을
+# 꺼내놓는 공간이므로. 대신 응답에 공감 + 전문 상담 안내가 반드시 포함되게 한다.
+# 미검출이 치명적이므로 과검출을 선호하되(G001), "힘들어 죽겠다" 같은 관용적 과장
+# 표현('죽겠' 형태)은 매치하지 않는다.
+_CRISIS_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"죽고\s*싶"),
+    re.compile(r"죽어\s*버리"),
+    re.compile(r"사라지고\s*싶"),
+    re.compile(r"살고\s*싶지\s*않"),
+    re.compile(r"그만\s*살"),
+    re.compile(r"다\s*그만두고\s*싶"),
+    re.compile(r"살아야\s*할\s*이유(?:를|가)?\s*모르"),
+    re.compile(r"자해"),
+    re.compile(r"자살"),
+    re.compile(r"손목을?\s*(?:그(?:었|어|을)|긋)"),
+    re.compile(r"(?:팔|다리|몸|허벅지)에\s*상처를?\s*(?:냈|내)"),
+    re.compile(r"생을\s*마감"),
+)
+
+# 응답에 이 표지가 이미 있으면 상담 안내가 포함된 것으로 본다(중복 덧붙임 방지)
+CRISIS_GUIDANCE_MARKERS: tuple[str, ...] = ("109", "1577", "1393", "상담")
+
+_DIARY_CRISIS_GUIDANCE = (
+    "혹시 마음이 많이 무거운 날엔 혼자 견디지 않아도 돼. "
+    "자살예방상담전화 109(24시간, 무료)나 정신건강 위기상담 1577-0199에서 "
+    "언제든 네 이야기를 들어줄 수 있어. 나도 여기서 계속 네 곁에 있을게."
+)
+
+
+def contains_crisis_signal(text: str) -> bool:
+    """자해·자살 등 위기 신호를 결정론적으로 감지한다(과장 표현 '죽겠'은 제외)."""
+    return any(pattern.search(text) for pattern in _CRISIS_PATTERNS)
+
+
+def build_diary_crisis_guidance() -> str:
+    """diary 위기 응답에 덧붙일 고정 상담 안내 문구(모델 미개입·결정론)."""
+    return _DIARY_CRISIS_GUIDANCE
+
+
 # 생성된 응답에 섞이면 안 되는 처방성 지시 토큰 (post-generation tripwire용)
 _PRESCRIPTIVE_TOKENS: tuple[str, ...] = (
     "mg",
