@@ -141,6 +141,56 @@ class HealthChunkModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
+class SleepRecordModel(Base):
+    """나의건강기록 수입 수면 데이터 — 측정일이 희소해 daily summary와 분리(DEC: 인사이트 개편).
+
+    '기록 없는 날'과 '0분'을 구분하기 위해 nullable 컬럼 추가 대신 별도 테이블을 쓴다.
+    """
+
+    __tablename__ = "sleep_records"
+    __table_args__ = (
+        UniqueConstraint("device_id", "record_date", name="uq_sleep_records_device_record_date"),
+        Index("ix_sleep_records_device_record_date", "device_id", "record_date"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    device_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    record_date: Mapped[date] = mapped_column(Date, nullable=False)
+    duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    source: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="myhealthrecord", server_default="myhealthrecord"
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+class MedicalVisitModel(Base):
+    """나의건강기록 수입 진료이력 — 이벤트 행(같은 날 여러 기관 가능).
+
+    병명·진단 정보는 수집하지 않는다(원천에 없음 + 민감도·guardrail 부담 축소 정책).
+    복합 UNIQUE로 재수입 멱등성을 보장한다.
+    """
+
+    __tablename__ = "medical_visits"
+    __table_args__ = (
+        UniqueConstraint(
+            "device_id", "visit_date", "institution", "visit_type",
+            name="uq_medical_visits_dedupe",
+        ),
+        Index("ix_medical_visits_device_visit_date", "device_id", "visit_date"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    device_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    visit_date: Mapped[date] = mapped_column(Date, nullable=False)
+    visit_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    institution: Mapped[str] = mapped_column(String(100), nullable=False)
+    location: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    visit_days: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    prescription_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    medication_days: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
 class UserSessionModel(Base):
     """
     DEC-023: 동시접속 strict 1세션 — JWT jti 블랙리스트 + 세션 상태.
