@@ -24,6 +24,7 @@ export { listDiaries, type DiaryResponse, type DiaryListResponse } from './diari
 // 건강냥(Medlife) 통합 — BE-only 기능 클라이언트 (feat/healthcat-backend)
 export { sendCoachingMessage, type CoachTurn } from './coaching';
 export {
+  diaryDaysOf,
   getWeeklyInsight,
   getMonthlyInsight,
   isoWeekOf,

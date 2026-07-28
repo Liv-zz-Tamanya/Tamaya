@@ -1,16 +1,23 @@
-// 웰빙 인사이트 — 코칭 정성신호 기반 주/월 웰빙 스코어 + trend 집계.
-// device_id 키잉, 인증 불요. (건강냥 BE: GET /api/v1/insights/{weekly,monthly})
+// 웰빙 인사이트 — 일기(satisfaction) + 라이프로그(걸음·수면) 기반 주/월 스코어 + trend.
+// device_id 키잉, 인증 불요. (BE: GET /api/v1/insights/{weekly,monthly})
 import { apiFetch } from './client';
 import { getDeviceId } from './auth';
 
 export type WellbeingReport = {
-  score: number; // 0–100
-  emotion_score: number;
-  behavior_score: number;
+  score: number | null; // 0–100, 기간에 일기가 없으면 null
+  emotion_score: number | null; // 기간 일기 satisfaction 평균
+  behavior_score: number | null; // 개인 기준선(90일) 대비 걸음·수면
+  /** @deprecated diary_days로 대체 — 구백엔드 호환용으로만 남김 */
   signal_count: number;
+  diary_days?: number; // satisfaction 관측 일기 일수 (신백엔드)
+  lifelog_days?: number; // 걸음 또는 수면이 있는 날 수 (신백엔드)
 };
 
 export type TrendPoint = { label: string; score: number; signal_count: number };
+
+/** 신·구 백엔드 응답 모두에서 일기 관측 일수를 얻는다. */
+export const diaryDaysOf = (report: WellbeingReport): number =>
+  report.diary_days ?? report.signal_count;
 
 export type InsightResponse = {
   period: string;
