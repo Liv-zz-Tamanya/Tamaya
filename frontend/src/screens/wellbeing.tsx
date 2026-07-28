@@ -98,8 +98,8 @@ export const S24_Wellbeing = () => {
 
             <div className="hbox r-l" style={{ padding: 16, marginTop: 12 }}>
               <h2 className="h-label" style={{ marginBottom: 10 }}>구성</h2>
-              <Bar label="정서 (emotion)" value={data.report.emotion_score} />
-              <Bar label="행동 (behavior)" value={data.report.behavior_score} />
+              <Bar label="정서 (emotion)" value={data.report.emotion_score ?? 0} />
+              <Bar label="행동 (behavior)" value={data.report.behavior_score ?? 0} />
             </div>
 
             <div className="hbox r-r" style={{ padding: 16, marginTop: 12 }}>

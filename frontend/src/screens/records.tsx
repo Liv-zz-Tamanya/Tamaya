@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { BackButton, MoodFace, TabBar } from '../components/primitives';
+import { BackButton, MoodFace, TabBar, useToast } from '../components/primitives';
 import { MoodHeatmap } from '../components/mood-heatmap';
 import { MoodPalette } from '../components/mood-palette';
 import { useNav } from '../lib/router';
@@ -11,6 +11,8 @@ import {
   MOOD_LABEL,
   MOOD_BAR,
   WEEKDAY_KR,
+  INTERESTS,
+  ROUTINE_PRESETS,
   checkLabelOf,
   dateParts,
   diaryDateOf,
@@ -19,13 +21,20 @@ import {
   entryForDay,
   formatDateKey,
   formatMonthDay,
+  isWithinLastWeek,
   latestEntry,
   moodByDate,
   statsFor,
   weekdayOfDate,
   useStore,
 } from '../lib/store';
-import { listDiaries, type DiaryResponse } from '../lib/api';
+import {
+  diaryDaysOf,
+  getWeeklyInsight,
+  listDiaries,
+  type DiaryResponse,
+  type InsightResponse,
+} from '../lib/api';
 
 // 14-17 · Calendar / Diary detail / Stats / Insights
 
@@ -806,120 +815,67 @@ export const S16_Stats = () => {
   );
 };
 
+// S17 · 주간 인사이트 — [일–토] 한 주 단위, 매주 일요일 업데이트.
+// 서버(웰빙 스코어·트렌드) + 로컬(루틴 준수율·회고 시간대) 조합.
+// 감정 한 줄·다음주 추천 문구는 추후 인사이트 agent가 생성 예정 — 현재는 규칙 기반 placeholder.
 export const S17_Insights = () => {
   const nav = useNav();
-  const { state } = useStore();
-  const [routine, setRoutine] = useState<null | 'added' | 'later'>(null);
-  // 데이터 부족(<5건) 시 인사이트 대신 안내 (feature-spec §F7: 7일 미만 안내).
-  const enough = state.diaries.length >= 5;
+  const { state, dispatch } = useStore();
+  const { toast, flash } = useToast();
+  const [insight, setInsight] = useState<InsightResponse | null>(null);
+  const [loadState, setLoadState] = useState<'loading' | 'done' | 'error'>('loading');
+
+  useEffect(() => {
+    let cancelled = false;
+    getWeeklyInsight()
+      .then((res) => {
+        if (cancelled) return;
+        setInsight(res);
+        setLoadState('done');
+      })
+      .catch(() => {
+        if (!cancelled) setLoadState('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const weekStats = statsFor(state.diaries, '주');
+  const weekEntries = state.diaries.filter((d) => isWithinLastWeek(d));
+
+  // 회고 시간대 (로컬 createdAt 기반): 새벽(0–5시) 회고가 있으면 수면 습관 제안
+  const hours = weekEntries.map((d) => new Date(d.createdAt).getHours());
+  const lateNights = hours.filter((h) => h >= 0 && h < 6);
+  const usualHour = hours.length
+    ? hours.sort((a, b) => a - b)[Math.floor(hours.length / 2)]
+    : null;
+
+  // 다음주 추천(로드맵의 시작점): 아직 없는 예시 루틴에서 관심사 우선으로 최대 3개.
+  // TODO(인사이트 agent): 추천 선정·문구를 agent 생성으로 교체
+  const candidates = [...state.interests, ...INTERESTS.filter((c) => !state.interests.includes(c))]
+    .flatMap((cat) => ROUTINE_PRESETS[cat].map((p) => ({ ...p, category: cat })))
+    .filter((p) => !state.routines.some((r) => r.label === p.label))
+    .slice(0, 3);
+
+  const report = insight?.report ?? null;
+  const diaryDays = report ? diaryDaysOf(report) : 0;
+  const hasServerData = report !== null && diaryDays > 0;
+  const empty = state.diaries.length === 0 && !hasServerData;
+
   return (
   <div className="screen">
     <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
       <h1 className="h-title">인사이트</h1>
-      <div className="tiny" style={{ marginTop: 2 }}>이음이가 정리해준 이번 주</div>
-
-      {enough ? (
-        <>
-      <div className="hbox night r-l" style={{ padding: 16, marginTop: 14 }}>
-        <h2 className="h-label" style={{ color: 'var(--accent-soft)' }}>
-          이번 주 메인 패턴
-        </h2>
-        <div
-          className="h-title"
-          style={{ color: 'var(--paper)', fontSize: 22, marginTop: 4 }}
-        >
-          "5분의 틈"이 있던 날엔
-          <br />
-          피곤이 절반이었어 ⌇
-        </div>
-        <div
-          className="handwriting"
-          style={{ color: 'var(--accent-soft)', fontSize: 16, marginTop: 8 }}
-        >
-          회의 사이 짧은 호흡을 한 화·목요일에는 평온함이
-          <br />두 배 많았어요. 같은 패턴, 다음 주에도 ?
-        </div>
+      <div className="tiny" style={{ marginTop: 2 }}>
+        {insight ? `${insight.start_date} – ${insight.end_date}` : '이번 주'} · 매주 일요일 업데이트
       </div>
 
-      <h2 className="h-label" style={{ marginTop: 14, marginBottom: 6 }}>
-        이번 주 발견
-      </h2>
-      {/* 발견 카드 — 넓은 폭서 reflow-grid 로 다열 자연 확장(데이터·문구 불변) */}
-      <div className="reflow-grid">
-      {(
-        [
-          ['☼', '햇볕 쐰 날 = 잠 더 푹', '3일 중 3일 "푹잠"으로 기록'],
-          ['🍜', '따뜻한 점심 → 오후 평온', '우동·죽 먹은 날 피곤 ↓'],
-          ['😴', '수면 6h 미만 = 짜증 ↑', '지난 7일 중 2번 발생'],
-        ] as [string, string, string][]
-      ).map(([ic, t, s], i) => (
-        <div
-          key={i}
-          className={'hbox ' + (i % 2 ? 'r-l' : 'r-r')}
-          style={{
-            padding: 12,
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 10,
-          }}
-        >
-          <div className="ph-circle" style={{ width: 36, height: 36, flex: 'none' }}>
-            {ic}
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 500 }}>{t}</div>
-            <div className="tiny" style={{ color: 'var(--pencil)' }}>{s}</div>
-          </div>
-          <span className="tiny" style={{ color: 'var(--accent)' }}>
-            ✦
-          </span>
-        </div>
-      ))}
-      </div>
-
-      <div className="hbox accent r-l" style={{ padding: 14, marginTop: 14 }}>
-        <h2 className="h-label">이번 주 추천 루틴</h2>
-        <div className="h-title" style={{ fontSize: 18, marginTop: 4 }}>
-          회의 끝 · 3분 호흡 알람
-        </div>
-        <div className="tiny" style={{ marginTop: 4 }}>
-          패턴 기반 추천 · 알람으로 추가하기
-        </div>
-        {routine === 'added' ? (
-          <div className="tiny" style={{ marginTop: 10, fontWeight: 700 }}>
-            ✓ 회의 종료 후 3분 호흡 알람이 추가됐어요
-          </div>
-        ) : routine === 'later' ? (
-          <div className="tiny" style={{ marginTop: 10 }}>
-            다음에 다시 추천할게요
-          </div>
-        ) : (
-          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <button
-              type="button"
-              onClick={() => setRoutine('later')}
-              className="chip chip-btn"
-              style={{ background: 'var(--paper)', cursor: 'pointer', fontFamily: 'inherit' }}
-            >
-              나중에
-            </button>
-            <button
-              type="button"
-              onClick={() => setRoutine('added')}
-              className="chip chip-btn ink"
-              style={{ cursor: 'pointer', fontFamily: 'inherit' }}
-            >
-              ✓ 추가
-            </button>
-          </div>
-        )}
-      </div>
-        </>
-      ) : (
+      {empty ? (
         <div className="hbox dashed r-l" style={{ padding: 18, marginTop: 14, textAlign: 'center' }}>
           <div className="body">아직 인사이트를 만들 데이터가 적어요</div>
           <div className="tiny" style={{ marginTop: 6 }}>
-            회고를 5번 이상 쌓으면 이음이가 패턴을 찾아줘요 (현재 {state.diaries.length}건)
+            낮 기록과 밤 회고가 쌓이면 이음이가 한 주를 정리해줘요
           </div>
           <button
             type="button"
@@ -930,6 +886,192 @@ export const S17_Insights = () => {
             회고 시작하기 →
           </button>
         </div>
+      ) : (
+        <>
+          {/* 주간 웰빙 스코어 (서버) */}
+          <div className="hbox night r-l" style={{ padding: 16, marginTop: 14 }}>
+            <h2 className="h-label" style={{ color: 'var(--accent-soft)' }}>이번 주 웰빙</h2>
+            {loadState === 'loading' && (
+              <div className="tiny" style={{ color: 'var(--accent-soft)', marginTop: 8 }}>
+                이음이가 한 주를 정리하는 중…
+              </div>
+            )}
+            {loadState === 'error' && (
+              <div className="tiny" style={{ color: 'var(--accent-soft)', marginTop: 8 }}>
+                서버 분석을 불러오지 못했어요 — 아래 기록 통계는 볼 수 있어요
+              </div>
+            )}
+            {loadState === 'done' && report && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 6 }}>
+                  <div className="h-display" style={{ fontSize: 48, color: 'var(--paper)' }}>
+                    {report.score ?? '–'}
+                  </div>
+                  <div className="tiny" style={{ color: 'var(--accent-soft)' }}>
+                    / 100 · 일기 {diaryDays}일
+                    {report.lifelog_days != null ? ` · 라이프로그 ${report.lifelog_days}일` : ''}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                  <span className="tiny" style={{ color: 'var(--accent-soft)' }}>
+                    감정 {report.emotion_score != null ? Math.round(report.emotion_score) : '–'}
+                  </span>
+                  <span className="tiny" style={{ color: 'var(--accent-soft)' }}>
+                    행동 {report.behavior_score != null ? Math.round(report.behavior_score) : '–'}
+                  </span>
+                </div>
+                {insight && insight.trend.length > 0 && (
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 44, marginTop: 10 }}>
+                    {insight.trend.map((t) => (
+                      <div key={t.label} style={{ flex: 1, textAlign: 'center' }}>
+                        <div
+                          style={{
+                            height: Math.max(4, Math.round((t.score / 100) * 36)),
+                            background: 'var(--accent-soft)',
+                            borderRadius: 3,
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+            {loadState === 'done' && report && !hasServerData && (
+              <div className="tiny" style={{ color: 'var(--accent-soft)', marginTop: 8 }}>
+                이번 주 서버 기록이 아직 없어요
+              </div>
+            )}
+          </div>
+
+          {/* 루틴 준수율 (로컬 일기 스냅샷 기반) */}
+          <div className="hbox r-r" style={{ padding: 14, marginTop: 12 }}>
+            <h2 className="h-label">데일리 루틴, 얼마나 지켰나</h2>
+            {weekStats.routines.length > 0 ? (
+              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {weekStats.routines.slice(0, 4).map((r) => {
+                  const pct = weekStats.writeDays > 0 ? Math.round((r.days / weekStats.writeDays) * 100) : 0;
+                  return (
+                    <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="tiny" style={{ width: 96, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                        {r.label}
+                      </span>
+                      <div className="bar" style={{ flex: 1 }}>
+                        <i style={{ width: `${Math.min(pct, 100)}%`, background: 'var(--accent)' }} />
+                      </div>
+                      <span className="tiny" style={{ width: 44, textAlign: 'right' }}>
+                        {r.days}/{weekStats.writeDays}일
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="tiny" style={{ marginTop: 8, color: 'var(--pencil)' }}>
+                이번 주 체크한 루틴이 아직 없어요 — 낮 기록에서 시작해요
+              </div>
+            )}
+          </div>
+
+          {/* 회고 시간대 (로컬) */}
+          <div className="hbox r-l" style={{ padding: 14, marginTop: 10 }}>
+            <h2 className="h-label">언제 나랑 얘기했나</h2>
+            {lateNights.length > 0 ? (
+              <>
+                <div style={{ fontFamily: 'Pretendard', fontWeight: 700, marginTop: 6 }}>
+                  새벽 {Math.max(...lateNights)}시까지 나랑 떠들던데? 🌙
+                </div>
+                <div className="tiny" style={{ marginTop: 4, color: 'var(--pencil)' }}>
+                  이번 주 {lateNights.length}일 — 잠드는 시간을 루틴으로 챙겨보는 건 어때요
+                </div>
+              </>
+            ) : usualHour != null ? (
+              <div className="tiny" style={{ marginTop: 8 }}>
+                주로 {usualHour}시쯤 회고를 남겼어요 — 좋은 리듬이에요
+              </div>
+            ) : (
+              <div className="tiny" style={{ marginTop: 8, color: 'var(--pencil)' }}>
+                이번 주 회고 기록이 아직 없어요
+              </div>
+            )}
+          </div>
+
+          {/* 다음주 추천 — 추가하면 홈 데일리 체크(루틴)에 합류 */}
+          <div className="hbox accent r-l" style={{ padding: 14, marginTop: 12 }}>
+            <h2 className="h-label">다음주엔 이런 것 어때요</h2>
+            <div className="tiny" style={{ marginTop: 2 }}>
+              추가하면 홈 데일리 체크에 들어가요 · 목표 로드맵은 준비 중
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+              {candidates.length === 0 && (
+                <div className="tiny" style={{ color: 'var(--pencil)' }}>
+                  예시 루틴을 모두 쓰고 있어요 — 대단한데요!
+                </div>
+              )}
+              {candidates.map((p) => {
+                const added = state.routines.some((r) => r.label === p.label);
+                return (
+                  <div
+                    key={p.label}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '8px 10px',
+                      border: '1.5px solid var(--ink)',
+                      borderRadius: 12,
+                      background: 'var(--paper)',
+                      opacity: added ? 0.55 : 1,
+                    }}
+                  >
+                    <span style={{ fontSize: 18 }} aria-hidden="true">{p.emoji}</span>
+                    <span style={{ flex: 1, fontFamily: 'Pretendard', fontWeight: 600 }}>{p.label}</span>
+                    <span className="tiny" style={{ color: 'var(--pencil)' }}>{p.category}</span>
+                    {added ? (
+                      <span className="chip">진행중</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          dispatch({ type: 'routine/add', label: p.label, emoji: p.emoji, category: p.category });
+                          flash(`홈 데일리 체크에 추가됐어요 — ${p.label}`);
+                        }}
+                        className="chip chip-btn ink"
+                        style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+                      >
+                        + 추가
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 주중 추가 분석 = 프리미엄 */}
+          <button
+            type="button"
+            className="hbox dashed as-button"
+            onClick={() => flash('한 주에 여러 번 인사이트는 프리미엄에서 준비 중이에요 🔒')}
+            style={{
+              padding: 12,
+              marginTop: 10,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              width: '100%',
+              textAlign: 'left',
+              cursor: 'pointer',
+              background: 'transparent',
+            }}
+          >
+            <div className="ph-circle" style={{ width: 36, height: 36, flex: 'none' }}>🔒</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>지금 다시 분석하기</div>
+              <div className="tiny" style={{ color: 'var(--pencil)' }}>주 1회는 무료 — 더 자주 보고 싶다면 프리미엄</div>
+            </div>
+          </button>
+        </>
       )}
 
       <button
@@ -951,15 +1093,12 @@ export const S17_Insights = () => {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700 }}>이번 주 리포트 보기</div>
-          <div className="tiny">매주 월요일 발행 · 한 주 요약 카드</div>
+          <div className="tiny">매주 일요일 발행 · 한 주 요약 카드</div>
         </div>
         <span style={{ fontSize: 22 }}>›</span>
       </button>
-
-      <div className="sticky" style={{ marginTop: 14, transform: 'rotate(-1.5deg)' }}>
-        ※ D7+에 더 깊은 패턴 — 꾸준히 모일수록 정확해져요
-      </div>
     </div>
+    {toast && <div className="toast" role="status">{toast}</div>}
     <TabBar active="ins" />
   </div>
   );
