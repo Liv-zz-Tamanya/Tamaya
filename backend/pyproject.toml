@@ -7,10 +7,10 @@ dependencies = [
     "alembic>=1.18.4",
     "asyncpg>=0.31.0",
     "fastapi>=0.131.0",
-    "httpx>=0.27.0",      # 카카오 OAuth HTTP 클라이언트 (DEC-022.4)
+    "httpx>=0.27.0", # 카카오 OAuth HTTP 클라이언트 (DEC-022.4)
     "openai>=2.21.0",
     "pydantic-settings>=2.13.1",
-    "python-jose[cryptography]>=3.3.0",  # JWT 서명·검증 (DEC-023)
+    "python-jose[cryptography]>=3.3.0", # JWT 서명·검증 (DEC-023)
     "sqlalchemy[asyncio]>=2.0.46",
     "uvicorn[standard]>=0.41.0",
     "langgraph>=0.2",
@@ -19,6 +19,7 @@ dependencies = [
     "sentence-transformers>=3.0",
     "pgvector>=0.3",
     "torch>=2.0",
+    "scipy>=1.14",
 ]
 
 # torch: linux(도커/서버)에서는 CPU 전용 휠 사용 — nvidia CUDA 라이브러리(수 GB) 제거해
