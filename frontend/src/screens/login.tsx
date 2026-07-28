@@ -86,9 +86,7 @@ export const S21_Login = () => {
   return (
     <div
       className="screen"
-      style={{
-        background: 'linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 70%, var(--accent-soft) 100%)',
-      }}
+      style={{ background: '#fff9ee' }}
     >
       <div
         className="screen-scroll"

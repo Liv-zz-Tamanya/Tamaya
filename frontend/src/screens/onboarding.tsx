@@ -53,28 +53,12 @@ export const S01_Splash = () => {
       style={{ position: 'absolute', inset: 0, opacity: 0.5 }}
     >
       {[
-        [40, 90],
-        [120, 60],
-        [300, 80],
-        [260, 180],
-        [60, 220],
-        [330, 220],
-        [180, 140],
-        [80, 400],
-        [300, 420],
-        [330, 520],
-        [40, 560],
-        [160, 640],
+        [40, 90], [120, 60], [300, 80], [260, 180], [60, 220], [330, 220],
+        [180, 140], [80, 400], [300, 420], [330, 520], [40, 560], [160, 640],
       ].map(([x, y], i) => (
         <g key={i}>
           <circle cx={x} cy={y} r="1.5" fill="var(--paper)" />
-          {i % 3 === 0 && (
-            <path
-              d={`M${x - 4} ${y} L${x + 4} ${y} M${x} ${y - 4} L${x} ${y + 4}`}
-              stroke="var(--paper)"
-              strokeWidth="0.5"
-            />
-          )}
+          {i % 3 === 0 && <path d={`M${x - 4} ${y} L${x + 4} ${y} M${x} ${y - 4} L${x} ${y + 4}`} stroke="var(--paper)" strokeWidth="0.5" />}
         </g>
       ))}
     </svg>
@@ -100,7 +84,7 @@ export const S01_Splash = () => {
         <CatSketch size={128} mood="wink" />
       </div>
       <div style={{ textAlign: 'center' }}>
-        <h1 className="h-display" style={{ fontSize: 52, color: 'var(--paper)' }}>
+          <h1 className="h-display" style={{ fontSize: 52, color: 'var(--paper)' }}>
           Tamaya
         </h1>
         <div className="handwriting" style={{ color: 'var(--accent-soft)', marginTop: 8 }}>
@@ -118,7 +102,7 @@ export const S01_Splash = () => {
 export const S02_Welcome = () => {
   const nav = useNav();
   return (
-  <div className="screen">
+  <div className="screen" style={{ background: '#fff9ee' }}>
     <div className="screen-scroll" style={{ padding: 'calc(56px + var(--safe-t)) 24px 120px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div className="h-section">01 / 05 · 인사</div>
@@ -196,7 +180,7 @@ export const S02_Welcome = () => {
 export const S03_Privacy = () => {
   const nav = useNav();
   return (
-  <div className="screen">
+  <div className="screen" style={{ background: '#fff9ee' }}>
     <div className="screen-scroll" style={{ padding: 'calc(52px + var(--safe-t)) 24px 120px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div className="h-section">02 / 05 · 약속</div>
@@ -288,7 +272,7 @@ export const S04_CreateCat = () => {
   };
 
   return (
-  <div className="screen">
+  <div className="screen" style={{ background: '#fff9ee' }}>
     <div className="screen-scroll" style={{ padding: 'calc(48px + var(--safe-t)) 24px 120px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div className="h-section">03 / 05 · 캐릭터</div>
@@ -420,7 +404,7 @@ export const S04b_Interests = () => {
   };
 
   return (
-  <div className="screen">
+  <div className="screen" style={{ background: '#fff9ee' }}>
     <div className="screen-scroll" style={{ padding: 'calc(48px + var(--safe-t)) 24px 120px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div className="h-section">04 / 05 · 관심사</div>
@@ -499,32 +483,14 @@ export const S05_FirstMeet = () => {
   const { state } = useStore();
   const name = state.character.name || '이음이';
   return (
-  <div className="screen" style={{ background: 'var(--night)', color: 'var(--paper)' }}>
-    <svg
-      width="100%"
-      height="180"
-      viewBox="0 0 375 180"
-      preserveAspectRatio="xMidYMid slice"
-      style={{ position: 'absolute', top: 40, opacity: 0.4 }}
-    >
-      {[
-        [60, 40],
-        [140, 80],
-        [260, 50],
-        [320, 110],
-        [100, 140],
-        [200, 30],
-      ].map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r="1.5" fill="var(--paper)" />
-      ))}
-    </svg>
+  <div className="screen" style={{ background: '#fff9ee', color: 'var(--ink)' }}>
     <div className="screen-scroll" style={{ padding: 'calc(56px + var(--safe-t)) 24px 120px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', textAlign: 'center' }}>
-        <div className="h-section" style={{ color: 'var(--accent-soft)' }}>
+        <div className="h-section" style={{ color: 'var(--accent)' }}>
           05 / 05 · 첫 만남
         </div>
-        <OnbProgress step={5} dark style={{ marginInline: 'auto' }} />
-        <h1 className="h-display" style={{ fontSize: 28, lineHeight: 1.15, color: 'var(--paper)' }}>
+        <OnbProgress step={5} style={{ marginInline: 'auto' }} />
+        <h1 className="h-display" style={{ fontSize: 28, lineHeight: 1.15, color: 'var(--ink)' }}>
           이제 만났네,
           <br />
           {name}!
@@ -547,7 +513,7 @@ export const S05_FirstMeet = () => {
 
       <div
         className="handwriting"
-        style={{ marginTop: 22, textAlign: 'center', fontSize: 18, color: 'var(--accent-soft)' }}
+        style={{ marginTop: 22, textAlign: 'center', fontSize: 18, color: 'var(--accent)' }}
       >
         "안녕, 난 {name}. 너의 밤 친구야."
       </div>
@@ -566,7 +532,7 @@ export const S05_FirstMeet = () => {
       className="pin-bottom"
       style={{ bottom: 'calc(8px + var(--safe-b, 0px))', textAlign: 'center' }}
     >
-      <div className="tiny" style={{ color: 'var(--accent-soft)' }}>
+      <div className="tiny" style={{ color: 'var(--pencil)' }}>
         이제부터 매일 밤 만나요
       </div>
     </div>
