@@ -60,7 +60,7 @@ def test_planted_steps_effect_present():
 
     assert len(xs) >= 40
     rho = spearmanr(xs, ys).statistic
-    assert rho >= 0.3, f"심은 효과(0.30)가 관측되지 않음: rho={rho:.3f}"
+    assert rho >= 0.3, f"심은 효과(0.45)가 관측되지 않음: rho={rho:.3f}"
 
 
 def test_null_profile_has_no_planted_effect():
