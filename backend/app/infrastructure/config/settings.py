@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
     gemini_model: str = "gemini-2.5-flash"
+    # 회사 Vertex AI 프로젝트 모드 — API 키 대신 gcloud 계정 인증으로 judge를 호출한다.
+    # 셋업 가이드의 표준 변수명을 그대로 사용한다(google-genai SDK와 호환).
+    google_genai_use_vertexai: bool = False
+    google_cloud_project: str = ""
+    google_cloud_location: str = "global"
     # DEC-022.4: 카카오 REST API 앱 키 (사용자 발급 후 .env에 설정)
     kakao_app_key: str = ""
     # DEC-023: JWT 서명 시크릿 (프로덕션에서는 반드시 강력한 랜덤값으로 교체)
