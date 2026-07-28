@@ -75,6 +75,10 @@ class DiaryModel(Base):
     emotion: Mapped[str] = mapped_column(String(20), nullable=False)
     # BUG-07: satisfaction 0-100 (DEC-020)
     satisfaction: Mapped[int] = mapped_column(Integer, nullable=False)
+    # '모름'(LLM null·타입 오류로 채운 중립 50)과 실제 '중립 판단 50'의 구분 플래그
+    satisfaction_estimated: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     keywords: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
     chat_session_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("chat_sessions.id"), nullable=True

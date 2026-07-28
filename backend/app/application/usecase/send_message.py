@@ -7,6 +7,7 @@ from app.application.service.chat_message_adapter import (
     to_langchain_messages,
 )
 from app.application.service.diary_chat_prompt import DiaryConversationContext
+from app.application.service.diary_parsing import parse_satisfaction
 from app.application.usecase.diary_keywords import normalize_diary_keywords
 from app.application.usecase.extract_chunks import ExtractChunksUseCase
 from app.application.usecase.personal_assistant_agent import PersonalAssistantMode
@@ -90,8 +91,7 @@ class SendMessageUseCase:
         session.finalize()
 
         emotion = Emotion(diary_data.get("emotion", "calm"))
-        # BUG-07: satisfaction 0~100 통일 (DEC-020)
-        satisfaction = max(0, min(100, int(diary_data.get("satisfaction", 50))))
+        satisfaction, satisfaction_estimated = parse_satisfaction(diary_data.get("satisfaction"))
         diary = Diary(
             device_id=session.device_id,
             diary_date=session.session_date,
@@ -99,6 +99,7 @@ class SendMessageUseCase:
             content=diary_data.get("content", ""),
             emotion=emotion,
             satisfaction=satisfaction,
+            satisfaction_estimated=satisfaction_estimated,
             keywords=normalize_diary_keywords(diary_data.get("keywords")),
             chat_session_id=session.id,
         )

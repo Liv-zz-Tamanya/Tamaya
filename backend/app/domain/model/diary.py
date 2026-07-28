@@ -14,6 +14,7 @@ class Diary:
     content: str = ""
     emotion: Emotion = Emotion.CALM
     satisfaction: int = 50  # BUG-07: 0-100 (DEC-020)
+    satisfaction_estimated: bool = False  # True = LLM 판단 불가·값 부적절로 채운 중립값 (분석 제외 대상)
     keywords: list[str] = field(default_factory=list)
     chat_session_id: UUID | None = None
     created_at: datetime = field(default_factory=datetime.now)
