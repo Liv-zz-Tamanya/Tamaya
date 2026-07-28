@@ -14,9 +14,7 @@ import { S01_Splash, S02_Welcome, S03_Privacy, S04_CreateCat, S04b_Interests, S0
 import { S06_HomeDay, S07_HomeNight, S08_DayLog } from '../screens/home-day';
 import { S10_RecapStart, S11_ChatDiary, S12_MoodFinalize, S13_Reward } from '../screens/evening';
 import { S14_Calendar, S15_DiaryDetail, S16_Stats, S17_Insights } from '../screens/records';
-import { S18_CatRoom, S19_Inventory, S20_Report } from '../screens/character';
-import { S23_Coach } from '../screens/coach';
-import { S24_Wellbeing } from '../screens/wellbeing';
+import { S18_CatSurvey, S20_Report } from '../screens/character';
 import { S25_Byok } from '../screens/byok';
 import { S26_HealthChat } from '../screens/health-chat';
 
@@ -29,9 +27,9 @@ const SCREENS: Record<Route, () => ReactNode> = {
   'recap-start': () => <S10_RecapStart />, 'chat-diary': () => <S11_ChatDiary />,
   'mood-finalize': () => <S12_MoodFinalize />, reward: () => <S13_Reward />,
   calendar: () => <S14_Calendar />, 'diary-detail': () => <S15_DiaryDetail />,
-  stats: () => <S16_Stats />, insights: () => <S17_Insights />, 'cat-room': () => <S18_CatRoom />,
-  inventory: () => <S19_Inventory />, report: () => <S20_Report />, login: () => <S21_Login />,
-  settings: () => <S22_Settings />, coach: () => <S23_Coach />, wellbeing: () => <S24_Wellbeing />,
+  stats: () => <S16_Stats />, insights: () => <S17_Insights />, 'cat-room': () => <S18_CatSurvey />,
+  report: () => <S20_Report />, login: () => <S21_Login />,
+  settings: () => <S22_Settings />,
   byok: () => <S25_Byok />, 'health-chat': () => <S26_HealthChat />,
 };
 
