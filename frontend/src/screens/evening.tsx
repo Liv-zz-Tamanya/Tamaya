@@ -11,9 +11,9 @@ import {
   type ChatSessionMaxTurns,
 } from '../lib/api';
 import {
-  CHAT_DIARY_FULL_TURNS,
+  CHAT_DIARY_FIVE_TURNS,
+  CHAT_DIARY_FREE_TURNS,
   CHAT_DIARY_INTRO,
-  CHAT_DIARY_SHORT_TURNS,
   CHAT_DIARY_TURNS,
   dateParts,
   formatDateKey,
@@ -24,7 +24,7 @@ import type { ChatDiaryMode, Mood } from '../lib/store';
 // 10-13 · Evening recap entry / Chat Diary / Mood finalize / Reward modal
 
 const modeToTurns = (mode: ChatDiaryMode): ChatSessionMaxTurns =>
-  mode === 'short' ? CHAT_DIARY_SHORT_TURNS : CHAT_DIARY_FULL_TURNS;
+  mode === 'five' ? CHAT_DIARY_FIVE_TURNS : CHAT_DIARY_FREE_TURNS;
 
 const moodsFromEmotion = (emotion?: string): Mood[] => {
   switch (emotion) {
@@ -113,8 +113,7 @@ export const S10_RecapStart = () => {
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   const voiceDialogRef = useRef<HTMLDivElement>(null);
   const selectedMode = state.chatDiaryMode;
-  const selectedMaxTurns = state.chatDiaryMaxTurns;
-  const isShortMode = selectedMode === 'short';
+  const isFreeMode = selectedMode === 'free';
 
   // 보이스 모달 — 열릴 때 첫 버튼 focus + Esc 로 닫기(A11Y-08, 로직 불변·포커스 관리만 추가).
   useEffect(() => {
@@ -191,7 +190,7 @@ export const S10_RecapStart = () => {
         className="handwriting"
         style={{ color: 'var(--accent-soft)', marginTop: 10, fontSize: 18, fontWeight: 700 }}
       >
-        {isShortMode ? '3번만 나누는 짧은 회고' : '5분이면 충분해 · 5턴 대화'}
+        {isFreeMode ? '오늘은 편하게, 하고 싶은 만큼' : '5분이면 충분해 · 5턴 대화'}
       </div>
 
       <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
@@ -249,17 +248,17 @@ export const S10_RecapStart = () => {
         <button
           type="button"
           className="hbox as-button"
-          aria-pressed={selectedMode === 'full'}
+          aria-pressed={selectedMode === 'five'}
           style={{
             flex: 1,
             padding: 10,
             textAlign: 'center',
             border: '1.5px solid var(--ink)',
-            color: selectedMode === 'full' ? 'var(--paper)' : 'var(--ink)',
-            background: selectedMode === 'full' ? 'var(--accent)' : 'var(--paper)',
+            color: selectedMode === 'five' ? 'var(--paper)' : 'var(--ink)',
+            background: selectedMode === 'five' ? 'var(--accent)' : 'var(--paper)',
             cursor: 'pointer',
           }}
-          onClick={() => selectMode('full')}
+          onClick={() => selectMode('five')}
         >
           <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>✦ 대화</div>
           <div className="tiny" style={{ color: 'inherit' }}>5턴 챗</div>
@@ -267,20 +266,20 @@ export const S10_RecapStart = () => {
         <button
           type="button"
           className="hbox as-button"
-          aria-pressed={selectedMode === 'short'}
+          aria-pressed={selectedMode === 'free'}
           style={{
             flex: 1,
             padding: 10,
             textAlign: 'center',
             border: '1.5px solid var(--ink)',
-            color: selectedMode === 'short' ? 'var(--paper)' : 'var(--ink)',
-            background: selectedMode === 'short' ? 'var(--accent)' : 'var(--paper)',
+            color: selectedMode === 'free' ? 'var(--paper)' : 'var(--ink)',
+            background: selectedMode === 'free' ? 'var(--accent)' : 'var(--paper)',
             cursor: 'pointer',
           }}
-          onClick={() => selectMode('short')}
+          onClick={() => selectMode('free')}
         >
-          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>줄글 기록</div>
-          <div className="tiny" style={{ color: 'inherit' }}>3줄 일기</div>
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>☾ 자유 대화</div>
+          <div className="tiny" style={{ color: 'inherit' }}>제한 없이</div>
         </button>
         <button
           type="button"
@@ -308,7 +307,7 @@ export const S10_RecapStart = () => {
         className="btn primary block"
         style={{ cursor: 'pointer', fontFamily: 'inherit' }}
       >
-        {selectedMaxTurns}턴 회고 시작하기 →
+        {isFreeMode ? '자유 회고 시작하기 →' : '5턴 회고 시작하기 →'}
       </button>
       <button
         type="button"
@@ -416,6 +415,8 @@ export const S11_ChatDiary = () => {
   const userTurns = state.chatDiary.filter((m) => m.role === 'user').length;
   const turn = Math.min(userTurns, maxTurns);
   const done = turn >= maxTurns;
+  // 자유 모드: 턴 상한(50)은 백엔드 세션 캡일 뿐이라 카운터·진행바로 노출하지 않는다.
+  const isFree = maxTurns === CHAT_DIARY_FREE_TURNS;
 
   const finishRecap = (closing?: string) => {
     dispatch({
@@ -523,23 +524,25 @@ export const S11_ChatDiary = () => {
           style={{ cursor: 'pointer', fontFamily: 'inherit' }}
           title="대화 다시 시작"
         >
-          {turn} / {maxTurns}턴 ⟲
+          {isFree ? `${turn}턴 ⟲` : `${turn} / ${maxTurns}턴 ⟲`}
         </button>
       </div>
-      <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-        {Array.from({ length: maxTurns }, (_, i) => (
-          <div
-            key={i}
-            style={{
-              flex: 1,
-              height: 6,
-              background: i < turn ? 'var(--night)' : 'var(--paper)',
-              border: '1.5px solid var(--ink)',
-              borderRadius: 999,
-            }}
-          />
-        ))}
-      </div>
+      {!isFree && (
+        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+          {Array.from({ length: maxTurns }, (_, i) => (
+            <div
+              key={i}
+              style={{
+                flex: 1,
+                height: 6,
+                background: i < turn ? 'var(--night)' : 'var(--paper)',
+                border: '1.5px solid var(--ink)',
+                borderRadius: 999,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       <ChatThread
         msgs={state.chatDiary}
@@ -618,10 +621,7 @@ export const S12_MoodFinalize = () => {
       : `${datePrefix}. 점심으로 우동 한 그릇이 위로였다.\n긴 회의로 피곤했고, 끝난 뒤에 숨 돌릴 5분이\n없었던 게 가장 무거웠다. 내일은 일정 사이에\n3분의 틈을 만들어보기로 했다.`;
 
   const tomorrowLine =
-    userAnswers[userAnswers.length - 1] ??
-    (state.chatDiaryMode === 'short'
-      ? '내일도 짧게라도 하루를 돌아보기'
-      : '회의 종료 후 · 3분 호흡 알람');
+    userAnswers[userAnswers.length - 1] ?? '회의 종료 후 · 3분 호흡 알람';
 
   // 서버 AI 키워드가 없을 때만 로컬 휴리스틱으로 fallback한다.
   const keywords =

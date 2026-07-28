@@ -31,13 +31,13 @@ def test_diary_chat_prompt_includes_turn_policy_without_finalize_hint():
 
 def test_diary_chat_prompt_includes_finalize_policy():
     prompt = build_diary_chat_system_prompt(
-        max_turns=3,
-        current_user_turn=2,
+        max_turns=5,
+        current_user_turn=4,
         suggest_finalize=True,
         tool_calling_enabled=True,
     )
 
-    assert "이 회고 대화는 3턴" in prompt
+    assert "이 회고 대화는 5턴" in prompt
     assert "[마무리 지시" in prompt
     assert "새 질문을 던지지 마" in prompt
     assert "일기로 정리해볼까" in prompt

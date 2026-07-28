@@ -205,7 +205,7 @@ async def test_general_diary_response_uses_personal_assistant_and_saves_ai_messa
 
 async def test_initial_turn_passes_current_turn_and_max_turns():
     repo = _MemoryChatSessionRepo()
-    session = await _saved_session(repo, max_turns=3)
+    session = await _saved_session(repo, max_turns=5)
     agent = _FakePersonalAssistantAgent(AIMessage(content="응, 이어가볼까?"))
     usecase = SendMessageUseCase(
         repo,
@@ -218,7 +218,7 @@ async def test_initial_turn_passes_current_turn_and_max_turns():
     _, _, suggest, _ = await usecase.execute(session.id, "첫 번째 이야기", "dev-a")
 
     assert agent.calls[0]["diary_context"] == DiaryConversationContext(
-        max_turns=3,
+        max_turns=5,
         current_user_turn=1,
         suggest_finalize=False,
     )
@@ -283,8 +283,8 @@ async def test_must_finalize_skips_personal_assistant_and_preserves_finalize_flo
     repo = _MemoryChatSessionRepo()
     diary_repo = _MemoryDiaryRepo()
     extract_chunks = _FakeExtractChunks()
-    session = ChatSession(device_id="dev-a", max_turns=3)
-    for index in range(2):
+    session = ChatSession(device_id="dev-a", max_turns=5)
+    for index in range(4):
         session.add_message("user", f"이야기 {index}")
         session.add_message("assistant", "응")
     await repo.save(session)
@@ -292,7 +292,7 @@ async def test_must_finalize_skips_personal_assistant_and_preserves_finalize_flo
     factory = _FakePersonalAssistantFactory(agent)
     usecase = SendMessageUseCase(repo, _FakeAi(), diary_repo, factory, extract_chunks)
 
-    _, ai_msg, suggest, diary = await usecase.execute(session.id, "세 번째", "dev-a")
+    _, ai_msg, suggest, diary = await usecase.execute(session.id, "다섯 번째", "dev-a")
 
     assert factory.calls == []
     assert agent.calls == []

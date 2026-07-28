@@ -142,15 +142,15 @@ async def test_start_chat_session_resets_when_turn_policy_changes():
     await repo.save(session)
 
     usecase = StartChatSessionUseCase(repo, ai)
-    restarted = await usecase.execute("dev-1", max_turns=3)
+    restarted = await usecase.execute("dev-1", max_turns=50)
 
     assert restarted.id == session.id
-    assert restarted.max_turns == 3
+    assert restarted.max_turns == 50
     assert restarted.is_finalized is False
     assert len(restarted.messages) == 1
     assert restarted.messages[0].role == "assistant"
-    assert "3턴 회고" in restarted.messages[0].content
-    assert ai.chat_calls == [3]
+    assert "50턴 회고" in restarted.messages[0].content
+    assert ai.chat_calls == [50]
     assert repo.save_count == 2
 
 
@@ -175,26 +175,30 @@ async def test_start_chat_session_resets_when_requested_explicitly():
     assert repo.save_count == 2
 
 
+def test_chat_session_rejects_retired_three_turn_mode():
+    with pytest.raises(ValueError):
+        ChatSession(device_id="dev-1", max_turns=3)
+
+
 @pytest.mark.asyncio
-async def test_send_message_auto_finalizes_on_third_turn_for_short_mode():
+async def test_send_message_auto_finalizes_on_fifth_turn_for_five_turn_mode():
     repo = _MemoryChatSessionRepo()
     diary_repo = _MemoryDiaryRepo()
     ai = _FakeAi()
     personal_assistant_factory = _FakePersonalAssistantFactory()
     extract_chunks = _FakeExtractChunks()
 
-    session = ChatSession(device_id="dev-1", max_turns=3)
+    session = ChatSession(device_id="dev-1", max_turns=5)
     session.add_message("assistant", "시작해볼까?")
-    session.add_message("user", "첫 번째")
-    session.add_message("assistant", "응")
-    session.add_message("user", "두 번째")
-    session.add_message("assistant", "계속 들려줘")
+    for index in range(1, 5):
+        session.add_message("user", f"{index}번째")
+        session.add_message("assistant", "계속 들려줘")
     await repo.save(session)
 
     usecase = SendMessageUseCase(repo, ai, diary_repo, personal_assistant_factory, extract_chunks)
-    user_msg, ai_msg, suggest, diary = await usecase.execute(session.id, "세 번째", "dev-1")
+    user_msg, ai_msg, suggest, diary = await usecase.execute(session.id, "다섯 번째", "dev-1")
 
-    assert user_msg.content == "세 번째"
+    assert user_msg.content == "다섯 번째"
     assert ai_msg.content == "여기까지 들은 걸로 오늘 일기를 정리해볼게."
     assert suggest is False
     assert diary is not None
