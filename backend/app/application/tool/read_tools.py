@@ -21,6 +21,7 @@ MAX_TOOL_SEARCH_LIMIT = 10
 class AgentToolExecutionContext:
     device_id: str
     session_id: UUID | None = None
+    run_id: UUID | None = None  # 채팅이 아닌 자동 실행(insight 생성 등)의 참조
 
 
 class SearchDiaryMemoriesInput(BaseModel):

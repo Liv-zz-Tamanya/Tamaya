@@ -19,6 +19,10 @@ from app.application.service.signal_extraction_service import SignalExtractionSe
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
 from app.application.usecase.extract_chunks import ExtractChunksUseCase
 from app.application.usecase.extract_signals import ExtractSignalsUseCase
+from app.application.usecase.generate_weekly_insight_report import (
+    GenerateWeeklyInsightReportUseCase,
+    GetCachedWeeklyInsightReportUseCase,
+)
 from app.application.usecase.get_monthly_insight import GetMonthlyInsightUseCase
 from app.application.usecase.get_weekly_insight import GetWeeklyInsightUseCase
 from app.application.usecase.personal_assistant_agent_factory import PersonalAssistantAgentFactory
@@ -29,6 +33,7 @@ from app.domain.repository.event_chunk_repository import EventChunkRepository
 from app.domain.repository.health_chunk_repository import HealthChunkRepository
 from app.domain.repository.health_record_repository import HealthRecordRepository
 from app.domain.repository.health_session_repository import HealthSessionRepository
+from app.domain.repository.insight_report_repository import InsightReportRepository
 from app.domain.repository.medical_visit_repository import MedicalVisitRepository
 from app.domain.repository.qualitative_signal_repository import QualitativeSignalRepository
 from app.domain.repository.sleep_record_repository import SleepRecordRepository
@@ -53,6 +58,9 @@ from app.infrastructure.persistence.health_chunk_repository_impl import HealthCh
 from app.infrastructure.persistence.health_record_repository_impl import HealthRecordRepositoryImpl
 from app.infrastructure.persistence.health_session_repository_impl import (
     HealthSessionRepositoryImpl,
+)
+from app.infrastructure.persistence.insight_report_repository_impl import (
+    InsightReportRepositoryImpl,
 )
 from app.infrastructure.persistence.medical_visit_repository_impl import (
     MedicalVisitRepositoryImpl,
@@ -235,6 +243,11 @@ def get_monthly_insight_usecase(
     return GetMonthlyInsightUseCase(health_repo, sleep_repo, diary_repo, visit_repo)
 
 
+def get_insight_report_repo(db: AsyncSession = Depends(get_db)) -> InsightReportRepository:
+    return InsightReportRepositoryImpl(db)
+
+
+
 def get_health_chunk_repo(db: AsyncSession = Depends(get_db)) -> HealthChunkRepository:
     return HealthChunkRepositoryImpl(db)
 
@@ -272,6 +285,31 @@ def get_personal_assistant_agent_factory(
         timeout_policy,
         execution_recorder,
     )
+
+
+def get_generate_weekly_insight_report_usecase(
+    report_repo: InsightReportRepository = Depends(get_insight_report_repo),
+    health_repo: HealthRecordRepository = Depends(get_health_record_repo),
+    sleep_repo: SleepRecordRepository = Depends(get_sleep_record_repo),
+    diary_repo: DiaryRepository = Depends(get_diary_repo),
+    visit_repo: MedicalVisitRepository = Depends(get_medical_visit_repo),
+    agent_factory: PersonalAssistantAgentFactory = Depends(get_personal_assistant_agent_factory),
+) -> GenerateWeeklyInsightReportUseCase:
+    return GenerateWeeklyInsightReportUseCase(
+        report_repo,
+        health_repo,
+        sleep_repo,
+        diary_repo,
+        visit_repo,
+        agent_factory,
+        model_name=settings.clova_model if not settings.clova_mock_mode else None,
+    )
+
+
+def get_cached_weekly_insight_report_usecase(
+    report_repo: InsightReportRepository = Depends(get_insight_report_repo),
+) -> GetCachedWeeklyInsightReportUseCase:
+    return GetCachedWeeklyInsightReportUseCase(report_repo)
 
 
 def get_coaching_personal_assistant_agent_factory(

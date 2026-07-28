@@ -47,6 +47,47 @@ class TrendPointResponse(BaseModel):
     signal_count: int
 
 
+class InsightCardResponse(BaseModel):
+    hypothesis_key: str
+    title: str
+    message: str
+    evidence_dates: list[date]
+
+
+class InsightReportResponse(BaseModel):
+    """생성형 주간 인사이트 리포트 — 비생성 상태도 200 well-formed."""
+
+    id: str
+    period: str
+    start_date: date
+    end_date: date
+    status: str
+    from_cache: bool
+    cards: list[InsightCardResponse]
+    created_at: str
+
+    @classmethod
+    def from_domain(cls, report, start_date: date, end_date: date, from_cache: bool):
+        return cls(
+            id=str(report.id),
+            period=report.period_key,
+            start_date=start_date,
+            end_date=end_date,
+            status=report.status.value,
+            from_cache=from_cache,
+            cards=[
+                InsightCardResponse(
+                    hypothesis_key=card.hypothesis_key,
+                    title=card.title,
+                    message=card.message,
+                    evidence_dates=list(card.evidence_dates),
+                )
+                for card in report.cards
+            ],
+            created_at=report.created_at.isoformat(),
+        )
+
+
 class InsightResponse(BaseModel):
     period: str
     start_date: date

@@ -175,3 +175,23 @@ _PRESCRIPTIVE_TOKENS: tuple[str, ...] = (
 def contains_prescriptive_content(text: str) -> bool:
     """생성 응답에 처방성 지시(용량·복용 등)가 섞였는지 검사한다(결정론)."""
     return any(token in text for token in _PRESCRIPTIVE_TOKENS)
+
+
+# ─── INSIGHT 출력 진단 단정 tripwire ─────────────────────────────────────────
+# INSIGHT는 입력 메시지가 없어 output guardrail이 핵심 방어선이다.
+# 고신뢰 패턴만 사용한다 — "함께 나타나는 경향이 있었어요" 같은 일반적인
+# 상관관계 표현까지 차단하는 텍스트 검열기가 되면 안 된다.
+_CONDITION_NAMES = r"(?:우울증|불면증|불안장애|공황장애|조울증|수면장애|번아웃\s*증후군|ADHD)"
+_DIAGNOSTIC_ASSERTION_PATTERNS: tuple[re.Pattern[str], ...] = (
+    # "당신은 우울증이에요" / "불면증이 확실해요" / "수면장애입니다"
+    re.compile(_CONDITION_NAMES + r"\s*(?:이|가)?\s*(?:확실|분명)"),
+    re.compile(_CONDITION_NAMES + r"\s*(?:예요|이에요|입니다|이야|야|(?:인|일)\s*것\s*같)"),
+    # "이 기록은 특정 질환 때문이에요" — 기록·증상을 질환 원인으로 단정
+    re.compile(r"(?:질환|질병|병)\s*(?:때문|탓)(?:이에요|입니다|이야|인\s*것\s*같)?"),
+    re.compile(r"진단\s*(?:결과|됩니다|해\s*드리|을\s*내리)"),
+)
+
+
+def contains_diagnostic_assertion(text: str) -> bool:
+    """생성 응답의 명백한 진단·의료 인과 단정을 결정론적으로 감지한다."""
+    return any(pattern.search(text) for pattern in _DIAGNOSTIC_ASSERTION_PATTERNS)

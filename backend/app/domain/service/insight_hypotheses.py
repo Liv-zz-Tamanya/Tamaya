@@ -62,6 +62,15 @@ class GateFailureReason(StrEnum):
     NOT_SIGNIFICANT = "not_significant"
 
 
+# 검정 전 abstention(통계값 없음) vs 검정 후 gate 탈락(통계값 존재) — 섞일 수 없다
+PRE_TEST_FAILURE_REASONS = frozenset(
+    {GateFailureReason.INSUFFICIENT_SAMPLE, GateFailureReason.CONSTANT_INPUT}
+)
+POST_TEST_FAILURE_REASONS = frozenset(
+    {GateFailureReason.EFFECT_TOO_SMALL, GateFailureReason.NOT_SIGNIFICANT}
+)
+
+
 @dataclass(frozen=True)
 class FindingCoverage:
     eligible_days: int  # 입력 facts 전체 일수
@@ -95,6 +104,14 @@ class StatisticalFinding:
             raise ValueError("gate_passed는 failure_reasons가 비어 있을 때만 True여야 합니다.")
         if self.gate_passed and None in (self.effect_size, self.p_value, self.q_value):
             raise ValueError("gate 통과 결과는 effect_size·p_value·q_value가 모두 있어야 합니다.")
+        reasons = set(self.failure_reasons)
+        statistics_values = (self.effect_size, self.p_value, self.q_value)
+        if reasons & PRE_TEST_FAILURE_REASONS and reasons & POST_TEST_FAILURE_REASONS:
+            raise ValueError("검정 전 사유와 검정 후 사유는 한 finding에 섞일 수 없습니다.")
+        if reasons & PRE_TEST_FAILURE_REASONS and any(v is not None for v in statistics_values):
+            raise ValueError("검정 전 abstention은 effect_size·p_value·q_value가 모두 None이어야 합니다.")
+        if reasons & POST_TEST_FAILURE_REASONS and any(v is None for v in statistics_values):
+            raise ValueError("검정 후 gate 탈락은 effect_size·p_value·q_value가 모두 있어야 합니다.")
         for name in ("p_value", "q_value"):
             value = getattr(self, name)
             if value is not None and not 0.0 <= value <= 1.0:

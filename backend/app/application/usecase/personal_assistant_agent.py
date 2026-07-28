@@ -29,6 +29,10 @@ from app.application.service.diary_chat_prompt import (
     build_diary_chat_system_prompt,
 )
 from app.application.service.health_chat_prompt import build_health_chat_system_prompt
+from app.application.service.insight_generation_prompt import (
+    InsightGenerationContext,
+    build_insight_system_prompt,
+)
 from app.application.service.model_provider_error import ModelProviderError
 from app.application.service.personal_assistant_timeout import (
     DEFAULT_PERSONAL_ASSISTANT_TIMEOUT_POLICY,
@@ -43,6 +47,7 @@ from app.domain.service.medical_guardrail import (
     build_disclaimer,
     classify_medical_request,
     contains_crisis_signal,
+    contains_diagnostic_assertion,
     contains_prescriptive_content,
 )
 
@@ -58,6 +63,45 @@ class PersonalAssistantMode(StrEnum):
     DIARY = "diary"
     HEALTH = "health"
     COACHING = "coaching"
+    INSIGHT = "insight"
+
+
+class InputGuardrailPolicy(StrEnum):
+    NONE = "none"
+    MEDICAL_REQUEST = "medical_request"
+
+
+class OutputGuardrailPolicy(StrEnum):
+    DIARY_CRISIS = "diary_crisis"
+    MEDICAL_BOUNDARY = "medical_boundary"
+    # INSIGHT는 입력 메시지가 없어 output이 핵심 방어선 — 처방 토큰에 더해
+    # 진단 단정까지 검사하고, 면책 문구 대신 구조화된 안전 차단 marker를 쓴다.
+    INSIGHT_MEDICAL_BOUNDARY = "insight_medical_boundary"
+
+
+# 모드별 guardrail 정책 선언 — 분기를 흩뿌리지 않고 여기서만 정의한다.
+MODE_GUARDRAIL_POLICIES: dict[
+    PersonalAssistantMode, tuple[InputGuardrailPolicy, OutputGuardrailPolicy]
+] = {
+    PersonalAssistantMode.DIARY: (InputGuardrailPolicy.NONE, OutputGuardrailPolicy.DIARY_CRISIS),
+    PersonalAssistantMode.HEALTH: (
+        InputGuardrailPolicy.MEDICAL_REQUEST,
+        OutputGuardrailPolicy.MEDICAL_BOUNDARY,
+    ),
+    PersonalAssistantMode.COACHING: (
+        InputGuardrailPolicy.MEDICAL_REQUEST,
+        OutputGuardrailPolicy.MEDICAL_BOUNDARY,
+    ),
+    PersonalAssistantMode.INSIGHT: (
+        InputGuardrailPolicy.NONE,  # 사용자 메시지가 없다 — 가짜 HumanMessage 금지
+        OutputGuardrailPolicy.INSIGHT_MEDICAL_BOUNDARY,
+    ),
+}
+
+INSIGHT_SAFETY_BLOCKED_MESSAGE_ID = "insight-safety-blocked"
+INSIGHT_SAFETY_BLOCKED_CONTENT = (
+    "이번 기간의 인사이트 문구가 안전 기준에 걸려 표시하지 않았어요."
+)
 
 
 class CoachingConversationContext(TypedDict):
@@ -69,6 +113,7 @@ class PersonalAssistantState(TypedDict):
     mode: PersonalAssistantMode
     diary_context: DiaryConversationContext | None
     coaching_context: CoachingConversationContext | None
+    insight_context: InsightGenerationContext | None
     llm_calls: int
     tool_rounds: int
     guardrail_verdict: GuardrailVerdict
@@ -78,13 +123,11 @@ def build_personal_assistant_system_message(
     mode: PersonalAssistantMode,
     diary_context: DiaryConversationContext | None = None,
     coaching_context: CoachingConversationContext | None = None,
+    insight_context: InsightGenerationContext | None = None,
 ) -> SystemMessage:
+    _validate_context_for_mode(mode, diary_context, coaching_context, insight_context)
     match mode:
         case PersonalAssistantMode.DIARY:
-            if diary_context is None:
-                raise ValueError("diary_context is required for diary mode")
-            if coaching_context is not None:
-                raise ValueError("coaching_context is only supported for coaching mode")
             return SystemMessage(
                 content=build_diary_chat_system_prompt(
                     max_turns=diary_context.max_turns,
@@ -94,10 +137,6 @@ def build_personal_assistant_system_message(
                 )
             )
         case PersonalAssistantMode.HEALTH:
-            if diary_context is not None:
-                raise ValueError("diary_context is only supported for diary mode")
-            if coaching_context is not None:
-                raise ValueError("coaching_context is only supported for coaching mode")
             return SystemMessage(
                 content=build_health_chat_system_prompt(
                     tool_calling_enabled=True,
@@ -105,13 +144,13 @@ def build_personal_assistant_system_message(
                 )
             )
         case PersonalAssistantMode.COACHING:
-            if diary_context is not None:
-                raise ValueError("diary_context is only supported for diary mode")
             return SystemMessage(
                 content=build_coaching_system_prompt(
                     persona=coaching_context.get("persona") if coaching_context else None
                 )
             )
+        case PersonalAssistantMode.INSIGHT:
+            return SystemMessage(content=build_insight_system_prompt(insight_context))
 
 
 class PersonalAssistantAgent:
@@ -178,7 +217,9 @@ class PersonalAssistantAgent:
         return builder.compile()
 
     def _input_guardrail_node(self, state: PersonalAssistantState) -> dict:
-        if state["mode"] == PersonalAssistantMode.DIARY:
+        input_policy, _ = MODE_GUARDRAIL_POLICIES[state["mode"]]
+        if input_policy == InputGuardrailPolicy.NONE:
+            # DIARY: 프롬프트·output 백스톱이 담당. INSIGHT: 사용자 메시지 자체가 없다.
             return {"guardrail_verdict": GuardrailVerdict.SAFE}
 
         latest_user_text = find_latest_human_message_text(state["messages"])
@@ -225,6 +266,7 @@ class PersonalAssistantAgent:
                             state["mode"],
                             state.get("diary_context"),
                             state.get("coaching_context"),
+                            state.get("insight_context"),
                         ),
                         *state["messages"],
                     ],
@@ -289,17 +331,45 @@ class PersonalAssistantAgent:
         return {"messages": [AIMessage(content=ITERATION_LIMIT_MESSAGE)]}
 
     def _output_guardrail_node(self, state: PersonalAssistantState) -> dict:
-        if state["mode"] == PersonalAssistantMode.DIARY:
+        _, output_policy = MODE_GUARDRAIL_POLICIES[state["mode"]]
+        if output_policy == OutputGuardrailPolicy.DIARY_CRISIS:
             return self._diary_crisis_guidance_update(state)
 
         last_message = state["messages"][-1]
         if not isinstance(last_message, AIMessage) or last_message.tool_calls:
             raise RuntimeError("output_guardrail requires final AIMessage")
+        response_text = _ai_message_text(last_message)
 
-        if not contains_prescriptive_content(_ai_message_text(last_message)):
+        if output_policy == OutputGuardrailPolicy.INSIGHT_MEDICAL_BOUNDARY:
+            if contains_prescriptive_content(response_text) or contains_diagnostic_assertion(
+                response_text
+            ):
+                return self._replace_with_insight_safety_block(last_message)
+            return {}
+
+        if not contains_prescriptive_content(response_text):
             return {}
 
         return self._replace_with_advice_disclaimer(last_message)
+
+    def _replace_with_insight_safety_block(self, last_message: AIMessage) -> dict:
+        """INSIGHT 출력 차단 — 위험 원문 대신 구조화된 marker 응답으로 교체한다.
+
+        usecase는 message id로 차단을 식별해 SAFETY_BLOCKED 리포트를 만들고,
+        위험한 LLM 원문은 카드·캐시 어디에도 저장되지 않는다.
+        """
+        trace = get_active_agent_execution_trace()
+        if trace is not None:
+            trace.record_guardrail_verdict(OutputGuardrailPolicy.INSIGHT_MEDICAL_BOUNDARY.value)
+            trace.termination_reason = AgentTerminationReason.OUTPUT_GUARDRAIL_BLOCKED
+        return {
+            "messages": [
+                AIMessage(
+                    content=INSIGHT_SAFETY_BLOCKED_CONTENT,
+                    id=INSIGHT_SAFETY_BLOCKED_MESSAGE_ID,
+                )
+            ]
+        }
 
     def _diary_crisis_guidance_update(self, state: PersonalAssistantState) -> dict:
         """diary 위기 신호 백스톱 — 차단하지 않고 상담 안내를 보장한다.
@@ -372,13 +442,15 @@ class PersonalAssistantAgent:
         mode: PersonalAssistantMode,
         diary_context: DiaryConversationContext | None = None,
         coaching_context: CoachingConversationContext | None = None,
+        insight_context: InsightGenerationContext | None = None,
     ) -> PersonalAssistantState:
-        _validate_context_for_mode(mode, diary_context, coaching_context)
+        _validate_context_for_mode(mode, diary_context, coaching_context, insight_context)
         initial_state: PersonalAssistantState = {
             "messages": list(messages),
             "mode": mode,
             "diary_context": diary_context,
             "coaching_context": coaching_context,
+            "insight_context": insight_context,
             "llm_calls": 0,
             "tool_rounds": 0,
             "guardrail_verdict": GuardrailVerdict.ADVICE_BOUNDARY,
@@ -396,8 +468,14 @@ class PersonalAssistantAgent:
         mode: PersonalAssistantMode,
         diary_context: DiaryConversationContext | None = None,
         coaching_context: CoachingConversationContext | None = None,
+        insight_context: InsightGenerationContext | None = None,
+        execution_ref: str | None = None,
     ) -> AIMessage:
-        trace = AgentExecutionTrace(mode=mode.value, trace_detail=self._trace_detail)
+        trace = AgentExecutionTrace(
+            mode=mode.value,
+            trace_detail=self._trace_detail,
+            execution_ref=execution_ref,
+        )
         context_token = activate_agent_execution_trace(trace)
         try:
             async with asyncio.timeout(self._timeout_policy.execution_seconds):
@@ -406,6 +484,7 @@ class PersonalAssistantAgent:
                     mode=mode,
                     diary_context=diary_context,
                     coaching_context=coaching_context,
+                    insight_context=insight_context,
                 )
         except TimeoutError as exc:
             trace.termination_reason = AgentTerminationReason.TIMEOUT
@@ -453,6 +532,7 @@ def _validate_context_for_mode(
     mode: PersonalAssistantMode,
     diary_context: DiaryConversationContext | None,
     coaching_context: CoachingConversationContext | None,
+    insight_context: InsightGenerationContext | None = None,
 ) -> None:
     if mode == PersonalAssistantMode.DIARY and diary_context is None:
         raise ValueError("diary_context is required for diary mode")
@@ -460,6 +540,10 @@ def _validate_context_for_mode(
         raise ValueError("diary_context is only supported for diary mode")
     if mode != PersonalAssistantMode.COACHING and coaching_context is not None:
         raise ValueError("coaching_context is only supported for coaching mode")
+    if mode == PersonalAssistantMode.INSIGHT and insight_context is None:
+        raise ValueError("insight_context is required for insight mode")
+    if mode != PersonalAssistantMode.INSIGHT and insight_context is not None:
+        raise ValueError("insight_context is only supported for insight mode")
 
 
 def find_latest_human_message_text(messages: Sequence[BaseMessage]) -> str:

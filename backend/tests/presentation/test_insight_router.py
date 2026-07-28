@@ -131,6 +131,143 @@ def test_monthly_bad_month_returns_400():
     assert resp.status_code == 400
 
 
+# ── 생성형 주간 리포트 API ──────────────────────────────────────────────────
+
+
+def _report_endpoints_overrides(generate=None, cached=None):
+    from app.infrastructure.config.dependencies import (
+        get_cached_weekly_insight_report_usecase,
+        get_generate_weekly_insight_report_usecase,
+    )
+
+    if generate is not None:
+        app.dependency_overrides[get_generate_weekly_insight_report_usecase] = lambda: generate
+    if cached is not None:
+        app.dependency_overrides[get_cached_weekly_insight_report_usecase] = lambda: cached
+
+
+def _stub_report(status="no_signal", cards=()):
+    from datetime import datetime
+
+    from app.domain.model.insight_report import (
+        InsightPeriodType,
+        InsightReport,
+        InsightReportStatus,
+    )
+
+    return InsightReport(
+        device_id="dev-1",
+        period_type=InsightPeriodType.WEEKLY,
+        period_key="2026-W31",
+        status=InsightReportStatus(status),
+        cards=cards,
+        selected_hypothesis_keys=tuple(card.hypothesis_key for card in cards),
+        payload={"status": status, "cards": []},
+        model_meta={},
+        created_at=datetime(2026, 8, 3, 9, 0),
+        updated_at=datetime(2026, 8, 3, 9, 0),
+    )
+
+
+class _StubGenerateUseCase:
+    def __init__(self, report=None, error: Exception | None = None):
+        self._report = report or _stub_report()
+        self._error = error
+        self.calls = 0
+
+    async def execute(self, device_id, year, week):
+        self.calls += 1
+        if self._error is not None:
+            raise self._error
+        return self._report, self.calls > 1  # 두 번째 호출부터 캐시로 표시
+
+
+class _StubCachedUseCase:
+    def __init__(self, report=None):
+        self._report = report
+
+    async def execute(self, device_id, year, week):
+        return self._report
+
+
+def test_post_weekly_report_generates_then_returns_cache_flag():
+    from app.domain.model.insight_report import InsightCard
+
+    card = InsightCard(
+        hypothesis_key="sleep_satisfaction",
+        title="잠과 만족도의 패턴",
+        message="함께 나타나는 경향이 있었어요.",
+        evidence_dates=(date(2026, 7, 28),),
+    )
+    generate = _StubGenerateUseCase(report=_stub_report("generated", (card,)))
+    _report_endpoints_overrides(generate=generate)
+    client = TestClient(app)
+
+    first = client.post(
+        "/api/v1/insights/weekly/report", params={"device_id": "dev-1", "week": "2026-W31"}
+    )
+    second = client.post(
+        "/api/v1/insights/weekly/report", params={"device_id": "dev-1", "week": "2026-W31"}
+    )
+
+    assert first.status_code == 200
+    body = first.json()
+    assert body["status"] == "generated"
+    assert body["from_cache"] is False
+    assert body["cards"][0]["hypothesis_key"] == "sleep_satisfaction"
+    assert second.json()["from_cache"] is True
+
+
+def test_post_weekly_report_non_generated_status_is_200():
+    _report_endpoints_overrides(generate=_StubGenerateUseCase(_stub_report("insufficient_data")))
+    client = TestClient(app)
+    resp = client.post(
+        "/api/v1/insights/weekly/report", params={"device_id": "dev-1", "week": "2026-W31"}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "insufficient_data"
+    assert resp.json()["cards"] == []
+
+
+def test_post_weekly_report_bad_week_400():
+    _report_endpoints_overrides(generate=_StubGenerateUseCase())
+    client = TestClient(app)
+    resp = client.post(
+        "/api/v1/insights/weekly/report", params={"device_id": "dev-1", "week": "2026-31"}
+    )
+    assert resp.status_code == 400
+
+
+def test_post_weekly_report_output_error_returns_502():
+    from app.application.service.insight_output_parser import InsightOutputError
+
+    _report_endpoints_overrides(
+        generate=_StubGenerateUseCase(error=InsightOutputError("cards는 list여야 합니다"))
+    )
+    client = TestClient(app)
+    resp = client.post(
+        "/api/v1/insights/weekly/report", params={"device_id": "dev-1", "week": "2026-W31"}
+    )
+    assert resp.status_code == 502
+
+
+def test_get_weekly_report_cache_hit_and_miss():
+    _report_endpoints_overrides(cached=_StubCachedUseCase(_stub_report()))
+    client = TestClient(app)
+    hit = client.get(
+        "/api/v1/insights/weekly/report", params={"device_id": "dev-1", "week": "2026-W31"}
+    )
+    assert hit.status_code == 200
+    assert hit.json()["from_cache"] is True
+
+    app.dependency_overrides.clear()
+    _report_endpoints_overrides(cached=_StubCachedUseCase(None))
+    miss = client.get(
+        "/api/v1/insights/weekly/report", params={"device_id": "dev-1", "week": "2026-W31"}
+    )
+    assert miss.status_code == 404
+
+
 def test_schema_invariant_rejects_none_score_with_nonzero_count():
     # DEC-B1 불변식: score=None ⟺ signal_count=0 — 어기면 직렬화 단계에서 시끄럽게 실패
     broken = WellbeingReport(
