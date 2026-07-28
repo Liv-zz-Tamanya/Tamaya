@@ -20,7 +20,8 @@ export type ChatMsg = {
   chips?: string[];
 };
 
-export type ChatDiaryMode = 'full' | 'short';
+// five: 5턴 대화 · free: 자유 대화(상한 = 백엔드 세션 캡 50턴). 3턴(short) 모드는 폐지됨.
+export type ChatDiaryMode = 'five' | 'free';
 export type GeneratedDiary = {
   diary_date?: string;
   title: string;
@@ -55,7 +56,7 @@ export type State = {
   aiChat: ChatMsg[];
   chatDiary: ChatMsg[];
   chatDiaryMode: ChatDiaryMode;
-  chatDiaryMaxTurns: 3 | 5 | 50;
+  chatDiaryMaxTurns: 5 | 50;
   chatDiaryGeneratedDiary: GeneratedDiary | null;
   diaries: DiaryEntry[];
   selectedDay: number | null;       // legacy fallback for older screens
@@ -130,7 +131,7 @@ const DEFAULT_STATE: State = {
     { role: 'bot', text: '안녕! 낮엔 내가 도와줄게.\n오늘 뭐 도와줄까?' },
   ],
   chatDiary: [],
-  chatDiaryMode: 'full',
+  chatDiaryMode: 'five',
   chatDiaryMaxTurns: 5,
   chatDiaryGeneratedDiary: null,
   diaries: SEED_DIARIES,
@@ -151,7 +152,7 @@ type Action =
   | { type: 'daily/movement'; bucket: string }
   | { type: 'daily/sun'; level: string }
   | { type: 'ai-chat/append'; msg: ChatMsg }
-  | { type: 'chat-diary/configure'; mode: ChatDiaryMode; maxTurns: 3 | 5 | 50 }
+  | { type: 'chat-diary/configure'; mode: ChatDiaryMode; maxTurns: 5 | 50 }
   | { type: 'chat-diary/append'; msg: ChatMsg }
   | { type: 'chat-diary/set-generated-diary'; diary: GeneratedDiary | null }
   | { type: 'chat-diary/reset' }
@@ -317,9 +318,13 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       const raw = localStorage.getItem(LS_KEY);
       if (raw) {
         const saved = { ...init, ...(JSON.parse(raw) as State) };
-        if (saved.chatDiaryMode === 'full') {
-          saved.chatDiaryMaxTurns = CHAT_DIARY_FULL_TURNS;
-        }
+        // 레거시 모드 마이그레이션: full(50턴)→free, short(3턴 폐지)→five.
+        // maxTurns는 항상 mode에서 다시 유도해 저장값 불일치를 흡수한다.
+        const legacyMode = saved.chatDiaryMode as string;
+        if (legacyMode === 'full') saved.chatDiaryMode = 'free';
+        else if (legacyMode === 'short') saved.chatDiaryMode = 'five';
+        saved.chatDiaryMaxTurns =
+          saved.chatDiaryMode === 'free' ? CHAT_DIARY_FREE_TURNS : CHAT_DIARY_FIVE_TURNS;
         return saved;
       }
     } catch {
@@ -422,8 +427,8 @@ export const simulateAiReply = (userText: string): ChatMsg => {
 
 // ── ChatDiary 회고 시퀀스 ────────────────────────────────────────────────
 
-export const CHAT_DIARY_FULL_TURNS = 50;
-export const CHAT_DIARY_SHORT_TURNS = 3;
+export const CHAT_DIARY_FREE_TURNS = 50; // 자유 모드 — 백엔드 세션 상한과 동일
+export const CHAT_DIARY_FIVE_TURNS = 5;
 
 export const CHAT_DIARY_TURNS: { question: string; hint?: string }[] = [
   {

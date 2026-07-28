@@ -7,7 +7,7 @@ import { maskPII, MaskResult } from './masking';
 
 const SESSION_KEY_PREFIX = 'tamaya-chat-session';
 
-export type ChatSessionMaxTurns = 3 | 5 | 50;
+export type ChatSessionMaxTurns = 5 | 50;
 export type GeneratedDiaryResponse = {
   id?: string;
   diary_date?: string;
@@ -42,8 +42,9 @@ export function clearChatSessionCache(maxTurns?: ChatSessionMaxTurns): void {
       localStorage.removeItem(sessionKey(maxTurns));
       return;
     }
-    localStorage.removeItem(sessionKey(3));
     localStorage.removeItem(sessionKey(5));
+    localStorage.removeItem(sessionKey(50));
+    localStorage.removeItem(`${SESSION_KEY_PREFIX}:3`); // 폐지된 3턴 모드 캐시 정리
   } catch {
     // ignore
   }
