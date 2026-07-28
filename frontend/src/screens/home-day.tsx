@@ -129,7 +129,7 @@ export const S06_HomeDay = ({ night = false }: { night?: boolean }) => {
         className="hbox r-r as-button"
         onClick={() => nav.go('daily-check')}
         aria-label={`오늘의 루틴, ${dailyDone} / ${routines.length} 완료`}
-        style={{ padding: 14, marginTop: night ? 32 : 12, cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
+        style={{ padding: 14, marginTop: 12, cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
       >
         <div
           style={{

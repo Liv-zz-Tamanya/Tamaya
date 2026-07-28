@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import { BackButton, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
-import { suppressPersistence, useStore } from '../lib/store';
-import { purgeMyData, updateNightChatPreference } from '../lib/api';
+import { useStore } from '../lib/store';
+import { updateNightChatPreference } from '../lib/api';
 
 // 22 · Settings — character name, notifications, data, logout
 
 export const S22_Settings = () => {
   const nav = useNav();
-  const { state, dispatch } = useStore();
-  const [purging, setPurging] = useState(false);
+  const { state } = useStore();
   const [openTime, setOpenTime] = useState(nav.nightOpenTime);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
@@ -37,33 +36,7 @@ export const S22_Settings = () => {
     }
   };
 
-  // 완전 삭제(liv-I1): 서버 device 데이터 purge(best-effort) + 로컬 store/세션 clear → 리로드.
-  const purgeAll = async () => {
-    if (!confirm('모든 데이터를 완전히 삭제할까요?\n· 서버: 일기·대화·정성신호·CLOVA설정·게임·인벤토리\n· 기기: 로컬 저장 전부\n되돌릴 수 없습니다.')) return;
-    setPurging(true);
-    let serverMsg = '서버 데이터 삭제 완료';
-    try {
-      const r = await purgeMyData();
-      const n = Object.values(r.items_removed).reduce((a, b) => a + b, 0);
-      serverMsg = `서버 데이터 삭제 완료 (${n}행)`;
-    } catch {
-      serverMsg = '서버 연결 실패 — 로컬만 삭제(서버는 기동 후 재시도)';
-    }
-    try {
-      suppressPersistence(); // beforeunload flush가 삭제를 되돌리지 않도록 removeItem 직전에 억제 (liv-I1)
-      Object.keys(localStorage)
-        .filter((k) => k.startsWith('tamaya-'))
-        .forEach((k) => localStorage.removeItem(k));
-    } catch {
-      /* ignore */
-    }
-    alert(serverMsg + '\n기기 데이터 삭제 완료. 처음 화면으로 돌아갑니다.');
-    location.reload();
-  };
-
-  // v4 S22 절충(2026-07-24): Figma 레이아웃(카드 리스트·현재 상태·하단 위험 버튼)을
-  // 따르되 항목은 실기능만 — 목업 전용 정적 row(주간 리포트 알림·로컬 저장·백업)는
-  // 기능이 생길 때 추가한다.
+  // 설정 화면에는 사용자에게 제공하는 항목만 둔다.
   const rows: {
     label: string;
     value: string;
@@ -71,8 +44,6 @@ export const S22_Settings = () => {
     danger?: boolean;
   }[] = [
     { label: '이음이 이름', value: state.character.name, onClick: () => nav.go('create-cat') },
-    { label: '건강 기록 Q&A', value: '내 기록 기반 질문', onClick: () => nav.go('health-chat') },
-    { label: 'CLOVA 키 (BYOK)', value: '키 설정', onClick: () => nav.go('byok') },
     { label: '버전', value: 'v1.0 · tamaya.online' },
   ];
 
@@ -143,53 +114,8 @@ export const S22_Settings = () => {
             </div>
             {saveStatus && <div className="tiny" role="status" style={{ marginTop: 6, color: 'var(--pencil)' }}>{saveStatus}</div>}
           </div>
-          {rowNodes.slice(1)}
+          {rowNodes[1]}
         </div>
-
-        <div style={{ marginTop: 20 }}>
-          <h2 className="h-label" style={{ marginBottom: 8 }}>현재 상태</h2>
-          {/* v4 S22: 첫 줄 볼드 요약 + 연한 둘째 줄 */}
-          <div className="hbox" style={{ padding: '12px 14px' }}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 5 }}>
-              포인트 {state.points} pt / 연속 달성 {state.streak}일 / Lv.{state.level}
-            </div>
-            <div className="tiny" style={{ color: 'var(--pencil)' }}>아이템 {state.unlockedItems.length}개 · 입는중 {state.equippedItem ?? '없음'}</div>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => void purgeAll()}
-          disabled={purging}
-          className="btn block"
-          style={{
-            marginTop: 20,
-            color: 'var(--danger)',
-            borderColor: 'var(--danger)',
-            background: 'var(--cream)', /* v4: 흰색 대신 크림 필 */
-            cursor: purging ? 'wait' : 'pointer',
-            fontFamily: 'inherit',
-            opacity: purging ? 0.6 : 1,
-          }}
-        >
-          {purging ? '완전 삭제 중…' : '데이터 완전 삭제 (서버 + 기기)'}
-        </button>
-        <div className="tiny" style={{ marginTop: 6, textAlign: 'center', color: 'var(--pencil)' }}>
-          서버·기기의 내 데이터를 모두 지웁니다 · liv-zz Private-First 약속
-        </div>
-
-        {import.meta.env.DEV && (
-          <div style={{ marginTop: 10, textAlign: 'center' }}>
-            <button
-              type="button"
-              className="tiny as-button"
-              style={{ cursor: 'pointer', color: 'var(--pencil)' }}
-              onClick={() => dispatch({ type: 'streak/inc' })}
-            >
-              (디버그) +1 스트릭
-            </button>
-          </div>
-        )}
       </div>
       <TabBar active="home" />
     </div>
