@@ -89,6 +89,69 @@ def test_effect_size_range_validated():
         _finding(effect_size=1.2)
 
 
+def _abstained(**overrides) -> StatisticalFinding:
+    base = dict(
+        hypothesis_key="sleep_satisfaction",
+        test_type=InsightTestType.SPEARMAN,
+        n=3,
+        effect_size=None,
+        p_value=None,
+        q_value=None,
+        gate_passed=False,
+        coverage=FindingCoverage(
+            eligible_days=90, paired_days=3, predictor_observed_days=13, outcome_observed_days=22
+        ),
+        failure_reasons=(GateFailureReason.INSUFFICIENT_SAMPLE,),
+    )
+    base.update(overrides)
+    return StatisticalFinding(**base)
+
+
+def test_pre_test_reason_forbids_statistics():
+    # INSUFFICIENT_SAMPLE·CONSTANT_INPUT은 검정을 수행하지 않은 상태다
+    with pytest.raises(ValueError):
+        _abstained(effect_size=0.4)
+    with pytest.raises(ValueError):
+        _abstained(
+            failure_reasons=(GateFailureReason.CONSTANT_INPUT,),
+            p_value=0.01,
+        )
+
+
+def test_post_test_reason_requires_statistics():
+    with pytest.raises(ValueError):
+        _abstained(failure_reasons=(GateFailureReason.EFFECT_TOO_SMALL,))
+    with pytest.raises(ValueError):
+        _finding(
+            gate_passed=False,
+            failure_reasons=(GateFailureReason.NOT_SIGNIFICANT,),
+            q_value=None,
+        )
+
+
+def test_pre_and_post_test_reasons_cannot_mix():
+    with pytest.raises(ValueError):
+        _abstained(
+            failure_reasons=(
+                GateFailureReason.INSUFFICIENT_SAMPLE,
+                GateFailureReason.NOT_SIGNIFICANT,
+            )
+        )
+
+
+def test_post_test_failure_with_statistics_accepted():
+    finding = _finding(
+        gate_passed=False,
+        effect_size=0.15,
+        failure_reasons=(
+            GateFailureReason.EFFECT_TOO_SMALL,
+            GateFailureReason.NOT_SIGNIFICANT,
+        ),
+        q_value=0.4,
+    )
+    assert finding.gate_passed is False
+
+
 def test_abstained_finding_accepted():
     finding = _finding(
         effect_size=None,
