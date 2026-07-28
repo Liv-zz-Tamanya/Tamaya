@@ -51,17 +51,17 @@ from app.infrastructure.persistence.diary_repository_impl import DiaryRepository
 from app.infrastructure.persistence.event_chunk_repository_impl import EventChunkRepositoryImpl
 from app.infrastructure.persistence.health_chunk_repository_impl import HealthChunkRepositoryImpl
 from app.infrastructure.persistence.health_record_repository_impl import HealthRecordRepositoryImpl
-from app.infrastructure.persistence.medical_visit_repository_impl import (
-    MedicalVisitRepositoryImpl,
-)
-from app.infrastructure.persistence.sleep_record_repository_impl import (
-    SleepRecordRepositoryImpl,
-)
 from app.infrastructure.persistence.health_session_repository_impl import (
     HealthSessionRepositoryImpl,
 )
+from app.infrastructure.persistence.medical_visit_repository_impl import (
+    MedicalVisitRepositoryImpl,
+)
 from app.infrastructure.persistence.qualitative_signal_repository_impl import (
     QualitativeSignalRepositoryImpl,
+)
+from app.infrastructure.persistence.sleep_record_repository_impl import (
+    SleepRecordRepositoryImpl,
 )
 
 _embedding_service: EmbeddingService | None = None
