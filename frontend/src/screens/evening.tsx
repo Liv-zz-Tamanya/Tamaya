@@ -16,6 +16,7 @@ import {
   CHAT_DIARY_INTRO,
   CHAT_DIARY_TURNS,
   dateParts,
+  dayLogFor,
   formatDateKey,
   useStore,
 } from '../lib/store';
@@ -125,17 +126,14 @@ export const S10_RecapStart = () => {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [voiceModalOpen]);
-  // 낮 동안의 기록(AI 채팅·데일리체크)을 회고 입력으로 인계 — 없으면 빈상태. (C)경계: 로컬 유지.
-  const d = state.daily;
+  // 낮 동안의 기록(루틴 체크·한 줄 메모)을 회고 입력으로 인계 — 없으면 빈상태. (C)경계: 로컬 유지.
+  const log = dayLogFor(state.dayLog, nav.now);
   const memos: string[] = [
-    ...state.aiChat
-      .filter((m) => m.role === 'user')
-      .slice(-2)
-      .map((m) => '💬 ' + m.text.trim().slice(0, 18)),
-    ...(d.food.done ? ['🍚 식사 기록'] : []),
-    ...(d.water >= 6 ? [`💧 물 ${d.water}컵`] : []),
-    ...(d.movement.done ? ['🚶 운동'] : []),
-    ...(d.sun.done ? ['☼ 햇볕'] : []),
+    ...log.memos.slice(-3).map((m) => `📝 [${m.category}] ${m.text.trim().slice(0, 18)}`),
+    ...state.routines
+      .filter((r) => log.checks[r.id])
+      .slice(0, 4)
+      .map((r) => `${r.emoji} ${r.label}`),
   ];
 
   const selectMode = (mode: ChatDiaryMode) => {
@@ -648,13 +646,10 @@ export const S12_MoodFinalize = () => {
         moods: diaryMoods,
         keywords,
         body: bodyPreview,
-        check: {
-          food: state.daily.food.done,
-          water: state.daily.water >= 6,
-          sleep: state.daily.sleep.done,
-          movement: state.daily.movement.done,
-          sun: state.daily.sun.done,
-        },
+        // 루틴 라벨 → 오늘 체크 여부 스냅샷 (통계·일기 디테일이 라벨로 읽음)
+        check: Object.fromEntries(
+          state.routines.map((r) => [r.label, !!dayLogFor(state.dayLog).checks[r.id]]),
+        ),
         tomorrow: tomorrowLine,
         createdAt: Date.now(),
       },

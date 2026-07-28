@@ -37,23 +37,82 @@ export type DiaryEntry = {
   moods: Mood[];           // primary + secondary feelings
   keywords: string[];
   body: string;            // generated diary
-  check: Partial<Record<DailyKey, boolean>>;
+  // 루틴 라벨 → 체크 여부 스냅샷. 레거시 엔트리는 food/water/sleep/movement/sun 키.
+  check: Partial<Record<string, boolean>>;
   tomorrow?: string;
   createdAt: number;
 };
 
-export type DailyKey = 'food' | 'water' | 'sleep' | 'movement' | 'sun';
+// ── 루틴 · 낮 기록(리스트업) ────────────────────────────────────────────────
+// 관심사 어휘는 온보딩 선택지 = 낮 메모 컬럼 = 루틴 카테고리로 공유한다.
+export const INTERESTS = ['건강', '스터디', '취미', '생활'] as const;
+export type Interest = (typeof INTERESTS)[number];
+
+export type Routine = { id: string; label: string; emoji: string; category: Interest };
+export type DayMemo = { id: string; text: string; category: Interest };
+// 하루 단위 낮 기록 — date가 오늘이 아니면 소비처에서 dayLogFor()로 리셋해 읽는다.
+export type DayLog = { date: string; checks: Record<string, boolean>; memos: DayMemo[] };
+
+export const ROUTINE_PRESETS: Record<Interest, { label: string; emoji: string }[]> = {
+  건강: [
+    { label: '물 6컵 마시기', emoji: '💧' },
+    { label: '30분 걷기', emoji: '🚶' },
+    { label: '12시 전에 자기', emoji: '😴' },
+    { label: '아침 챙겨 먹기', emoji: '🍚' },
+    { label: '스트레칭 5분', emoji: '🤸' },
+  ],
+  스터디: [
+    { label: '공부 30분', emoji: '📖' },
+    { label: '책 10쪽 읽기', emoji: '📚' },
+    { label: '배운 것 한 줄 정리', emoji: '✏️' },
+  ],
+  취미: [
+    { label: '취미 시간 30분', emoji: '🎨' },
+    { label: '사진 한 장 남기기', emoji: '📷' },
+    { label: '새로운 것 하나 해보기', emoji: '✨' },
+  ],
+  생활: [
+    { label: '방 정리 10분', emoji: '🧹' },
+    { label: '이불 정리', emoji: '🛏️' },
+    { label: '지출 기록하기', emoji: '💸' },
+  ],
+};
+
+// 관심사 선택 → 기본 루틴 ~5개 자동 세팅 (라운드로빈으로 골고루).
+export const seedRoutines = (interests: Interest[]): Routine[] => {
+  const picked = interests.length > 0 ? interests : (['건강'] as Interest[]);
+  const routines: Routine[] = [];
+  for (let round = 0; routines.length < 5; round += 1) {
+    let added = false;
+    for (const cat of picked) {
+      const preset = ROUTINE_PRESETS[cat][round];
+      if (!preset || routines.length >= 5) continue;
+      routines.push({ id: `r-${cat}-${round}`, label: preset.label, emoji: preset.emoji, category: cat });
+      added = true;
+    }
+    if (!added) break;
+  }
+  return routines;
+};
+
+const todayKeyOf = (now: Date = new Date()) =>
+  `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+const emptyDayLog = (now: Date = new Date()): DayLog => ({
+  date: todayKeyOf(now),
+  checks: {},
+  memos: [],
+});
+
+// 날짜가 넘어간 dayLog는 빈 오늘 기록으로 취급 (읽기 전용 파생 — 리듀서는 쓰기 시점에 리셋).
+export const dayLogFor = (log: DayLog, now: Date = new Date()): DayLog =>
+  log.date === todayKeyOf(now) ? log : emptyDayLog(now);
 
 export type State = {
   character: { name: string; color: CatColor; personalities: Personality[] };
-  daily: {
-    food: { done: boolean; picks: string[] };       // 아침/점심/저녁/간식
-    water: number;                                   // 0..8
-    sleep: { done: boolean; quality: string | null };
-    movement: { done: boolean; bucket: string | null };
-    sun: { done: boolean; level: string | null };
-  };
-  aiChat: ChatMsg[];
+  interests: Interest[];       // 온보딩에서 선택 — 루틴 시드·메모 컬럼과 어휘 공유
+  routines: Routine[];         // 사용자 루틴 (가변, 커스터마이징 가능)
+  dayLog: DayLog;              // 오늘의 낮 기록 — 루틴 체크 + 메모
   chatDiary: ChatMsg[];
   chatDiaryMode: ChatDiaryMode;
   chatDiaryMaxTurns: 5 | 50;
@@ -120,16 +179,9 @@ const SEED_DIARIES: DiaryEntry[] = [
 
 const DEFAULT_STATE: State = {
   character: { name: '이음이', color: '#a66838', personalities: ['다정한'] },
-  daily: {
-    food: { done: false, picks: [] },
-    water: 0,
-    sleep: { done: false, quality: null },
-    movement: { done: false, bucket: null },
-    sun: { done: false, level: null },
-  },
-  aiChat: [
-    { role: 'bot', text: '안녕! 낮엔 내가 도와줄게.\n오늘 뭐 도와줄까?' },
-  ],
+  interests: ['건강'],
+  routines: seedRoutines(['건강']),
+  dayLog: emptyDayLog(),
   chatDiary: [],
   chatDiaryMode: 'five',
   chatDiaryMaxTurns: 5,
@@ -146,12 +198,12 @@ const DEFAULT_STATE: State = {
 
 type Action =
   | { type: 'character/set'; patch: Partial<State['character']> }
-  | { type: 'daily/toggle-food'; pick: string }
-  | { type: 'daily/water-set'; value: number }
-  | { type: 'daily/sleep'; quality: string }
-  | { type: 'daily/movement'; bucket: string }
-  | { type: 'daily/sun'; level: string }
-  | { type: 'ai-chat/append'; msg: ChatMsg }
+  | { type: 'interests/set'; interests: Interest[] }
+  | { type: 'routine/add'; label: string; emoji?: string; category: Interest }
+  | { type: 'routine/remove'; id: string }
+  | { type: 'routine/toggle'; id: string }
+  | { type: 'memo/add'; text: string; category: Interest }
+  | { type: 'memo/remove'; id: string }
   | { type: 'chat-diary/configure'; mode: ChatDiaryMode; maxTurns: 5 | 50 }
   | { type: 'chat-diary/append'; msg: ChatMsg }
   | { type: 'chat-diary/set-generated-diary'; diary: GeneratedDiary | null }
@@ -181,47 +233,47 @@ function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'character/set':
       return { ...state, character: { ...state.character, ...action.patch } };
-    case 'daily/toggle-food': {
-      const has = state.daily.food.picks.includes(action.pick);
-      const picks = has
-        ? state.daily.food.picks.filter((p) => p !== action.pick)
-        : [...state.daily.food.picks, action.pick];
+    case 'interests/set':
+      // 온보딩 전용 — 관심사에 맞춰 기본 루틴을 다시 시드한다.
+      return { ...state, interests: action.interests, routines: seedRoutines(action.interests) };
+    case 'routine/add': {
+      const label = action.label.trim();
+      if (!label || state.routines.some((r) => r.label === label)) return state;
+      const routine: Routine = {
+        id: `r-user-${Date.now()}`,
+        label,
+        emoji: action.emoji ?? '☑️',
+        category: action.category,
+      };
+      return { ...state, routines: [...state.routines, routine] };
+    }
+    case 'routine/remove': {
+      const log = dayLogFor(state.dayLog);
+      const { [action.id]: _removed, ...checks } = log.checks;
       return {
         ...state,
-        daily: {
-          ...state.daily,
-          food: { done: picks.length > 0, picks },
-        },
+        routines: state.routines.filter((r) => r.id !== action.id),
+        dayLog: { ...log, checks },
       };
     }
-    case 'daily/water-set':
+    case 'routine/toggle': {
+      const log = dayLogFor(state.dayLog);
       return {
         ...state,
-        daily: { ...state.daily, water: Math.max(0, Math.min(8, action.value)) },
+        dayLog: { ...log, checks: { ...log.checks, [action.id]: !log.checks[action.id] } },
       };
-    case 'daily/sleep':
-      return {
-        ...state,
-        daily: {
-          ...state.daily,
-          sleep: { done: true, quality: action.quality },
-        },
-      };
-    case 'daily/movement':
-      return {
-        ...state,
-        daily: {
-          ...state.daily,
-          movement: { done: true, bucket: action.bucket },
-        },
-      };
-    case 'daily/sun':
-      return {
-        ...state,
-        daily: { ...state.daily, sun: { done: true, level: action.level } },
-      };
-    case 'ai-chat/append':
-      return { ...state, aiChat: [...state.aiChat, action.msg] };
+    }
+    case 'memo/add': {
+      const text = action.text.trim();
+      if (!text) return state;
+      const log = dayLogFor(state.dayLog);
+      const memo: DayMemo = { id: `m-${Date.now()}`, text, category: action.category };
+      return { ...state, dayLog: { ...log, memos: [...log.memos, memo] } };
+    }
+    case 'memo/remove': {
+      const log = dayLogFor(state.dayLog);
+      return { ...state, dayLog: { ...log, memos: log.memos.filter((m) => m.id !== action.id) } };
+    }
     case 'chat-diary/configure':
       return {
         ...state,
@@ -372,59 +424,6 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
 
 export const useStore = () => useContext(StoreContext);
 
-// ── 봇 응답 시뮬레이션 helpers ─────────────────────────────────────────────
-
-const AI_CHAT_REPLIES: { keywords: string[]; replies: string[] }[] = [
-  {
-    keywords: ['점심', '먹', '입맛', '배고'],
-    replies: [
-      '속이 편한 게 좋겠다.\n죽 한 그릇 어때? 따뜻한 우동도 좋고.',
-      '오늘 같은 날엔 김밥+계란국 조합도 좋아.\n어떤 게 끌려?',
-    ],
-  },
-  {
-    keywords: ['잠', '졸려', '피곤', '수면'],
-    replies: [
-      '오늘 너무 무리한 거 아니야?\n10분만 눈 감고 천천히 숨 쉬어볼래?',
-      '잠이 안 올 땐 따뜻한 물 한 잔이 도움돼.\n자기 전 화면도 잠깐 멀리해보자.',
-    ],
-  },
-  {
-    keywords: ['외로', '심심', '혼자'],
-    replies: [
-      '나 여기 있어 :)\n오늘 가장 좋았던 순간이 뭐였어?',
-      '집이 너무 조용할 땐 작은 백색소음도 좋아.\n뭐가 듣고 싶어?',
-    ],
-  },
-  {
-    keywords: ['루틴', '추천', '뭐 할'],
-    replies: [
-      '딱 3분 호흡 알람 어때?\n회의 끝나고 강제로 쉬는 시간을 만들어보자.',
-      '저녁에 10분 산책 추천 — 햇볕보다 더 잘 와닿을 거야.',
-    ],
-  },
-];
-
-const FALLBACK_AI_REPLIES = [
-  '음… 그렇구나. 그래서 어떤 기분이야?',
-  '천천히 말해줘. 내가 듣고 있어.',
-  '오늘 점심 뭐 먹었어?\n이건 회고에 미리 적어둘게 ✎',
-  '그 얘기, 밤 회고 시간에 한 번 더 꺼내볼까?',
-];
-
-export const simulateAiReply = (userText: string): ChatMsg => {
-  const lower = userText.toLowerCase();
-  for (const group of AI_CHAT_REPLIES) {
-    if (group.keywords.some((k) => lower.includes(k))) {
-      const text = group.replies[Math.floor(Math.random() * group.replies.length)];
-      return { role: 'bot', text };
-    }
-  }
-  const text =
-    FALLBACK_AI_REPLIES[Math.floor(Math.random() * FALLBACK_AI_REPLIES.length)];
-  return { role: 'bot', text };
-};
-
 // ── ChatDiary 회고 시퀀스 ────────────────────────────────────────────────
 
 export const CHAT_DIARY_FREE_TURNS = 50; // 자유 모드 — 백엔드 세션 상한과 동일
@@ -520,15 +519,27 @@ const HISTORY = {
   writeDays: 22,
   weekday: [2, 4, 5, 3, 4, 3, 1],
   mood: { '😌': 9, '😊': 6, '😣': 4, '😢': 2, '😡': 1 } as Record<Mood, number>,
-  life: { food: 19, water: 15, sleep: 12, movement: 9, sun: 11 },
+  routine: { 식사: 19, 물: 15, 수면: 12, 운동: 9, 햇볕: 11 } as Record<string, number>,
 };
+
+// 시드/구버전 일기의 check 키(DailyKey) → 표시 라벨
+const LEGACY_CHECK_LABEL: Record<string, string> = {
+  food: '식사',
+  water: '물',
+  sleep: '수면',
+  movement: '운동',
+  sun: '햇볕',
+};
+
+export const checkLabelOf = (key: string) => LEGACY_CHECK_LABEL[key] ?? key;
 
 export type StatsResult = {
   count: number;
   writeDays: number;
   weekday: number[];
   moodPct: { mood: Mood; label: string; pct: number; color: string }[];
-  life: { food: number; water: number; sleep: number; movement: number; sun: number };
+  // 루틴 라벨별 체크된 일수 — 많이 지킨 순
+  routines: { label: string; days: number }[];
 };
 
 // 실날짜 기준 "오늘 포함 최근 7일" 윈도우 판정. 레거시 TODAY_DAY=27(5월 고정)
@@ -549,12 +560,14 @@ export const statsFor = (diaries: DiaryEntry[], period: Period): StatsResult => 
 
   const weekday = [0, 0, 0, 0, 0, 0, 0];
   const mood: Record<Mood, number> = { '😌': 0, '😊': 0, '😣': 0, '😢': 0, '😡': 0 };
-  const life = { food: 0, water: 0, sleep: 0, movement: 0, sun: 0 };
+  const routineDays: Record<string, number> = {};
   filtered.forEach((d) => {
     weekday[weekdayOfDate(diaryDateOf(d))]++;
     if (d.moods[0]) mood[d.moods[0]]++;
-    (['food', 'water', 'sleep', 'movement', 'sun'] as DailyKey[]).forEach((k) => {
-      if (d.check[k]) life[k]++;
+    Object.entries(d.check ?? {}).forEach(([key, on]) => {
+      if (!on) return;
+      const label = checkLabelOf(key);
+      routineDays[label] = (routineDays[label] ?? 0) + 1;
     });
   });
   let count = filtered.length;
@@ -565,7 +578,9 @@ export const statsFor = (diaries: DiaryEntry[], period: Period): StatsResult => 
     writeDays += HISTORY.writeDays;
     HISTORY.weekday.forEach((v, i) => (weekday[i] += v));
     MOODS_ALL.forEach((m) => (mood[m] += HISTORY.mood[m]));
-    (Object.keys(life) as (keyof typeof life)[]).forEach((k) => (life[k] += HISTORY.life[k]));
+    Object.entries(HISTORY.routine).forEach(([label, v]) => {
+      routineDays[label] = (routineDays[label] ?? 0) + v;
+    });
   }
 
   const totalMood = MOODS_ALL.reduce((a, m) => a + mood[m], 0) || 1;
@@ -576,5 +591,10 @@ export const statsFor = (diaries: DiaryEntry[], period: Period): StatsResult => 
     color: MOOD_BAR[m],
   })).sort((a, b) => b.pct - a.pct);
 
-  return { count, writeDays, weekday, moodPct, life };
+  const routines = Object.entries(routineDays)
+    .map(([label, days]) => ({ label, days }))
+    .sort((a, b) => b.days - a.days)
+    .slice(0, 6);
+
+  return { count, writeDays, weekday, moodPct, routines };
 };

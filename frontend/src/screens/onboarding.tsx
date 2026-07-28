@@ -1,13 +1,12 @@
 import { CSSProperties, useEffect, useState } from 'react';
 import { CatSketch } from '../components/primitives';
 import { useNav } from '../lib/router';
-import { CatColor, Personality, useStore } from '../lib/store';
+import { CatColor, INTERESTS, Interest, Personality, ROUTINE_PRESETS, useStore } from '../lib/store';
 import { setInitialAuthMode } from './login';
 
-// 01-05 · Onboarding sequence (5 screens) — v4 Figma Section1 시각 언어 적용
-// 로직(핸들러·nav·store)은 불변. 마크업/스타일/정적 문구만 v4로 번역.
+// 01-05 · Onboarding sequence (6 screens) — v4 Figma Section1 시각 언어 적용
 
-// v4 온보딩 4단계 진행 인디케이터 (S02~S05 공용). 순수 표현 요소.
+// v4 온보딩 5단계 진행 인디케이터 (S02~S05 공용). 순수 표현 요소.
 const OnbProgress = ({
   step,
   dark = false,
@@ -18,7 +17,7 @@ const OnbProgress = ({
   style?: CSSProperties;
 }) => (
   <div style={{ display: 'flex', gap: 6, width: '100%', maxWidth: 240, ...style }} aria-hidden="true">
-    {[1, 2, 3, 4].map((i) => {
+    {[1, 2, 3, 4, 5].map((i) => {
       const on = i <= step;
       const line = dark ? 'var(--accent-soft)' : 'var(--ink)';
       return (
@@ -122,7 +121,7 @@ export const S02_Welcome = () => {
   <div className="screen">
     <div className="screen-scroll" style={{ padding: 'calc(56px + var(--safe-t)) 24px 120px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div className="h-section">01 / 04 · 인사</div>
+        <div className="h-section">01 / 05 · 인사</div>
         <OnbProgress step={1} />
         <h1 className="h-display" style={{ fontSize: 28, lineHeight: 1.15 }}>
           혼자여도
@@ -200,7 +199,7 @@ export const S03_Privacy = () => {
   <div className="screen">
     <div className="screen-scroll" style={{ padding: 'calc(52px + var(--safe-t)) 24px 120px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div className="h-section">02 / 04 · 약속</div>
+        <div className="h-section">02 / 05 · 약속</div>
         <OnbProgress step={2} />
         <h1 className="h-display" style={{ fontSize: 28, lineHeight: 1.15 }}>
           네 마음은
@@ -285,14 +284,14 @@ export const S04_CreateCat = () => {
 
   const save = () => {
     dispatch({ type: 'character/set', patch: { name: name.trim() || '이음이' } });
-    nav.go('first-meet');
+    nav.go('onboard-interests');
   };
 
   return (
   <div className="screen">
     <div className="screen-scroll" style={{ padding: 'calc(48px + var(--safe-t)) 24px 120px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div className="h-section">03 / 04 · 캐릭터</div>
+        <div className="h-section">03 / 05 · 캐릭터</div>
         <OnbProgress step={3} />
         <h1 className="h-display" style={{ fontSize: 28, lineHeight: 1.15 }}>
           너만의 이음이를
@@ -398,6 +397,103 @@ export const S04_CreateCat = () => {
   );
 };
 
+// 04/05 · 관심사 — 선택한 카테고리로 데일리 루틴 ~5개 자동 세팅.
+// 이 어휘(INTERESTS)는 낮 기록의 메모 컬럼·루틴 카테고리와 공유된다.
+export const S04b_Interests = () => {
+  const nav = useNav();
+  const { state, dispatch } = useStore();
+  const [picked, setPicked] = useState<Interest[]>(state.interests);
+
+  const toggle = (c: Interest) =>
+    setPicked((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
+
+  const next = () => {
+    dispatch({ type: 'interests/set', interests: picked.length > 0 ? picked : ['건강'] });
+    nav.go('first-meet');
+  };
+
+  const CATEGORY_DESC: Record<Interest, string> = {
+    건강: '물 · 걷기 · 수면 같은 몸 돌보기',
+    스터디: '공부 · 독서 · 배움 기록',
+    취미: '그림 · 사진 · 새로운 시도',
+    생활: '정리 · 지출 · 소소한 살림',
+  };
+
+  return (
+  <div className="screen">
+    <div className="screen-scroll" style={{ padding: 'calc(48px + var(--safe-t)) 24px 120px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="h-section">04 / 05 · 관심사</div>
+        <OnbProgress step={4} />
+        <h1 className="h-display" style={{ fontSize: 28, lineHeight: 1.15 }}>
+          요즘 어떤 하루를
+          <br />
+          보내고 싶어?
+        </h1>
+        <div className="body" style={{ color: 'var(--ink)' }}>
+          고른 관심사에 맞춰 데일리 루틴을 미리 챙겨둘게요.
+          <br />
+          나중에 언제든 바꿀 수 있어요.
+        </div>
+      </div>
+
+      <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {INTERESTS.map((c) => {
+          const on = picked.includes(c);
+          const preview = ROUTINE_PRESETS[c]
+            .slice(0, 2)
+            .map((p) => p.emoji)
+            .join(' ');
+          return (
+            <button
+              key={c}
+              type="button"
+              onClick={() => toggle(c)}
+              aria-pressed={on}
+              className="hbox as-button"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '12px 14px',
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+                background: on ? 'var(--accent-soft)' : 'var(--paper)',
+                border: '1.5px solid var(--ink)',
+              }}
+            >
+              <div className={'check sq ' + (on ? 'on' : '')} style={{ width: 22, height: 22, flex: 'none' }}>
+                {on ? '✓' : ''}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>{c}</div>
+                <div className="tiny" style={{ color: 'var(--pencil)' }}>{CATEGORY_DESC[c]}</div>
+              </div>
+              <span aria-hidden="true">{preview}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="tiny" style={{ marginTop: 14, color: 'var(--pencil)' }}>
+        아무것도 안 고르면 [건강] 루틴으로 시작해요.
+      </div>
+    </div>
+    <div className="pin-bottom" style={{ bottom: 'calc(28px + var(--safe-b, 0px))' }}>
+      <button
+        type="button"
+        onClick={next}
+        className="btn primary block"
+        style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+      >
+        {picked.length > 0 ? `${picked.join(' · ')} 루틴으로 시작` : '건강 루틴으로 시작'}
+      </button>
+    </div>
+  </div>
+  );
+};
+
 export const S05_FirstMeet = () => {
   const nav = useNav();
   const { state } = useStore();
@@ -425,9 +521,9 @@ export const S05_FirstMeet = () => {
     <div className="screen-scroll" style={{ padding: 'calc(56px + var(--safe-t)) 24px 120px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', textAlign: 'center' }}>
         <div className="h-section" style={{ color: 'var(--accent-soft)' }}>
-          04 / 04 · 첫 만남
+          05 / 05 · 첫 만남
         </div>
-        <OnbProgress step={4} dark style={{ marginInline: 'auto' }} />
+        <OnbProgress step={5} dark style={{ marginInline: 'auto' }} />
         <h1 className="h-display" style={{ fontSize: 28, lineHeight: 1.15, color: 'var(--paper)' }}>
           이제 만났네,
           <br />
