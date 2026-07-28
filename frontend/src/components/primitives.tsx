@@ -69,7 +69,6 @@ export const TabBar = ({
             border: 'none',
             cursor: 'pointer',
             fontFamily: 'inherit',
-            color: 'inherit',
             padding: 0,
           }}
         >
