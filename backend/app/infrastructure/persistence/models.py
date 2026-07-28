@@ -409,3 +409,28 @@ class GameDiaryCompletionModel(Base):
     device_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     diary_date: Mapped[date] = mapped_column(Date, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+class InsightReportModel(Base):
+    """생성형 인사이트 리포트 캐시 — (device, 기간) 단위 1행.
+
+    payload에는 통계 후보·선정 결과·카드 스냅샷을 저장해 재현성(PR-D)을
+    보장한다. raw 일기 본문은 저장하지 않는다(민감 원문 중복 방지).
+    """
+
+    __tablename__ = "insight_reports"
+    __table_args__ = (
+        UniqueConstraint(
+            "device_id", "period_type", "period_key", name="uq_insight_reports_period"
+        ),
+        Index("ix_insight_reports_device_created", "device_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    device_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    period_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    period_key: Mapped[str] = mapped_column(String(20), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    model_meta: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
