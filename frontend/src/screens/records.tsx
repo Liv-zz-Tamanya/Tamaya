@@ -11,6 +11,7 @@ import {
   MOOD_LABEL,
   MOOD_BAR,
   WEEKDAY_KR,
+  checkLabelOf,
   dateParts,
   diaryDateOf,
   entriesForMonth,
@@ -519,13 +520,10 @@ export const S15_DiaryDetail = () => {
     date: addDays(entryDate, 1),
     day: dateParts(addDays(entryDate, 1)).day,
   });
-  const checks: [string, boolean][] = [
-    ['🍚', !!entry.check.food],
-    ['💧', !!entry.check.water],
-    ['😴', !!entry.check.sleep],
-    ['🚶', !!entry.check.movement],
-    ['☼', !!entry.check.sun],
-  ];
+  // 체크 스냅샷: 신규 엔트리는 루틴 라벨 키, 레거시(시드)는 food/water… 키 → 라벨 변환
+  const checkedLabels = Object.entries(entry.check ?? {})
+    .filter(([, on]) => on)
+    .map(([key]) => checkLabelOf(key));
   // 감정 분포 비율 — moods 개수에 따라
   const moodWeights =
     entry.moods.length >= 3 ? [45, 30, 25] : entry.moods.length === 2 ? [60, 40] : [100];
@@ -601,32 +599,20 @@ export const S15_DiaryDetail = () => {
       </div>
 
       <div className="hbox r-l" style={{ padding: 12, marginTop: 14 }}>
-        <h2 className="h-label">그날의 체크</h2>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
-            gap: 6,
-            marginTop: 8,
-          }}
-        >
-          {checks.map(([ic, on], i) => (
-            <div key={i} style={{ textAlign: 'center' }}>
-              <div
-                className="ph-square"
-                style={{
-                  width: 38,
-                  height: 38,
-                  margin: '0 auto',
-                  background: on ? 'var(--ink)' : 'var(--paper)',
-                  color: on ? 'var(--paper)' : 'var(--ink)',
-                }}
-              >
-                {ic}
-              </div>
-            </div>
-          ))}
-        </div>
+        <h2 className="h-label">그날의 루틴</h2>
+        {checkedLabels.length > 0 ? (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+            {checkedLabels.map((label) => (
+              <span key={label} className="chip solid">
+                ✓ {label}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="tiny" style={{ marginTop: 8, color: 'var(--pencil)' }}>
+            이 날은 체크한 루틴이 없어요
+          </div>
+        )}
       </div>
 
       {entry.tomorrow && (
@@ -660,11 +646,12 @@ export const S16_Stats = () => {
   const s = statsFor(state.diaries, period);
   const maxW = Math.max(...s.weekday, 1);
   const nowMonth = new Date().getMonth() + 1;
-  const life: [string, string, string][] = [
-    ['🍚 식사', `${s.life.food}/${s.writeDays}`, s.life.food >= s.writeDays * 0.7 ? '꾸준 ↑' : '보통'],
-    ['😴 수면', `${s.life.sleep}/${s.writeDays}`, s.life.sleep >= s.writeDays * 0.6 ? '양호' : '부족 ↓'],
-    ['🚶 운동', `${s.life.movement}/${s.writeDays}`, s.life.movement >= s.writeDays * 0.5 ? '활발' : '보통'],
-  ];
+  // 루틴 준수: 체크된 일수 / 기록일수 기준으로 상위 루틴 3개
+  const routineCards: [string, string, string][] = s.routines.slice(0, 3).map((r) => [
+    r.label,
+    `${r.days}/${s.writeDays}`,
+    r.days >= s.writeDays * 0.7 ? '꾸준 ↑' : r.days >= s.writeDays * 0.4 ? '보통' : '드문 ↓',
+  ]);
   return (
   <div className="screen">
     <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
@@ -777,7 +764,12 @@ export const S16_Stats = () => {
       </div>
 
       <div className="hbox r-r" style={{ padding: 14 }}>
-        <h2 className="h-label">라이프스타일</h2>
+        <h2 className="h-label">데일리 루틴</h2>
+        {routineCards.length === 0 && (
+          <div className="tiny" style={{ marginTop: 8, color: 'var(--pencil)' }}>
+            루틴을 체크하면 여기에 통계가 쌓여요
+          </div>
+        )}
         <div
           style={{
             display: 'grid',
@@ -786,7 +778,7 @@ export const S16_Stats = () => {
             marginTop: 8,
           }}
         >
-          {life.map(([t, v, sub], i) => (
+          {routineCards.map(([t, v, sub], i) => (
             <div
               key={i}
               className="hbox dashed"

@@ -1,42 +1,32 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
 import { BackButton, MoodFace, TabBar, useToast } from '../components/primitives';
 import { TAB_ICONS } from '../components/tab-icons';
-import { ChatInputRow, ChatThread } from '../components/chat';
 import { useNav } from '../lib/router';
-import { scrollBehavior } from '../lib/scroll';
 import {
-  DailyKey,
+  INTERESTS,
   MOOD_LABEL,
+  ROUTINE_PRESETS,
   WEEKDAY_KR,
+  dayLogFor,
   isWithinLastWeek,
   latestEntry,
-  simulateAiReply,
   useStore,
 } from '../lib/store';
-import { AI_ENABLED, sendAiChat } from '../lib/api';
+import type { Interest, Routine } from '../lib/store';
 import { formatKoreanTime, getTimeUntilNextOpen } from '../lib/nightChat';
 
-// 06-09 · Home Day / Home Night / Daily Check / AI Chat
+// 06-08 · Home Day / Home Night / Day Log(낮 기록: 루틴 체크 + 메모)
+// 낮엔 이음이가 자므로 대화 없음 — 기록형만. (낮 채팅은 프리미엄 예정)
 
 export const S06_HomeDay = () => {
   const nav = useNav();
   const { state } = useStore();
   const minutesUntilOpen = getTimeUntilNextOpen(nav.now, nav.nightOpenTime);
   const remaining = `${Math.floor(minutesUntilOpen / 60)}시간 ${minutesUntilOpen % 60}분`;
-  const d = state.daily;
-  const dailyDone =
-    (d.food.done ? 1 : 0) +
-    (d.water >= 6 ? 1 : 0) +
-    (d.sleep.done ? 1 : 0) +
-    (d.movement.done ? 1 : 0) +
-    (d.sun.done ? 1 : 0);
-  const checks: [string, string, boolean][] = [
-    ['🍚', '식사', d.food.done],
-    ['💧', '물', d.water >= 6],
-    ['😴', '수면', d.sleep.done],
-    ['🚶', '운동', d.movement.done],
-    ['☼', '햇볕', d.sun.done],
-  ];
+  const log = dayLogFor(state.dayLog, nav.now);
+  const routines = state.routines;
+  const dailyDone = routines.filter((r) => log.checks[r.id]).length;
+  const tiles = routines.slice(0, 5);
   // 로컬 store 실값 바인딩(서버 미전송, (C)경계 = 온디바이스 유지) + 빈상태.
   const latest = latestEntry(state.diaries);
   // v4 S06: 카드 수치는 텍스트만(이모지 없음) — "N / 7 일" · "N pt" · "옷장" 표기
@@ -115,7 +105,7 @@ export const S06_HomeDay = () => {
         type="button"
         className="hbox r-r as-button"
         onClick={() => nav.go('daily-check')}
-        aria-label={`오늘의 데일리 체크, ${dailyDone} / 5 완료`}
+        aria-label={`오늘의 루틴, ${dailyDone} / ${routines.length} 완료`}
         style={{ padding: 14, marginTop: 12, cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
       >
         <div
@@ -126,41 +116,57 @@ export const S06_HomeDay = () => {
             marginBottom: 8,
           }}
         >
-          <div className="h-section">오늘의 데일리 체크</div>
-          <span className="tiny">{dailyDone} / 5</span>
+          <div className="h-section">오늘의 루틴</div>
+          <span className="tiny">{dailyDone} / {routines.length}</span>
         </div>
-        {/* v4 S06: 이모지 대신 고양이 얼굴 — 완료는 다크 필 */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
-          {checks.map(([, l, on], i) => (
-            <div key={i} style={{ textAlign: 'center' }}>
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  margin: '0 auto',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 14,
-                  border: '0.5px solid var(--ink)',
-                  background: on ? 'var(--ink)' : 'var(--paper)',
-                }}
-              >
-                <MoodFace mood={'\u{1F60C}'} size={32} />
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(tiles.length, 1)}, 1fr)`, gap: 6 }}>
+          {tiles.map((r) => {
+            const on = !!log.checks[r.id];
+            return (
+              <div key={r.id} style={{ textAlign: 'center' }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    margin: '0 auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 14,
+                    border: '0.5px solid var(--ink)',
+                    background: on ? 'var(--ink)' : 'var(--paper)',
+                    fontSize: 20,
+                  }}
+                >
+                  {r.emoji}
+                </div>
+                <div
+                  className="tiny"
+                  style={{
+                    marginTop: 4,
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {r.label}
+                </div>
               </div>
-              <div className="tiny" style={{ marginTop: 4 }}>
-                {l}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+        {routines.length > 5 && (
+          <div className="tiny" style={{ marginTop: 6, color: 'var(--pencil)' }}>
+            외 {routines.length - 5}개 더 — 탭해서 보기
+          </div>
+        )}
       </button>
 
       <button
         type="button"
         className="hbox r-l as-button"
-        onClick={() => nav.go('ai-chat')}
-        aria-label="AI 코칭에게 물어봐요"
+        onClick={() => nav.go('daily-check')}
+        aria-label="오늘 낮 기록 — 루틴 체크와 한 줄 메모"
         style={{
           padding: 14,
           marginTop: 12,
@@ -168,20 +174,20 @@ export const S06_HomeDay = () => {
           alignItems: 'center',
           gap: 12,
           cursor: 'pointer',
-          background: 'var(--banner)', /* v4 S06: AI 코칭 배너 = 그레이-탄 토큰 */
+          background: 'var(--banner)',
           color: 'var(--ink)',
           width: '100%',
           textAlign: 'left',
         }}
       >
         <div className="ph-circle" style={{ width: 40, height: 40, background: 'var(--night)', color: 'var(--cream)' }}>
-          ✦
+          ✎
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: 'Pretendard', fontWeight: 700, color: 'var(--ink)' }}>
-            AI 코칭에게 물어봐요
+            오늘 낮, 가볍게 기록해요
           </div>
-          <div className="tiny" style={{ color: 'var(--ink-soft)' }}>"점심 뭐 먹지?" "잠이 안 와요"</div>
+          <div className="tiny" style={{ color: 'var(--ink-soft)' }}>루틴 체크 + 한 줄 메모 — 밤 회고 재료가 돼요</div>
         </div>
         <span className="handwriting" style={{ fontSize: 24, color: 'var(--ink)' }} aria-hidden="true">
           ›
@@ -417,351 +423,310 @@ export const S07_HomeNight = () => {
   );
 };
 
-export const S08_DailyCheck = () => {
+export const S08_DayLog = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
   const { toast, flash } = useToast();
+  const [manage, setManage] = useState(false);
+  const [newLabel, setNewLabel] = useState('');
+  const [newCat, setNewCat] = useState<Interest>(state.interests[0] ?? '건강');
+  const [memoText, setMemoText] = useState('');
+  const [memoCat, setMemoCat] = useState<Interest>(state.interests[0] ?? '건강');
 
-  const d = state.daily;
-  const doneCount = useMemo(() => {
-    let c = 0;
-    if (d.food.done) c++;
-    if (d.water >= 6) c++;
-    if (d.sleep.done) c++;
-    if (d.movement.done) c++;
-    if (d.sun.done) c++;
-    return c;
-  }, [d]);
+  const log = dayLogFor(state.dayLog, nav.now);
+  const routines = state.routines;
+  const doneCount = routines.filter((r) => log.checks[r.id]).length;
 
-  const award = (key: DailyKey, label: string, before: boolean) => {
-    if (!before) {
+  const toggle = (r: Routine) => {
+    const was = !!log.checks[r.id];
+    dispatch({ type: 'routine/toggle', id: r.id });
+    if (!was) {
       dispatch({ type: 'points/add', delta: 10 });
-      flash(`+10 ◉  ${label}`);
+      flash(`+10 ◉  ${r.label}`);
     }
   };
 
-  const togglePick = (pick: string) => {
-    const had = d.food.picks.includes(pick);
-    dispatch({ type: 'daily/toggle-food', pick });
-    if (!had && d.food.picks.length === 0) award('food', '오늘 식사 기록', d.food.done);
+  const addRoutine = (label: string, emoji?: string) => {
+    const trimmed = label.trim();
+    if (!trimmed) return;
+    dispatch({ type: 'routine/add', label: trimmed, emoji, category: newCat });
+    setNewLabel('');
   };
 
-  const setSleep = (q: string) => {
-    const before = d.sleep.done;
-    dispatch({ type: 'daily/sleep', quality: q });
-    award('sleep', '수면 기록', before);
+  const addMemo = () => {
+    const text = memoText.trim();
+    if (!text) return;
+    dispatch({ type: 'memo/add', text, category: memoCat });
+    setMemoText('');
   };
-  const setMove = (b: string) => {
-    const before = d.movement.done;
-    dispatch({ type: 'daily/movement', bucket: b });
-    award('movement', '움직임 기록', before);
-  };
-  const setSun = (l: string) => {
-    const before = d.sun.done;
-    dispatch({ type: 'daily/sun', level: l });
-    award('sun', '햇볕 기록', before);
-  };
-  const setWater = (n: number) => {
-    const before = d.water >= 6;
-    dispatch({ type: 'daily/water-set', value: n });
-    if (!before && n >= 6) award('water', '물을 잘 챙겼네요', false);
-  };
+
+  // 현재 카테고리에서 아직 추가 안 한 예시 루틴 제안
+  const suggestions = ROUTINE_PRESETS[newCat]
+    .filter((p) => !routines.some((r) => r.label === p.label))
+    .slice(0, 3);
+
+  const inputStyle = {
+    flex: 1,
+    minWidth: 0,
+    border: '1.5px solid var(--ink)',
+    borderRadius: 999,
+    padding: '9px 14px',
+    background: 'var(--paper)',
+    fontFamily: 'Pretendard',
+    fontSize: 16, /* iOS Safari 자동 줌 방지 */
+    color: 'var(--ink)',
+    outline: 'none',
+  } as const;
 
   return (
   <div className="screen">
     <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <BackButton onClick={() => nav.back()} />
-        <h1 className="h-title" style={{ fontSize: 22 }}>데일리 체크</h1>
+        <h1 className="h-title" style={{ fontSize: 22 }}>낮 기록</h1>
       </div>
-      <div className="tiny">하루 5가지 — 가볍게 톡톡</div>
+      <div className="tiny">루틴 체크 + 한 줄 메모 — 밤 회고 때 이음이가 함께 봐요</div>
 
       <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
-        {Array.from({ length: 5 }).map((_, i) => (
+        {routines.map((r) => (
           <div
-            key={i}
+            key={r.id}
             style={{
               flex: 1,
               height: 6,
               borderRadius: 999,
               border: '1.5px solid var(--ink)',
-              background: i < doneCount ? 'var(--night)' : 'var(--paper)',
+              background: log.checks[r.id] ? 'var(--night)' : 'var(--paper)',
             }}
           />
         ))}
       </div>
       <div className="tiny" style={{ marginTop: 6 }}>
-        {doneCount} / 5 완료 · 오늘 +{state.points} 포인트 ◉
+        {doneCount} / {routines.length} 완료 · 오늘 +{state.points} 포인트 ◉
       </div>
 
-      {doneCount === 5 && (
+      {routines.length > 0 && doneCount === routines.length && (
         <div className="hbox accent r-r" style={{ padding: 12, marginTop: 10, textAlign: 'center' }}>
-          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>🎉 오늘 5가지 모두 완료!</div>
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>🎉 오늘 루틴 모두 완료!</div>
           <div className="tiny" style={{ marginTop: 2 }}>꾸준함이 이음이를 키워요</div>
         </div>
       )}
 
-      {/* 식사 */}
+      {/* 루틴 투두리스트 */}
       <div className="hbox r-l" style={{ padding: 14, marginTop: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="ph-circle" style={{ width: 36, height: 36 }}>🍚</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>오늘 식사</div>
-            <div className="tiny">아침 / 점심 / 저녁 — 탭해서 토글</div>
-          </div>
-          <div className={'check ' + (d.food.done ? 'on' : '')}>{d.food.done ? '✓' : '○'}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 className="h-label">오늘의 루틴</h2>
+          <button
+            type="button"
+            onClick={() => setManage((m) => !m)}
+            className={'chip chip-btn ' + (manage ? 'solid' : '')}
+            aria-pressed={manage}
+            style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            {manage ? '완료' : '관리'}
+          </button>
         </div>
-        <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
-          {['아침', '점심', '저녁', '간식'].map((t) => {
-            const on = d.food.picks.includes(t);
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+          {routines.length === 0 && (
+            <div className="tiny" style={{ color: 'var(--pencil)' }}>
+              아직 루틴이 없어요 — [관리]에서 추가해봐요
+            </div>
+          )}
+          {routines.map((r) => {
+            const on = !!log.checks[r.id];
             return (
-              <button
-                key={t}
-                type="button"
-                onClick={() => togglePick(t)}
-                className={'chip chip-btn ' + (on ? 'solid' : 'dashed')}
-                aria-pressed={on}
-                style={{ background: on ? undefined : 'transparent' }}
-              >
-                {t}
-              </button>
+              <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => toggle(r)}
+                  aria-pressed={on}
+                  aria-label={`${r.label} ${on ? '완료됨' : '체크하기'}`}
+                  className="as-button"
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '8px 10px',
+                    border: '1.5px solid var(--ink)',
+                    borderRadius: 12,
+                    background: on ? 'var(--paper-2)' : 'var(--paper)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div className={'check sq ' + (on ? 'on' : '')} style={{ width: 22, height: 22 }}>
+                    {on ? '✓' : ''}
+                  </div>
+                  <span style={{ fontSize: 18 }} aria-hidden="true">{r.emoji}</span>
+                  <span
+                    style={{
+                      flex: 1,
+                      fontFamily: 'Pretendard',
+                      fontWeight: 600,
+                      textDecoration: on ? 'line-through' : 'none',
+                      opacity: on ? 0.6 : 1,
+                    }}
+                  >
+                    {r.label}
+                  </span>
+                  <span className="tiny" style={{ color: 'var(--pencil)' }}>{r.category}</span>
+                </button>
+                {manage && (
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ type: 'routine/remove', id: r.id })}
+                    aria-label={`${r.label} 삭제`}
+                    className="chip chip-btn"
+                    style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
-      </div>
 
-      {/* 수면 */}
-      <div className="hbox r-r" style={{ padding: 14, marginTop: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="ph-circle" style={{ width: 36, height: 36, overflow: 'hidden' }}><img src="/character/sleepy.webp" alt="자는 중" style={{ width: '100%', height: '100%', objectFit: 'contain' }} draggable={false} /></div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>어젯밤 수면</div>
-            <div className="tiny">
-              {d.sleep.quality ? `선택: ${d.sleep.quality}` : '취침 1:20 → 기상 7:40 · 약 6h 20m'}
+        {manage && (
+          <div style={{ marginTop: 12, borderTop: '1.5px dashed var(--muted)', paddingTop: 12 }}>
+            <div className="tiny" style={{ marginBottom: 6 }}>새 루틴 추가</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+              {INTERESTS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setNewCat(c)}
+                  className={'chip chip-btn ' + (newCat === c ? 'solid' : 'dashed')}
+                  aria-pressed={newCat === c}
+                  style={{ background: newCat === c ? undefined : 'transparent' }}
+                >
+                  {c}
+                </button>
+              ))}
             </div>
-          </div>
-          <div className={'check ' + (d.sleep.done ? 'on' : '')}>{d.sleep.done ? '✓' : '○'}</div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-          {['푹잠', '뒤척', '부족', '과수면'].map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setSleep(t)}
-              className={'chip chip-btn ' + (d.sleep.quality === t ? 'solid' : '')}
-              aria-pressed={d.sleep.quality === t}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                addRoutine(newLabel);
+              }}
+              style={{ display: 'flex', gap: 8 }}
             >
-              {t}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 움직임 */}
-      <div className="hbox r-l" style={{ padding: 14, marginTop: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="ph-circle" style={{ width: 36, height: 36 }}>🚶</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>몸을 움직였나</div>
-            <div className="tiny">
-              {d.movement.bucket ? `선택: ${d.movement.bucket}` : '스트레칭도 포함 — 정직하게'}
-            </div>
-          </div>
-          <div className={'check ' + (d.movement.done ? 'on' : '')}>
-            {d.movement.done ? '✓' : '○'}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-          {['10분 미만', '10–30', '30+'].map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setMove(t)}
-              className={'chip chip-btn ' + (d.movement.bucket === t ? 'solid' : 'dashed')}
-              aria-pressed={d.movement.bucket === t}
-              style={{ background: d.movement.bucket === t ? undefined : 'transparent' }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 물 + 햇볕 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
-        <div className="hbox r-r" style={{ padding: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div className="ph-circle" style={{ width: 32, height: 32 }}>💧</div>
-            <div>
-              <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>물</div>
-              <div className="tiny">{d.water} / 8잔 — 탭</div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
-            {Array.from({ length: 8 }).map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setWater(i + 1 === d.water ? i : i + 1)}
-                aria-label={`물 ${i + 1}잔`}
-                style={{
-                  /* 터치 타깃 44px: 히트박스(padding)와 시각(내부 span 16×22)을 분리.
-                     border-box 전역 리셋 하에서 width/height 를 직접 키우면 실제
-                     칩 모양이 커져버리므로, 버튼 자체는 투명 히트박스로만 쓰고
-                     negative margin 으로 원래 레이아웃 폭(16×22+gap)을 유지한다. */
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  padding: '11px 14px',
-                  margin: '-11px -14px',
-                }}
-              >
-                <span
-                  style={{
-                    display: 'block',
-                    width: 16,
-                    height: 22,
-                    border: '1.5px solid var(--ink)',
-                    borderRadius: 4,
-                    background: i < d.water ? 'var(--ink)' : 'var(--paper)',
-                  }}
-                />
+              <input
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                maxLength={20}
+                placeholder="예: 저녁 10분 산책"
+                aria-label="새 루틴 이름"
+                style={inputStyle}
+              />
+              <button type="submit" className="btn" style={{ cursor: 'pointer', fontFamily: 'inherit' }}>
+                추가
               </button>
-            ))}
-          </div>
-        </div>
-        <div className="hbox r-l" style={{ padding: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div className="ph-circle" style={{ width: 32, height: 32 }}>☼</div>
-            <div>
-              <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>햇볕</div>
-              <div className="tiny">
-                {d.sun.level ?? '바깥 공기 쐰 시간'}
+            </form>
+            {suggestions.length > 0 && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                {suggestions.map((p) => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => addRoutine(p.label, p.emoji)}
+                    className="chip chip-btn dashed"
+                    style={{ background: 'transparent' }}
+                  >
+                    + {p.emoji} {p.label}
+                  </button>
+                ))}
               </div>
-            </div>
+            )}
           </div>
-          <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
-            {['☁', '☼', '☼☼'].map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setSun(t)}
-                className={'chip chip-btn ' + (d.sun.level === t ? 'solid' : 'dashed')}
-                aria-pressed={d.sun.level === t}
-                style={{ background: d.sun.level === t ? undefined : 'transparent' }}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
+        )}
       </div>
 
-      {doneCount === 5 && (
-        <div className="hbox accent" style={{ padding: 12, marginTop: 14, textAlign: 'center' }}>
-          <div className="h-title" style={{ fontSize: 18 }}>오늘 다섯 가지를 돌봤어요! 🎉</div>
-          <div className="tiny">밤에 오늘 얘기 더 들려줄래?</div>
+      {/* 한 줄 메모장 — 컬럼(카테고리)은 온보딩 관심사와 같은 어휘 */}
+      <div className="hbox r-r" style={{ padding: 14, marginTop: 10 }}>
+        <h2 className="h-label">한 줄 메모</h2>
+        <div className="tiny" style={{ marginTop: 2 }}>오늘 있었던 일을 컬럼에 짧게 — 밤에 같이 정리해요</div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+          {INTERESTS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setMemoCat(c)}
+              className={'chip chip-btn ' + (memoCat === c ? 'solid' : 'dashed')}
+              aria-pressed={memoCat === c}
+              style={{ background: memoCat === c ? undefined : 'transparent' }}
+            >
+              {c}
+            </button>
+          ))}
         </div>
-      )}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            addMemo();
+          }}
+          style={{ display: 'flex', gap: 8, marginTop: 8 }}
+        >
+          <input
+            value={memoText}
+            onChange={(e) => setMemoText(e.target.value)}
+            maxLength={60}
+            placeholder={`${memoCat}에 남길 한 줄...`}
+            aria-label="한 줄 메모"
+            style={inputStyle}
+          />
+          <button type="submit" className="btn" style={{ cursor: 'pointer', fontFamily: 'inherit' }}>
+            남기기
+          </button>
+        </form>
+        {log.memos.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
+            {log.memos.map((m) => (
+              <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="chip" style={{ flex: 'none' }}>{m.category}</span>
+                <span className="body" style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{m.text}</span>
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: 'memo/remove', id: m.id })}
+                  aria-label="메모 삭제"
+                  className="tiny as-button"
+                  style={{ cursor: 'pointer', color: 'var(--pencil)', background: 'none', border: 'none' }}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 낮 대화는 프리미엄 예정 — 잠금 티저 (이음이는 자는 중) */}
+      <button
+        type="button"
+        className="hbox dashed as-button"
+        onClick={() => flash('이음이와 낮 대화는 프리미엄에서 준비 중이에요 🔒')}
+        style={{
+          padding: 12,
+          marginTop: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          width: '100%',
+          textAlign: 'left',
+          cursor: 'pointer',
+          background: 'transparent',
+        }}
+      >
+        <div className="ph-circle" style={{ width: 36, height: 36, flex: 'none' }}>🔒</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>이음이와 낮 대화</div>
+          <div className="tiny" style={{ color: 'var(--pencil)' }}>프리미엄 · 준비 중 — 지금은 이음이가 자는 시간이에요</div>
+        </div>
+      </button>
     </div>
     {toast && <div className="toast" role="status">{toast}</div>}
     <TabBar active="home" />
   </div>
-  );
-};
-
-export const S09_AIChat = () => {
-  const nav = useNav();
-  const { state, dispatch } = useStore();
-  const [input, setInput] = useState('');
-  const [typing, setTyping] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: scrollBehavior() });
-  }, [state.aiChat, typing]);
-
-  const send = (text?: string) => {
-    const t = (text ?? input).trim();
-    if (!t || typing) return;
-    dispatch({ type: 'ai-chat/append', msg: { role: 'user', text: t } });
-    setInput('');
-    setTyping(true);
-    // 로컬 시뮬레이션 모드 (VITE_AI_ENABLED=false): backend 미경유
-    if (!AI_ENABLED) {
-      setTimeout(() => {
-        dispatch({ type: 'ai-chat/append', msg: simulateAiReply(t) });
-        setTyping(false);
-      }, 700 + Math.random() * 400);
-      return;
-    }
-    // backend 결선: maskPII로 PII 제거 후 전송 → CLOVA(mock) 응답.
-    // 원문 평문은 기기를 떠나지 않는다(liv-I1). 실패 시 로컬 폴백.
-    void (async () => {
-      try {
-        const { text: aiText } = await sendAiChat(t);
-        dispatch({
-          type: 'ai-chat/append',
-          msg: { role: 'bot', text: aiText || simulateAiReply(t).text },
-        });
-      } catch {
-        dispatch({ type: 'ai-chat/append', msg: simulateAiReply(t) });
-      } finally {
-        setTyping(false);
-      }
-    })();
-  };
-
-  const quick = ['잠이 안 와요', '집이 너무 조용해', '오늘 기분 그저 그래', '루틴 추천'];
-
-  return (
-    <div className="screen">
-      <div
-        ref={scrollRef}
-        className="screen-scroll"
-        style={{ padding: 'calc(46px + var(--safe-t)) 14px calc(140px + var(--safe-b, 0px))' }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <BackButton onClick={() => nav.back()} />
-          <h1 className="h-title" style={{ fontSize: 22 }}>AI 코칭 (낮 모드)</h1>
-        </div>
-        <div className="tiny" style={{ marginBottom: 14 }}>
-          이음이는 자는 중 — 작은 비서가 답해줘요
-        </div>
-
-        <ChatThread
-          msgs={state.aiChat}
-          typing={typing}
-          avatar={<div className="ph-circle" style={{ width: 28, height: 28, fontSize: 11, flex: 'none' }}>✦</div>}
-        />
-
-        <h2 className="h-label" style={{ marginTop: 18, marginBottom: 6 }}>자주 묻는 것</h2>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {quick.map((t, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => send(t)}
-              className="chip chip-btn"
-              style={{ background: 'var(--paper)', borderWidth: '0.5px' }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <ChatInputRow
-        value={input}
-        onChange={setInput}
-        onSend={() => send()}
-        placeholder="비서에게 말 걸기..."
-        ariaLabel="비서에게 말 걸기"
-      />
-      <TabBar active="home" />
-    </div>
   );
 };

@@ -10,8 +10,8 @@ import { NavApi, NavContext, Route } from '../lib/router';
 import { StoreProvider } from '../lib/store';
 import { S21_Login } from '../screens/login';
 import { S22_Settings } from '../screens/settings';
-import { S01_Splash, S02_Welcome, S03_Privacy, S04_CreateCat, S05_FirstMeet } from '../screens/onboarding';
-import { S06_HomeDay, S07_HomeNight, S08_DailyCheck, S09_AIChat } from '../screens/home-day';
+import { S01_Splash, S02_Welcome, S03_Privacy, S04_CreateCat, S04b_Interests, S05_FirstMeet } from '../screens/onboarding';
+import { S06_HomeDay, S07_HomeNight, S08_DayLog } from '../screens/home-day';
 import { S10_RecapStart, S11_ChatDiary, S12_MoodFinalize, S13_Reward } from '../screens/evening';
 import { S14_Calendar, S15_DiaryDetail, S16_Stats, S17_Insights } from '../screens/records';
 import { S18_CatRoom, S19_Inventory, S20_Report } from '../screens/character';
@@ -22,9 +22,10 @@ import { S26_HealthChat } from '../screens/health-chat';
 
 const SCREENS: Record<Route, () => ReactNode> = {
   splash: () => <S01_Splash />, welcome: () => <S02_Welcome />, privacy: () => <S03_Privacy />,
-  'create-cat': () => <S04_CreateCat />, 'first-meet': () => <S05_FirstMeet />,
+  'create-cat': () => <S04_CreateCat />, 'onboard-interests': () => <S04b_Interests />,
+  'first-meet': () => <S05_FirstMeet />,
   'home-day': () => <S06_HomeDay />, 'home-night': () => <S07_HomeNight />,
-  'daily-check': () => <S08_DailyCheck />, 'ai-chat': () => <S09_AIChat />,
+  'daily-check': () => <S08_DayLog />,
   'recap-start': () => <S10_RecapStart />, 'chat-diary': () => <S11_ChatDiary />,
   'mood-finalize': () => <S12_MoodFinalize />, reward: () => <S13_Reward />,
   calendar: () => <S14_Calendar />, 'diary-detail': () => <S15_DiaryDetail />,
