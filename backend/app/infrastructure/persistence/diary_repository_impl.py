@@ -64,6 +64,19 @@ class DiaryRepositoryImpl(DiaryRepository):
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
 
+    async def find_by_date_range(self, device_id: str, start: date, end: date) -> list[Diary]:
+        stmt = (
+            select(DiaryModel)
+            .where(
+                DiaryModel.device_id == device_id,
+                DiaryModel.diary_date >= start,
+                DiaryModel.diary_date <= end,
+            )
+            .order_by(DiaryModel.diary_date)
+        )
+        result = await self._db.execute(stmt)
+        return [self._to_domain(m) for m in result.scalars().all()]
+
     async def find_all(self, device_id: str, offset: int = 0, limit: int = 20) -> list[Diary]:
         stmt = (
             select(DiaryModel)
