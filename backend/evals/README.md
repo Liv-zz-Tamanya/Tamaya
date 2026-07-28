@@ -355,6 +355,33 @@ uv run python -m evals.run_conversation_evaluation --judge-model HCX-007   # jud
 - **책임 경계**: PR-B2는 후보(`StatisticalFinding`) 생성까지만 담당한다.
   노출 쿨다운·카드 선정·Agent 멘트 생성은 PR-C 책임이다.
 
+## 인사이트 리포트 생성 (PR-C)
+
+통계 게이트 통과 후보를 사용자용 카드로 바꾸는 파이프라인.
+`POST/GET /api/v1/insights/weekly/report` (주간, `insight_reports` 캐시 우선).
+
+- **2층 경계의 코드화**: 통계 후보·기간 요약은 tool이 아니라
+  `InsightGenerationContext`로 시스템 프롬프트에 필수 주입된다
+  (`app/application/service/insight_generation_prompt.py`). LLM은 숫자를
+  계산하지 않고 selected 가설의 해석 멘트만 만든다.
+- **INSIGHT 모드**: 사용자 메시지 없이 실행된다(`messages=[]`) — 가짜
+  HumanMessage 금지. 모드별 guardrail 정책은
+  `MODE_GUARDRAIL_POLICIES`(personal_assistant_agent.py)에 선언되며 INSIGHT는
+  input 생략 + output에서 처방 토큰·진단 단정 tripwire를 검사한다. 걸리면
+  위험 원문 대신 `SAFETY_BLOCKED` 리포트가 저장된다.
+- **tool 3종만**: `get_day_facts`(허용된 근거 날짜 한 행),
+  `search_diary_memories`, `get_medical_visit_facts`(병명·약 정보 없음).
+  기간 raw 수면·걸음 목록 tool은 존재하지 않는다.
+- **선정·쿨다운**(`app/domain/service/insight_selection.py`): gate 통과 →
+  최근 28일 노출 가설 제외 → |rho| 내림차순·q 오름차순·레지스트리 순서 →
+  최대 2개. 근거 날짜도 결정론 함수가 고른다(LLM이 raw에서 고르지 않는다).
+- **통계·근거는 90일 분석 창** 기준이다 — 주간 조각(n<20)으로는 검정이
+  성립하지 않는다. 주간은 캐시·표시 단위다.
+- **LLM 비용 0 경로**: 캐시 hit / insufficient_data / no_signal / cooldown.
+  같은 주차 재호출은 항상 기존 리포트를 반환한다(재생성 옵션 없음 — 후속).
+- **trace 연결**: `generation_run_id == insight_reports.id`가 Agent 실행
+  기록의 `execution_ref`로 전달된다(trace_id와 별개 개념).
+
 ## 평가 자동화
 
 **PR CI (비용 0, 매 PR 자동):**
