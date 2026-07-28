@@ -32,13 +32,20 @@ DIARY_USER_REQUEST = """위 대화를 바탕으로 일기를 JSON 형식으로 �
 
 반드시 아래 형식의 JSON만 출력해:
 
-{"title":"제목","content":"본문 (반드시 4~5문장)","emotion":"happy/sad/angry/anxious/calm/excited/tired/grateful 중 하나","satisfaction":0~100 숫자,"keywords":["키워드1","키워드2","키워드3"]}
+{"title":"제목","content":"본문 (반드시 4~5문장)","emotion":"happy/sad/angry/anxious/calm/excited/tired/grateful 중 하나","satisfaction":0~100 숫자 또는 null,"keywords":["키워드1","키워드2","키워드3"]}
 
 규칙:
 - content는 4~5문장.
 - 감정은 가장 지배적인 하나만 선택.
-- satisfaction은 대화 분위기 기반으로 추정하되,
-  명확하지 않으면 50으로 설정.
+- satisfaction은 아래 기준으로 매겨.
+   80~100  뚜렷한 성취·기쁨·감사가 대화 전반을 지배
+   60~79   대체로 좋았음. 긍정 서술이 부정보다 우세
+   40~59   중립. 사실 나열이거나 긍정·부정이 팽팽
+   20~39   대체로 힘들었음. 피로·불만·걱정이 우세
+    0~19   뚜렷한 고통·소진·절망
+- 사용자 발화가 3턴 미만이거나 정서 단서가 없으면
+  숫자를 만들지 말고 satisfaction을 null로 출력해.
+  억지로 50을 쓰지 마.
 - keywords는 사용자의 하루를 대표하는 짧은 명사/명사구 2~3개.
 - keywords에는 조사, 어미, 부사보다 핵심 사건·활동·감정 단어를 넣어.
 - 너무 일반적인 단어(오늘, 기분, 생각, 하루)는 피하고, 사용자가 말하지 않은 내용은 넣지 마.

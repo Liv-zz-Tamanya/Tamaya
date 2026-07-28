@@ -69,6 +69,8 @@ class DiarySummary(BaseModel):
     emotion_plausible_rate: float | None
     generic_keyword_runs: int
     ungrounded_keyword_runs: int
+    # satisfaction이 null(판단 불가)로 나온 run 수 — 과도한 null 탐지용 (PR-A2)
+    satisfaction_null_runs: int = 0
 
 
 class DiaryRunReport(BaseModel):
