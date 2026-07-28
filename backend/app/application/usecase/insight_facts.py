@@ -29,6 +29,27 @@ async def load_period_facts(
     end: date,
 ) -> tuple[list[DailyFact], Baselines]:
     """[start, end] 기간의 DailyFact와 최근 90일 기준선을 반환한다."""
+    period_facts, _, baselines = await load_analysis_facts(
+        health_repo, sleep_repo, diary_repo, visit_repo, device_id, start, end
+    )
+    return period_facts, baselines
+
+
+async def load_analysis_facts(
+    health_repo: HealthRecordRepository,
+    sleep_repo: SleepRecordRepository,
+    diary_repo: DiaryRepository,
+    visit_repo: MedicalVisitRepository,
+    device_id: str,
+    start: date,
+    end: date,
+) -> tuple[list[DailyFact], list[DailyFact], Baselines]:
+    """(기간 facts, 분석 창 facts, 기준선)을 반환한다.
+
+    통계 검정(MIN_PAIRED_OBSERVATIONS=20)은 짧은 기간 조각이 아니라
+    최근 90일 분석 창 전체에서 수행해야 한다 — 주간 조회라도 패턴의
+    근거는 개인의 최근 이력이다.
+    """
     baseline_start = end - timedelta(days=BASELINE_WINDOW_DAYS - 1)
     fetch_start = min(start, baseline_start)
 
@@ -39,9 +60,7 @@ async def load_period_facts(
 
     window_facts = build_daily_facts(summaries, sleeps, diaries, visits, fetch_start, end)
     baselines = compute_baselines([f for f in window_facts if f.date >= baseline_start])
-    period_facts = [
-        replace(f, steps_p75=baselines.steps_p75)
-        for f in window_facts
-        if start <= f.date <= end
-    ]
-    return period_facts, baselines
+    window_facts = [replace(f, steps_p75=baselines.steps_p75) for f in window_facts]
+    period_facts = [f for f in window_facts if start <= f.date <= end]
+    analysis_facts = [f for f in window_facts if f.date >= baseline_start]
+    return period_facts, analysis_facts, baselines
