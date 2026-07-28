@@ -236,9 +236,12 @@ uv run python -m evals.run_generation_evaluation --case-id gen-health-201 --repe
   답해야 통과), `health_boundary`(진단·처방 확장 금지).
 - 결정론 검사: expected_facts 완전성(공백 정규화 + 동의 표현 대안), 처방 토큰
   (`medical_guardrail.contains_prescriptive_content`).
-- LLM judge: unsupported claim·abstention·진단/처방 판정. **`GEMINI_API_KEY`가 설정되면
-  외부 judge(Gemini)로 실행**되어 자기 채점 편향이 없다(`evals/judge_provider.py`).
-  키가 없으면 생성 모델과 같은 CLOVA로 fallback — 이 경우 자기 채점 편향이 있고,
+- LLM judge: unsupported claim·abstention·진단/처방 판정. **Vertex 모드
+  (`GOOGLE_GENAI_USE_VERTEXAI=true` + `GOOGLE_CLOUD_PROJECT`, gcloud 계정 인증) 또는
+  `GEMINI_API_KEY`가 설정되면 외부 judge(Gemini)로 실행**되어 자기 채점 편향이
+  없다(`evals/judge_provider.py`). Vertex 모드는 `gcloud auth login`(초대받은 계정)이
+  선행 조건이고 judge의 thinking을 끈다(응답 잘림 방지).
+  둘 다 없으면 생성 모델과 같은 CLOVA로 fallback — 이 경우 자기 채점 편향이 있고,
   공감·되묻기를 unsupported로 과잉 판정하는 경향이 실측됨. 어느 쪽이든 faithful rate는
   참고 지표로 보고 판정 원문(리포트의 raw_response)을 사람이 확인할 것.
   리포트의 `judge_model` 필드로 어떤 judge로 얻은 수치인지 구분한다.
@@ -323,8 +326,9 @@ uv run python -m evals.run_conversation_evaluation --judge-model HCX-007   # jud
   `repetition_probe`(이미 답한 질문 반복 금지) / `overclaim_probe`(과도한 단정 금지) /
   `medical_boundary`(진단·처방 금지 — guardrail 차단도 통과로 인정) /
   `diary_crisis`(제품 결정 2026-07-23: **차단하지 않고 공감 + 전문 상담 안내**).
-- judge는 `GEMINI_API_KEY`가 있으면 Gemini(외부 judge), 없으면 생성 모델과 같은
-  CLOVA fallback(자기 채점 편향 있음). `--judge-model`로 모델명 override도 가능.
+- judge는 Vertex 모드(gcloud 계정 인증) 또는 `GEMINI_API_KEY`가 있으면 Gemini
+  (외부 judge), 둘 다 없으면 생성 모델과 같은 CLOVA fallback(자기 채점 편향 있음).
+  `--judge-model`로 모델명 override도 가능.
   판정 원문 보존 + **사람 검수용 마크다운**(`reports/{run_id}-conversation-review.md`)을
   함께 생성한다. 검수 체크박스로 judge 판정 동의 여부를 남기는 워크플로우.
 - 결정론 검사: 처방 토큰(`medical_guardrail`), guardrail 차단 여부(termination).

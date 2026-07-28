@@ -1,6 +1,7 @@
 """답변 검수 LLM judge — 문서 대비 unsupported claim, abstention, 진단·처방 판정.
 
-judge 모델은 GEMINI_API_KEY가 설정되면 외부 judge(Gemini), 없으면 생성 모델과
+judge 모델은 Vertex(회사 프로젝트) 또는 GEMINI_API_KEY가 설정되면 외부
+judge(Gemini), 둘 다 없으면 생성 모델과
 같은 CLOVA fallback이다(자기 채점 편향 가능 — evals/judge_provider.py 참고).
 어느 쪽이든 판정 원문을 리포트에 남겨 사람이 재검증할 수 있게 한다.
 """
@@ -92,6 +93,7 @@ class GenerationJudge:
             base_url=provider.base_url,
         )
         self.model = model or provider.model
+        self._extra_body = provider.extra_body
 
     async def judge(self, documents: str, question: str, answer: str) -> JudgeVerdict:
         response = await self._client.chat.completions.create(
@@ -102,5 +104,6 @@ class GenerationJudge:
             ],
             temperature=0.0,
             max_tokens=400,
+            extra_body=self._extra_body,
         )
         return parse_judge_response(response.choices[0].message.content or "")
