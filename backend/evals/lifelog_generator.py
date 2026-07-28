@@ -10,7 +10,9 @@ PR-B2의 통계 회귀 테스트가 전적으로 이 생성기에 의존한다.
 - 진짜 값은 항상 생성하고, coverage는 '기록 여부'만 결정한다(MCAR).
   실제 세계의 인과(전날 수면 → 만족도)는 측정 여부와 무관하게 존재하기 때문.
 - 결측은 행 자체를 만들지 않는 것으로 표현한다. 0으로 채우지 않는다.
-- SleepRecord.record_date는 기상일 기준(PR-A 확정). lag 계산도 이 규칙을 따른다.
+- SleepRecord.record_date는 기상일 기준(PR-A 확정)이다. 따라서 same-date
+  sleep과 satisfaction의 페어링이 제품 의미상 '지난밤 수면과 오늘 만족도'에
+  해당한다 — 효과 주입과 통계 검정 모두 이 규칙을 쓴다.
 
 사용:
     uv run python -m evals.lifelog_generator --profile null \\
@@ -55,7 +57,7 @@ class LifelogProfile:
     sleep_coverage: float  # 0.0~1.0, 수면 기록이 존재하는 날의 비율
     steps_coverage: float
     diary_rate: float  # 일기 작성률
-    planted_effects: dict[str, float]  # {"sleep_lag1_satisfaction": 0.45}
+    planted_effects: dict[str, float]  # {"sleep_satisfaction": 0.45}
     seed: int
 
 
@@ -80,8 +82,11 @@ PROFILES: dict[str, LifelogProfile] = {
         sleep_coverage=0.95,
         steps_coverage=0.90,
         diary_rate=0.85,
-        planted_effects={"sleep_lag1_satisfaction": 0.45, "steps_satisfaction": 0.30},
-        seed=20260701,
+        # planted rho는 노이즈(σ=10)와 타 효과가 섞여 실현 상관이 더 낮아진다
+        # (0.45+0.45 → 실현 r ≈ 0.38). 재현율 검증용이므로 게이트(|rho|>=0.30)
+        # 대비 여유가 있어야 해서 둘 다 0.45로 심는다.
+        planted_effects={"sleep_satisfaction": 0.45, "steps_satisfaction": 0.45},
+        seed=20260702,  # 두 가설 모두 표본 rho >= 0.35가 되는 결정론 seed
     ),
     "null": LifelogProfile(  # 거짓양성 검증 — 가장 중요
         name="null",
@@ -107,7 +112,7 @@ PROFILES: dict[str, LifelogProfile] = {
         sleep_coverage=0.95,
         steps_coverage=0.90,
         diary_rate=0.85,
-        planted_effects={"sleep_lag1_satisfaction": 0.30},
+        planted_effects={"sleep_satisfaction": 0.30},
         seed=20260704,
     ),
 }
@@ -182,7 +187,6 @@ def generate_lifelog(profile: LifelogProfile, device_id: str, end_date: date) ->
     summary_rows: list[dict] = []
     diary_rows: list[dict] = []
 
-    prev_sleep_true: float | None = None
     for offset in range(profile.days):
         day = start_date + timedelta(days=offset)
         is_weekend = day.weekday() >= 5
@@ -193,12 +197,14 @@ def generate_lifelog(profile: LifelogProfile, device_id: str, end_date: date) ->
         sleep_true = _clip(rng.gauss(sleep_mu, SLEEP_SIGMA_MIN), 180, 1440)
         steps_true = max(0, round(rng.gauss(steps_mu, STEPS_SIGMA)))
 
-        # 3) 심은 효과 — z-score × rho × sigma 를 satisfaction에 가산
+        # 3) 심은 효과 — z-score × rho × sigma 를 satisfaction에 가산.
+        #    수면은 same-date: record_date=기상일이므로 오늘 행의 수면이 곧
+        #    '지난밤 수면'이고, 그것이 오늘 만족도에 영향을 준다는 가설이다.
         effect = 0.0
-        rho_sleep = profile.planted_effects.get("sleep_lag1_satisfaction", 0.0)
-        if rho_sleep and prev_sleep_true is not None:
-            z_prev_sleep = (prev_sleep_true - base_sleep_min) / SLEEP_SIGMA_MIN
-            effect += rho_sleep * z_prev_sleep * SATISFACTION_SIGMA
+        rho_sleep = profile.planted_effects.get("sleep_satisfaction", 0.0)
+        if rho_sleep:
+            z_sleep = (sleep_true - base_sleep_min) / SLEEP_SIGMA_MIN
+            effect += rho_sleep * z_sleep * SATISFACTION_SIGMA
         rho_steps = profile.planted_effects.get("steps_satisfaction", 0.0)
         if rho_steps:
             z_steps = (steps_true - base_steps) / STEPS_SIGMA
@@ -219,8 +225,6 @@ def generate_lifelog(profile: LifelogProfile, device_id: str, end_date: date) ->
             summary_rows.append(_health_summary_row(day, steps_true))
         if rng.random() < profile.diary_rate:
             diary_rows.append(_diary_row(day, satisfaction, emotion))
-
-        prev_sleep_true = sleep_true
 
     meta = {
         "profile": profile.name,

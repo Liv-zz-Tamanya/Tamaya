@@ -1,8 +1,15 @@
-"""라이프로그 더미 생성기 — seed 재현성·coverage·심은 효과·도메인 제약 검증."""
+"""라이프로그 더미 생성기 — seed 재현성·coverage·심은 효과·도메인 제약 검증.
+
+Spearman은 자체 구현 대신 scipy를 쓴다 — satisfaction이 정수라 동점이 잦은데,
+동점 평균 순위 처리가 실제 통계 엔진과 같아야 검증이 의미 있다.
+"""
 
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
+
+from scipy.stats import spearmanr
 
 from app.domain.model.emotion import Emotion
 from app.domain.model.health_record import HealthDailySummary
@@ -10,24 +17,6 @@ from app.domain.model.sleep_record import SleepRecord
 from evals.lifelog_generator import PROFILES, generate_lifelog
 
 END = date(2026, 7, 27)
-
-
-def _rank(values: list[float]) -> list[float]:
-    order = sorted(range(len(values)), key=lambda i: values[i])
-    ranks = [0.0] * len(values)
-    for rank, index in enumerate(order):
-        ranks[index] = float(rank)
-    return ranks
-
-
-def _spearman(xs: list[float], ys: list[float]) -> float:
-    rx, ry = _rank(xs), _rank(ys)
-    n = len(xs)
-    mx, my = sum(rx) / n, sum(ry) / n
-    cov = sum((a - mx) * (b - my) for a, b in zip(rx, ry, strict=True))
-    vx = sum((a - mx) ** 2 for a in rx) ** 0.5
-    vy = sum((b - my) ** 2 for b in ry) ** 0.5
-    return cov / (vx * vy)
 
 
 def test_generator_deterministic():
@@ -44,26 +33,52 @@ def test_generator_coverage():
     assert 0.10 <= observed_rate <= 0.20
 
 
-def test_planted_effect_present():
-    """생성기 자체 검증 — 전날 수면과 satisfaction의 순위 상관이 실제로 심겼는가."""
-    fixture = generate_lifelog(PROFILES["planted_strong"], "eval-planted-01", END)
-    sleep_by_date = {r["record_date"]: r["duration_minutes"] for r in fixture.sleep_records}
-
-    pairs: list[tuple[float, float]] = []
+def _same_date_pairs(fixture, predictor_rows: list[dict], value_key: str) -> tuple[list, list]:
+    # record_date=기상일 규칙에서 same-date 페어링이 '지난밤 수면 ↔ 오늘 만족도'다
+    by_date = {r.get("record_date") or r.get("diary_date"): r[value_key] for r in predictor_rows}
+    xs, ys = [], []
     for diary in fixture.diaries:
-        diary_date = date.fromisoformat(diary["diary_date"])
-        prev = (diary_date - date.resolution).isoformat()
-        if prev in sleep_by_date:
-            pairs.append((float(sleep_by_date[prev]), float(diary["satisfaction"])))
+        if diary["diary_date"] in by_date:
+            xs.append(float(by_date[diary["diary_date"]]))
+            ys.append(float(diary["satisfaction"]))
+    return xs, ys
 
-    assert len(pairs) >= 40  # 표본이 너무 작으면 검증 자체가 무의미
-    rho = _spearman([p[0] for p in pairs], [p[1] for p in pairs])
+
+def test_planted_sleep_effect_present():
+    """생성기 자체 검증 — same-date 수면과 satisfaction의 순위 상관이 실제로 심겼는가."""
+    fixture = generate_lifelog(PROFILES["planted_strong"], "eval-planted-01", END)
+    xs, ys = _same_date_pairs(fixture, fixture.sleep_records, "duration_minutes")
+
+    assert len(xs) >= 40  # 표본이 너무 작으면 검증 자체가 무의미
+    rho = spearmanr(xs, ys).statistic
     assert rho >= 0.3, f"심은 효과(0.45)가 관측되지 않음: rho={rho:.3f}"
+
+
+def test_planted_steps_effect_present():
+    fixture = generate_lifelog(PROFILES["planted_strong"], "eval-planted-01", END)
+    xs, ys = _same_date_pairs(fixture, fixture.health_summaries, "step_count")
+
+    assert len(xs) >= 40
+    rho = spearmanr(xs, ys).statistic
+    assert rho >= 0.3, f"심은 효과(0.30)가 관측되지 않음: rho={rho:.3f}"
 
 
 def test_null_profile_has_no_planted_effect():
     fixture = generate_lifelog(PROFILES["null"], "eval-null-01", END)
     assert fixture.meta["planted_effects"] == {}
+
+
+def test_planted_keys_use_new_names():
+    # 가설 키 개명(sleep_lag1_satisfaction → sleep_satisfaction) 회귀 방지
+    assert set(PROFILES["planted_strong"].planted_effects) == {
+        "sleep_satisfaction",
+        "steps_satisfaction",
+    }
+    assert set(PROFILES["demo"].planted_effects) == {"sleep_satisfaction"}
+    generator_source = (
+        Path(__file__).resolve().parents[2] / "evals" / "lifelog_generator.py"
+    ).read_text(encoding="utf-8")
+    assert "sleep_lag1_satisfaction" not in generator_source
 
 
 def test_health_summary_constraints():
