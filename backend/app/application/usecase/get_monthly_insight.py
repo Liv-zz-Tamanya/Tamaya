@@ -1,41 +1,63 @@
-"""월간 웰빙 인사이트 usecase — 주별 trend 집계.
+"""월간 웰빙 인사이트 usecase — 일기·라이프로그 기반 집계 + 주별 trend.
 
-기간 신호를 순수 스코어러로 집계하고, 월이 걸치는 각 ISO 주차별 점수를 trend로 만든다.
-신호가 없는 주도 score 50·signal_count 0으로 포함해 well-formed를 보장한다(500 금지).
+빈 기간은 score=None·diary_days=0의 well-formed 결과를 반환한다(500 금지).
+trend는 일기가 있는 주만 포함한다(DEC-B2).
 """
 
 from datetime import timedelta
 
+from app.application.usecase.insight_facts import load_period_facts
 from app.application.usecase.insight_result import InsightResult, TrendPoint
-from app.domain.repository.qualitative_signal_repository import QualitativeSignalRepository
+from app.domain.repository.diary_repository import DiaryRepository
+from app.domain.repository.health_record_repository import HealthRecordRepository
+from app.domain.repository.medical_visit_repository import MedicalVisitRepository
+from app.domain.repository.sleep_record_repository import SleepRecordRepository
 from app.domain.service.insight_period import month_bounds
-from app.domain.service.wellbeing_score import compute_wellbeing_score
+from app.domain.service.wellbeing_score import compute_wellbeing
 
 
 class GetMonthlyInsightUseCase:
-    def __init__(self, repo: QualitativeSignalRepository) -> None:
-        self._repo = repo
+    def __init__(
+        self,
+        health_repo: HealthRecordRepository,
+        sleep_repo: SleepRecordRepository,
+        diary_repo: DiaryRepository,
+        visit_repo: MedicalVisitRepository,
+    ) -> None:
+        self._health_repo = health_repo
+        self._sleep_repo = sleep_repo
+        self._diary_repo = diary_repo
+        self._visit_repo = visit_repo
 
     async def execute(self, device_id: str, year: int, month: int) -> InsightResult:
         start, end = month_bounds(year, month)
-        signals = await self._repo.find_by_date_range(device_id, start, end)
+        facts, baselines = await load_period_facts(
+            self._health_repo,
+            self._sleep_repo,
+            self._diary_repo,
+            self._visit_repo,
+            device_id,
+            start,
+            end,
+        )
 
-        report = compute_wellbeing_score(signals)
+        report = compute_wellbeing(facts, baselines)
 
         trend: list[TrendPoint] = []
         for iso_year, iso_week in self._iso_weeks_in_range(start, end):
-            week_signals = [
-                s
-                for s in signals
-                if (s.recorded_date.isocalendar().year, s.recorded_date.isocalendar().week)
-                == (iso_year, iso_week)
+            week_facts = [
+                f
+                for f in facts
+                if (f.date.isocalendar().year, f.date.isocalendar().week) == (iso_year, iso_week)
             ]
-            week_report = compute_wellbeing_score(week_signals)
+            week_report = compute_wellbeing(week_facts, baselines)
+            if week_report.score is None:  # DEC-B2: 일기 없는 주는 생략
+                continue
             trend.append(
                 TrendPoint(
                     label=f"{iso_year}-W{iso_week:02d}",
                     score=week_report.score,
-                    signal_count=week_report.signal_count,
+                    signal_count=week_report.diary_days,
                 )
             )
 
