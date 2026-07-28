@@ -54,6 +54,14 @@ _MOCK_DIARY_RESPONSES = [
         "satisfaction": 50,
         "keywords": ["버팀", "피곤", "기록"],
     },
+    {
+        # 판단 불가(null) 케이스 — satisfaction_estimated 경로를 API 비용 없이 검증
+        "title": "짧은 기록",
+        "content": "오늘은 말을 많이 하지 못했다. 그래도 잠깐이라도 하루를 돌아보는 시간을 가졌다. 어떤 기분이었는지는 나도 잘 모르겠다. 내일은 조금 더 이야기해봐야겠다.",
+        "emotion": "calm",
+        "satisfaction": None,
+        "keywords": ["짧은 대화", "기록"],
+    },
 ]
 
 
@@ -134,7 +142,7 @@ class ClovaClient(AiChatService):
         response = await self._client.chat.completions.create(
             model=settings.clova_model,
             messages=api_messages,
-            temperature=0.3,  # 구조 안정성
+            temperature=0.0,  # satisfaction 점수 일관성 — 본문 다양성보다 스코어 재현성 우선
             max_tokens=800,
         )
 

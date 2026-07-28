@@ -51,11 +51,17 @@ def parse_diary_output(raw: object) -> tuple[dict, list[str]]:
         fields["emotion"] = emotion
     else:
         errors.append(f"emotion이 허용 어휘가 아님: {emotion!r}")
-    satisfaction = raw.get("satisfaction")
-    if isinstance(satisfaction, int) and not isinstance(satisfaction, bool) and 0 <= satisfaction <= 100:
-        fields["satisfaction"] = satisfaction
+    if "satisfaction" not in raw:
+        errors.append("satisfaction 키 누락")
+    elif raw["satisfaction"] is None:
+        # 판단 불가(null)는 유효 출력 — '모름'과 '중립 50'을 구분하는 계약(PR-A2)
+        fields["satisfaction"] = None
     else:
-        errors.append(f"satisfaction이 0~100 정수가 아님: {satisfaction!r}")
+        satisfaction = raw["satisfaction"]
+        if isinstance(satisfaction, int) and not isinstance(satisfaction, bool) and 0 <= satisfaction <= 100:
+            fields["satisfaction"] = satisfaction
+        else:
+            errors.append(f"satisfaction이 0~100 정수가 아님: {satisfaction!r}")
     keywords = raw.get("keywords")
     if isinstance(keywords, list) and keywords and all(isinstance(k, str) and k.strip() for k in keywords):
         fields["keywords"] = [k.strip() for k in keywords]
@@ -205,4 +211,9 @@ def summarize_diary_results(results: Sequence[DiaryCaseResult]) -> DiarySummary:
         ),
         generic_keyword_runs=sum(bool(r.generic_keywords) for r in completed),
         ungrounded_keyword_runs=sum(bool(r.ungrounded_keywords) for r in completed),
+        satisfaction_null_runs=sum(
+            r.satisfaction is None
+            and not any("satisfaction" in error for error in r.schema_errors)
+            for r in completed
+        ),
     )

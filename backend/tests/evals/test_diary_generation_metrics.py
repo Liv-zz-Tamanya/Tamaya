@@ -45,6 +45,19 @@ def test_parse_diary_output_accepts_contract():
     assert fields["emotion"] == "calm" and fields["satisfaction"] == 70
 
 
+def test_parse_diary_output_accepts_null_satisfaction():
+    # PR-A2: 판단 불가(null)는 유효 출력 — '모름'과 '중립 50'을 구분한다
+    fields, errors = parse_diary_output({**VALID_OUTPUT, "satisfaction": None})
+    assert errors == []
+    assert fields["satisfaction"] is None
+
+
+def test_parse_diary_output_missing_satisfaction_key_is_error():
+    output = {k: v for k, v in VALID_OUTPUT.items() if k != "satisfaction"}
+    _, errors = parse_diary_output(output)
+    assert any("satisfaction" in error for error in errors)
+
+
 def test_parse_diary_output_reports_violations():
     _, errors = parse_diary_output({
         "title": " ", "content": "본문.", "emotion": "joyful",

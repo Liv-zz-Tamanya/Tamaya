@@ -29,6 +29,7 @@ class DiaryRepositoryImpl(DiaryRepository):
             existing.content = diary.content
             existing.emotion = diary.emotion.value
             existing.satisfaction = diary.satisfaction
+            existing.satisfaction_estimated = diary.satisfaction_estimated
             existing.keywords = diary.keywords
             existing.chat_session_id = diary.chat_session_id
         else:
@@ -41,6 +42,7 @@ class DiaryRepositoryImpl(DiaryRepository):
                     content=diary.content,
                     emotion=diary.emotion.value,
                     satisfaction=diary.satisfaction,
+                    satisfaction_estimated=diary.satisfaction_estimated,
                     keywords=diary.keywords,
                     chat_session_id=diary.chat_session_id,
                     created_at=diary.created_at,
@@ -92,6 +94,7 @@ class DiaryRepositoryImpl(DiaryRepository):
             content=model.content,
             emotion=Emotion(model.emotion),
             satisfaction=model.satisfaction,
+            satisfaction_estimated=model.satisfaction_estimated,
             keywords=model.keywords,
             chat_session_id=model.chat_session_id,
             created_at=model.created_at,
