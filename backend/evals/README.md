@@ -333,6 +333,28 @@ uv run python -m evals.run_conversation_evaluation --judge-model HCX-007   # jud
   함께 생성한다. 검수 체크박스로 judge 판정 동의 여부를 남기는 워크플로우.
 - 결정론 검사: 처방 토큰(`medical_guardrail`), guardrail 차단 여부(termination).
 
+## 인사이트 통계 게이트 (PR-B2)
+
+인사이트 카드가 되려면 통계 검증을 먼저 통과해야 한다 — 게이트 통과 전에는
+어떤 인사이트도 사용자에게 노출하지 않는다.
+
+- **가설은 사전 등록 레지스트리에서만 평가한다**
+  (`app/domain/service/insight_hypotheses.py`의 `REGISTERED_HYPOTHESES`).
+  런타임 가설 생성·컬럼 자동 탐색 금지 — p-hacking 방지 정책.
+- **날짜 규칙**: `SleepRecord.record_date`는 기상일이므로 same-date 페어링이
+  '지난밤 수면 → 오늘 만족도'를 의미한다. 생성기의 효과 주입도 같은 규칙.
+- **검정**: Spearman 양측 (`app/application/service/insight_statistics.py` —
+  scipy는 application 계층에만 격리, domain은 순수 Python).
+  부호 있는 rho를 보존한다(음의 상관도 유효 후보).
+- **게이트 3중 조건**: `n >= 20` ∧ `|rho| >= 0.30` ∧ `BH FDR q <= 0.05`.
+  탈락 사유는 `GateFailureReason`으로 구조화된다
+  (insufficient_sample / constant_input / effect_too_small / not_significant).
+- **거짓양성 회귀 기준**: `null` 프로파일 × 300 seed에서 게이트 통과 seed 비율
+  ≤ 10% (`tests/application/test_insight_statistics.py`). 라이프로그 생성기
+  (`evals/lifelog_generator.py`)의 planted/null/sparse 프로파일이 이 검증의 전제다.
+- **책임 경계**: PR-B2는 후보(`StatisticalFinding`) 생성까지만 담당한다.
+  노출 쿨다운·카드 선정·Agent 멘트 생성은 PR-C 책임이다.
+
 ## 평가 자동화
 
 **PR CI (비용 0, 매 PR 자동):**
