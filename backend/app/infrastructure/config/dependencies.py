@@ -29,7 +29,9 @@ from app.domain.repository.event_chunk_repository import EventChunkRepository
 from app.domain.repository.health_chunk_repository import HealthChunkRepository
 from app.domain.repository.health_record_repository import HealthRecordRepository
 from app.domain.repository.health_session_repository import HealthSessionRepository
+from app.domain.repository.medical_visit_repository import MedicalVisitRepository
 from app.domain.repository.qualitative_signal_repository import QualitativeSignalRepository
+from app.domain.repository.sleep_record_repository import SleepRecordRepository
 from app.domain.service.clova_credential import resolve_clova_credential
 from app.infrastructure.config.database import get_db
 from app.infrastructure.config.settings import settings
@@ -52,8 +54,14 @@ from app.infrastructure.persistence.health_record_repository_impl import HealthR
 from app.infrastructure.persistence.health_session_repository_impl import (
     HealthSessionRepositoryImpl,
 )
+from app.infrastructure.persistence.medical_visit_repository_impl import (
+    MedicalVisitRepositoryImpl,
+)
 from app.infrastructure.persistence.qualitative_signal_repository_impl import (
     QualitativeSignalRepositoryImpl,
+)
+from app.infrastructure.persistence.sleep_record_repository_impl import (
+    SleepRecordRepositoryImpl,
 )
 
 _embedding_service: EmbeddingService | None = None
@@ -178,16 +186,12 @@ def get_extract_signals_usecase(
     return ExtractSignalsUseCase(service, repo)
 
 
-def get_weekly_insight_usecase(
-    repo: QualitativeSignalRepository = Depends(get_qualitative_signal_repo),
-) -> GetWeeklyInsightUseCase:
-    return GetWeeklyInsightUseCase(repo)
+def get_sleep_record_repo(db: AsyncSession = Depends(get_db)) -> SleepRecordRepository:
+    return SleepRecordRepositoryImpl(db)
 
 
-def get_monthly_insight_usecase(
-    repo: QualitativeSignalRepository = Depends(get_qualitative_signal_repo),
-) -> GetMonthlyInsightUseCase:
-    return GetMonthlyInsightUseCase(repo)
+def get_medical_visit_repo(db: AsyncSession = Depends(get_db)) -> MedicalVisitRepository:
+    return MedicalVisitRepositoryImpl(db)
 
 
 def get_clova_connection_tester() -> ClovaConnectionTester:
@@ -211,6 +215,24 @@ def get_health_ai_service(
 
 def get_health_record_repo(db: AsyncSession = Depends(get_db)) -> HealthRecordRepository:
     return HealthRecordRepositoryImpl(db)
+
+
+def get_weekly_insight_usecase(
+    health_repo: HealthRecordRepository = Depends(get_health_record_repo),
+    sleep_repo: SleepRecordRepository = Depends(get_sleep_record_repo),
+    diary_repo: DiaryRepository = Depends(get_diary_repo),
+    visit_repo: MedicalVisitRepository = Depends(get_medical_visit_repo),
+) -> GetWeeklyInsightUseCase:
+    return GetWeeklyInsightUseCase(health_repo, sleep_repo, diary_repo, visit_repo)
+
+
+def get_monthly_insight_usecase(
+    health_repo: HealthRecordRepository = Depends(get_health_record_repo),
+    sleep_repo: SleepRecordRepository = Depends(get_sleep_record_repo),
+    diary_repo: DiaryRepository = Depends(get_diary_repo),
+    visit_repo: MedicalVisitRepository = Depends(get_medical_visit_repo),
+) -> GetMonthlyInsightUseCase:
+    return GetMonthlyInsightUseCase(health_repo, sleep_repo, diary_repo, visit_repo)
 
 
 def get_health_chunk_repo(db: AsyncSession = Depends(get_db)) -> HealthChunkRepository:

@@ -18,6 +18,10 @@ class DiaryRepository(ABC):
     ) -> Diary | None: ...
 
     @abstractmethod
+    async def find_by_date_range(self, device_id: str, start: date, end: date) -> list[Diary]:
+        """기간 내(양끝 포함) 일기를 날짜 오름차순으로 반환한다."""
+
+    @abstractmethod
     async def find_all(self, device_id: str, offset: int = 0, limit: int = 20) -> list[Diary]: ...
 
     @abstractmethod

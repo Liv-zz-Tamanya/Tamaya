@@ -14,6 +14,12 @@ class HealthRecordRepository(ABC):
     ) -> HealthDailySummary | None: ...
 
     @abstractmethod
+    async def find_by_date_range(
+        self, device_id: str, start: date, end: date
+    ) -> list[HealthDailySummary]:
+        """기간 내(양끝 포함) 일별 요약을 날짜 오름차순으로 반환한다."""
+
+    @abstractmethod
     async def find_all(self, device_id: str) -> list[HealthDailySummary]: ...
 
     @abstractmethod

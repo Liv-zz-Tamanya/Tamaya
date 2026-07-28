@@ -46,6 +46,21 @@ class HealthRecordRepositoryImpl(HealthRecordRepository):
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
 
+    async def find_by_date_range(
+        self, device_id: str, start: date, end: date
+    ) -> list[HealthDailySummary]:
+        stmt = (
+            sa.select(HealthDailySummaryModel)
+            .where(
+                HealthDailySummaryModel.device_id == device_id,
+                HealthDailySummaryModel.record_date >= start,
+                HealthDailySummaryModel.record_date <= end,
+            )
+            .order_by(HealthDailySummaryModel.record_date)
+        )
+        result = await self._db.execute(stmt)
+        return [self._to_domain(m) for m in result.scalars().all()]
+
     async def find_all(self, device_id: str) -> list[HealthDailySummary]:
         stmt = (
             sa.select(HealthDailySummaryModel)

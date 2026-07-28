@@ -27,6 +27,9 @@ class _FakeDiaryRepo(DiaryRepository):
     async def find_by_device_and_date(self, device_id, diary_date):  # pragma: no cover
         raise NotImplementedError
 
+    async def find_by_date_range(self, device_id, start, end):  # pragma: no cover
+        raise NotImplementedError
+
     async def find_all(self, device_id: str, offset: int = 0, limit: int = 20):
         return []
 
