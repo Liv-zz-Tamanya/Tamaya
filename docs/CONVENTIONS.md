@@ -124,6 +124,7 @@ GPU 빌드는 이미지가 8.7GB까지 커져 배포 파이프라인이 타임�
     `git log --merges`로 PR 단위 작업 이력을 그대로 뽑을 수 있어야 하기 때문. devlog 자동 생성이 이 히스토리에 의존한다.
 -   PR 제목은 커밋 제목과 동일한 형식을 따른다: `feat(backend): ...`
 -   PR 본문 최소 3줄: **무엇을 / 왜 / 어떻게 검증했는지**
+    — `.github/PULL_REQUEST_TEMPLATE.md`가 이 구조(Why / What / How / 검증 / Next PR)를 자동으로 채워준다.
 -   이슈 연결: `Closes #12`
 
 ---
