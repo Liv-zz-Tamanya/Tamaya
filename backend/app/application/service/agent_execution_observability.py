@@ -70,6 +70,8 @@ class AgentExecutionRecord:
     first_finish_reason: str | None = None
     first_response_content: str | None = None
     final_response_content: str | None = None
+    # 채팅이 아닌 자동 실행(예: insight 생성 run)의 외부 참조 — trace_id와 별개 개념
+    execution_ref: str | None = None
 
 
 class AgentExecutionRecorder(Protocol):
@@ -86,6 +88,7 @@ class AgentExecutionTrace:
     mode: str
     trace_detail: AgentTraceDetail = AgentTraceDetail.BASIC
     trace_id: str = field(default_factory=lambda: str(uuid4()))
+    execution_ref: str | None = None
     guardrail_verdict: str | None = None
     termination_reason: AgentTerminationReason = AgentTerminationReason.COMPLETED
     llm_calls: int = 0
@@ -223,6 +226,7 @@ class AgentExecutionTrace:
             first_finish_reason=self.first_finish_reason,
             first_response_content=self.first_response_content,
             final_response_content=self.final_response_content,
+            execution_ref=self.execution_ref,
         )
 
 
