@@ -759,7 +759,7 @@ export const S16_Stats = () => {
           {s.moodPct.map((x, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 13, width: 64 }}>
-                {x.mood} {x.label}
+                {x.label}
               </span>
               <div className="bar" style={{ flex: 1 }}>
                 <i style={{ width: x.pct + '%', background: x.color }} />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { BackButton, CatSketch, MoodFace, TabBar, useToast } from '../components/primitives';
 import { useNav } from '../lib/router';
 import {
@@ -20,14 +20,15 @@ import { formatKoreanTime, getTimeUntilNextOpen } from '../lib/nightChat';
 
 export const S06_HomeDay = ({ night = false }: { night?: boolean }) => {
   const nav = useNav();
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
   const { toast, flash } = useToast();
+  const routineScrollRef = useRef<HTMLDivElement>(null);
+  const routineDragRef = useRef({ active: false, startX: 0, startScroll: 0, didDrag: false });
   const minutesUntilOpen = getTimeUntilNextOpen(nav.now, nav.nightOpenTime);
   const remaining = `${Math.floor(minutesUntilOpen / 60)}시간 ${minutesUntilOpen % 60}분`;
   const log = dayLogFor(state.dayLog, nav.now);
   const routines = state.routines;
   const dailyDone = routines.filter((r) => log.checks[r.id]).length;
-  const tiles = routines.slice(0, 5);
   // 로컬 store 실값 바인딩(서버 미전송, (C)경계 = 온디바이스 유지) + 빈상태.
   const latest = latestEntry(state.diaries);
   // v4 S06: 카드 수치는 텍스트만(이모지 없음) — "N / 7 일" · "N pt" · "옷장" 표기
@@ -39,6 +40,18 @@ export const S06_HomeDay = ({ night = false }: { night?: boolean }) => {
     ['포인트', `${state.points} pt`, `보상 ${state.unlockedItems.length}개`],
     ['키우기', '준비 중', '의견 주기 ›'],
   ];
+  const toggleRoutineFromHome = (routine: Routine) => {
+    if (routineDragRef.current.didDrag) {
+      routineDragRef.current.didDrag = false;
+      return;
+    }
+    const wasDone = !!log.checks[routine.id];
+    dispatch({ type: 'routine/toggle', id: routine.id });
+    if (!wasDone) {
+      dispatch({ type: 'points/add', delta: 10 });
+      flash(`+10 ◉  ${routine.label}`);
+    }
+  };
   return (
   <div className="screen">
     <div className="screen-scroll" style={{ padding: 'calc(46px + var(--safe-t)) 18px calc(88px + var(--safe-b, 0px))' }}>
@@ -124,12 +137,10 @@ export const S06_HomeDay = ({ night = false }: { night?: boolean }) => {
         </div>
       )}
 
-      <button
-        type="button"
-        className="hbox r-r as-button"
-        onClick={() => nav.go('daily-check')}
+      <section
+        className="hbox r-r"
         aria-label={`오늘의 루틴, ${dailyDone} / ${routines.length} 완료`}
-        style={{ padding: 14, marginTop: 12, cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
+        style={{ padding: 14, marginTop: 12 }}
       >
         <div
           style={{
@@ -142,11 +153,45 @@ export const S06_HomeDay = ({ night = false }: { night?: boolean }) => {
           <div className="h-section">오늘의 루틴</div>
           <span className="tiny">{dailyDone} / {routines.length}</span>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(tiles.length, 1)}, 1fr)`, gap: 6 }}>
-          {tiles.map((r) => {
+        <div
+          aria-label="오늘의 루틴 목록"
+          className="routine-scroll"
+          ref={routineScrollRef}
+          onMouseDown={(event) => {
+            const el = event.currentTarget;
+            routineDragRef.current = { active: true, startX: event.clientX, startScroll: el.scrollLeft, didDrag: false };
+            el.style.cursor = 'grabbing';
+          }}
+          onMouseMove={(event) => {
+            const drag = routineDragRef.current;
+            const el = event.currentTarget;
+            if (!drag.active) return;
+            const delta = event.clientX - drag.startX;
+            if (Math.abs(delta) > 4) drag.didDrag = true;
+            el.scrollLeft = drag.startScroll - delta;
+          }}
+          onMouseUp={(event) => {
+            routineDragRef.current.active = false;
+            event.currentTarget.style.cursor = 'grab';
+          }}
+          onMouseLeave={(event) => {
+            routineDragRef.current.active = false;
+            event.currentTarget.style.cursor = 'grab';
+          }}
+          style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollSnapType: 'x proximity', cursor: 'grab', userSelect: 'none' }}
+        >
+          {routines.map((r) => {
             const on = !!log.checks[r.id];
             return (
-              <div key={r.id} style={{ textAlign: 'center' }}>
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => toggleRoutineFromHome(r)}
+                aria-pressed={on}
+                aria-label={`${r.label} ${on ? '완료' : '미완료'}`}
+                className="as-button"
+                style={{ flex: '0 0 62px', scrollSnapAlign: 'start', textAlign: 'center', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
                 <div
                   style={{
                     width: 44,
@@ -174,22 +219,17 @@ export const S06_HomeDay = ({ night = false }: { night?: boolean }) => {
                 >
                   {r.label}
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
-        {routines.length > 5 && (
-          <div className="tiny" style={{ marginTop: 6, color: 'var(--pencil)' }}>
-            외 {routines.length - 5}개 더 — 탭해서 보기
-          </div>
-        )}
-      </button>
+      </section>
 
       <button
         type="button"
         className="hbox r-l as-button"
         onClick={() => nav.go('daily-check')}
-        aria-label="오늘 낮 기록 — 루틴 체크와 한 줄 메모"
+        aria-label="오늘 기록하기 — 루틴 전체 관리와 한 줄 메모"
         style={{
           padding: 14,
           marginTop: 12,
@@ -208,7 +248,7 @@ export const S06_HomeDay = ({ night = false }: { night?: boolean }) => {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: 'Pretendard', fontWeight: 700, color: 'var(--ink)' }}>
-            오늘 낮, 가볍게 기록해요
+            오늘 기록하기
           </div>
           <div className="tiny" style={{ color: 'var(--ink-soft)' }}>루틴 체크 + 한 줄 메모 — 밤 회고 재료가 돼요</div>
         </div>
