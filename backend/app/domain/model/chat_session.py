@@ -8,14 +8,13 @@ from app.domain.model.chat_message import ChatMessage
 
 @dataclass
 class ChatSession:
-    # 회고 대화는 기존 3턴/5턴 정책과 테스트용 확장 턴 정책을 허용한다.
+    # 회고 대화는 5턴 모드와 자유 모드(상한 50턴)만 허용한다. 3턴 모드는 폐지됨.
     DEFAULT_MAX_TURNS: ClassVar[int] = 50
-    SHORT_MAX_TURNS: ClassVar[int] = 3
-    FULL_MAX_TURNS: ClassVar[int] = 5
-    ALLOWED_MAX_TURNS: ClassVar[tuple[int, int, int]] = (
-        SHORT_MAX_TURNS,
-        FULL_MAX_TURNS,
-        DEFAULT_MAX_TURNS,
+    FIVE_MAX_TURNS: ClassVar[int] = 5
+    FREE_MAX_TURNS: ClassVar[int] = DEFAULT_MAX_TURNS
+    ALLOWED_MAX_TURNS: ClassVar[tuple[int, int]] = (
+        FIVE_MAX_TURNS,
+        FREE_MAX_TURNS,
     )
 
     id: UUID = field(default_factory=uuid4)
