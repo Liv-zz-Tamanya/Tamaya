@@ -198,7 +198,6 @@ export const S10_RecapStart = () => {
             borderRadius: 16,
             padding: 14,
             border: '2px solid var(--ink)',
-            transform: 'rotate(-1.5deg)',
           }}
         >
           <CatSketch size={120} mood="happy" />

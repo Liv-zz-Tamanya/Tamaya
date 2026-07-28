@@ -49,7 +49,6 @@ export const S18_CatSurvey = () => {
             borderRadius: 16,
             padding: 16,
             border: '2px solid var(--ink)',
-            transform: 'rotate(-1.5deg)',
           }}
         >
           <CatSketch size={132} mood="happy" />
