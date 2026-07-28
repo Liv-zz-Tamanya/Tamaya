@@ -13,6 +13,7 @@ import {
   useStore,
 } from '../lib/store';
 import type { Interest, Routine } from '../lib/store';
+import { HEALTH_SURVEY_URL, openSurvey } from '../lib/surveys';
 import { formatKoreanTime, getTimeUntilNextOpen } from '../lib/nightChat';
 
 // 06-08 · Home Day / Home Night / Day Log(낮 기록: 루틴 체크 + 메모)
@@ -21,6 +22,7 @@ import { formatKoreanTime, getTimeUntilNextOpen } from '../lib/nightChat';
 export const S06_HomeDay = () => {
   const nav = useNav();
   const { state } = useStore();
+  const { toast, flash } = useToast();
   const minutesUntilOpen = getTimeUntilNextOpen(nav.now, nav.nightOpenTime);
   const remaining = `${Math.floor(minutesUntilOpen / 60)}시간 ${minutesUntilOpen % 60}분`;
   const log = dayLogFor(state.dayLog, nav.now);
@@ -36,7 +38,7 @@ export const S06_HomeDay = () => {
     ['오늘 컨디션', cond, latest ? '최근 회고 기준' : '첫 회고를 해봐요'],
     ['이번 주', `${weekCount} / 7 일`, '함께했어요'],
     ['포인트', `${state.points} pt`, `보상 ${state.unlockedItems.length}개`],
-    ['키우기', '옷장', '이동 ›'],
+    ['키우기', '준비 중', '의견 주기 ›'],
   ];
   return (
   <div className="screen">
@@ -252,7 +254,57 @@ export const S06_HomeDay = () => {
           );
         })}
       </div>
+
+      {/* 건강 기록 — 출시 예정 티저 (프리미엄 전용 예정, 탭하면 설문 새 창) */}
+      <button
+        type="button"
+        className="hbox night r-l as-button"
+        onClick={() => {
+          if (!openSurvey(HEALTH_SURVEY_URL)) {
+            flash('설문 링크를 준비 중이에요 — 조금만 기다려줘요');
+          }
+        }}
+        aria-label="건강 기록 출시 예정 — 설문으로 의견 남기기"
+        style={{
+          padding: 14,
+          marginTop: 12,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          cursor: 'pointer',
+          width: '100%',
+          textAlign: 'left',
+          color: 'var(--paper)',
+        }}
+      >
+        <div className="ph-circle" style={{ width: 40, height: 40, background: 'var(--paper)', color: 'var(--ink)', flex: 'none' }}>
+          ♥
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>건강 기록</span>
+            <span
+              className="tiny"
+              style={{
+                background: 'var(--accent-soft)',
+                color: 'var(--ink)',
+                borderRadius: 999,
+                padding: '1px 7px',
+                fontWeight: 700,
+                letterSpacing: 0,
+              }}
+            >
+              출시 예정
+            </span>
+          </div>
+          <div className="tiny" style={{ color: 'var(--accent-soft)', marginTop: 2 }}>
+            수면·걸음까지 한 곳에 — 프리미엄으로 준비 중, 의견을 들려주세요 ↗
+          </div>
+        </div>
+        <span className="handwriting" style={{ fontSize: 24 }} aria-hidden="true">›</span>
+      </button>
     </div>
+    {toast && <div className="toast" role="status">{toast}</div>}
     <TabBar active="home" />
   </div>
   );
@@ -382,7 +434,7 @@ export const S07_HomeNight = () => {
         {(
           [
             ['cal', '캘린더', '지난 일기 보기', 'calendar'],
-            ['cat', '이음이 방', '이음이 보러가기', 'cat-room'],
+            ['cat', '이음이 키우기', '준비 중 · 의견 들려주기', 'cat-room'],
             ['ins', '이번 주 인사이트', 'AI 분석과 함께하기', 'insights'],
           ] as ['cal' | 'cat' | 'ins', string, string, 'calendar' | 'cat-room' | 'insights'][]
         ).map(([ic, t, s, route], i) => (

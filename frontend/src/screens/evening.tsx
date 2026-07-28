@@ -901,22 +901,14 @@ export const S13_Reward = () => {
         총 포인트 {state.points} ◉ · 일기 {state.diaries.length}건
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>
+      <div style={{ marginTop: 18 }}>
         <button
           type="button"
           onClick={() => nav.reset('home-night')}
-          className="btn block"
-          style={{ cursor: 'pointer', fontFamily: 'inherit' }}
-        >
-          홈으로
-        </button>
-        <button
-          type="button"
-          onClick={() => nav.reset('cat-room')}
           className="btn primary block"
           style={{ cursor: 'pointer', fontFamily: 'inherit' }}
         >
-          먹이주기 →
+          홈으로
         </button>
       </div>
     </div>

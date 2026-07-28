@@ -23,13 +23,10 @@ export type Route =
   | 'stats'
   | 'insights'
   | 'cat-room'
-  | 'inventory'
   | 'report'
   | 'login'
   | 'settings'
   // 건강냥(Medlife) 통합 — BE-only 기능 신규 화면 (feat/healthcat-backend)
-  | 'coach'
-  | 'wellbeing'
   | 'byok'
   | 'health-chat';
 

@@ -71,8 +71,6 @@ export const S22_Settings = () => {
     danger?: boolean;
   }[] = [
     { label: '이음이 이름', value: state.character.name, onClick: () => nav.go('create-cat') },
-    { label: '밤 코칭 (건강냥)', value: '코칭 대화', onClick: () => nav.go('coach') },
-    { label: '웰빙 인사이트', value: '주간 스코어', onClick: () => nav.go('wellbeing') },
     { label: '건강 기록 Q&A', value: '내 기록 기반 질문', onClick: () => nav.go('health-chat') },
     { label: 'CLOVA 키 (BYOK)', value: '키 설정', onClick: () => nav.go('byok') },
     { label: '버전', value: 'v1.0 · tamaya.online' },
