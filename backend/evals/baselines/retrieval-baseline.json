@@ -1,49 +1,66 @@
 {
-  "run_id": "20260723T071554Z",
-  "started_at": "2026-07-23T07:15:54.237042Z",
-  "completed_at": "2026-07-23T07:16:13.931735Z",
+  "run_id": "20260730T033058Z",
+  "started_at": "2026-07-30T03:30:58.777498Z",
+  "completed_at": "2026-07-30T03:31:05.708920Z",
   "top_k": 5,
   "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
-  "git_commit": "63e6e4f",
+  "mode": "filter-rerank",
+  "candidate_k": 15,
+  "reranker_model": "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
+  "reranker_load_seconds": 8.82,
+  "reranker_fallback_count": 0,
+  "git_commit": "66fb972",
   "git_dirty": false,
   "summary": {
-    "case_count": 30,
-    "evaluable_cases": 29,
-    "hit_rate_at_1": 44.8,
-    "hit_rate_at_3": 93.1,
-    "hit_rate_at_5": 96.6,
-    "mean_precision_at_k": 0.234,
-    "mean_recall_at_k": 0.966,
-    "mrr": 0.674,
-    "empty_expected_cases": 1,
-    "empty_check_passed_cases": 1,
+    "case_count": 39,
+    "evaluable_cases": 37,
+    "hit_rate_at_1": 86.5,
+    "hit_rate_at_3": 94.6,
+    "hit_rate_at_5": 97.3,
+    "mean_precision_at_k": 0.216,
+    "mean_recall_at_k": 0.95,
+    "mrr": 0.903,
+    "mean_ndcg_at_k": 0.908,
+    "latency_ms_mean": 177.595,
+    "latency_ms_p50": 123.8,
+    "latency_ms_p95": 181.8,
+    "empty_expected_cases": 2,
+    "empty_check_passed_cases": 2,
     "leak_violation_cases": 0,
     "unknown_result_cases": 0
   },
   "by_kind": {
     "diary": {
-      "case_count": 23,
-      "evaluable_cases": 23,
-      "hit_rate_at_1": 43.5,
-      "hit_rate_at_3": 91.3,
-      "hit_rate_at_5": 95.7,
-      "mean_precision_at_k": 0.243,
-      "mean_recall_at_k": 0.957,
-      "mrr": 0.661,
-      "empty_expected_cases": 0,
-      "empty_check_passed_cases": 0,
+      "case_count": 31,
+      "evaluable_cases": 30,
+      "hit_rate_at_1": 90.0,
+      "hit_rate_at_3": 96.7,
+      "hit_rate_at_5": 96.7,
+      "mean_precision_at_k": 0.22,
+      "mean_recall_at_k": 0.939,
+      "mrr": 0.928,
+      "mean_ndcg_at_k": 0.923,
+      "latency_ms_mean": 199.552,
+      "latency_ms_p50": 123.8,
+      "latency_ms_p95": 181.8,
+      "empty_expected_cases": 1,
+      "empty_check_passed_cases": 1,
       "leak_violation_cases": 0,
       "unknown_result_cases": 0
     },
     "health": {
-      "case_count": 7,
-      "evaluable_cases": 6,
-      "hit_rate_at_1": 50.0,
-      "hit_rate_at_3": 100.0,
+      "case_count": 8,
+      "evaluable_cases": 7,
+      "hit_rate_at_1": 71.4,
+      "hit_rate_at_3": 85.7,
       "hit_rate_at_5": 100.0,
       "mean_precision_at_k": 0.2,
       "mean_recall_at_k": 1.0,
-      "mrr": 0.722,
+      "mrr": 0.798,
+      "mean_ndcg_at_k": 0.847,
+      "latency_ms_mean": 92.513,
+      "latency_ms_p50": 132.0,
+      "latency_ms_p95": 142.0,
       "empty_expected_cases": 1,
       "empty_check_passed_cases": 1,
       "leak_violation_cases": 0,
@@ -51,15 +68,37 @@
     }
   },
   "by_category": {
-    "cross_user_probe": {
+    "adjacent_date_hard_negative": {
       "case_count": 2,
       "evaluable_cases": 2,
-      "hit_rate_at_1": 0.0,
+      "hit_rate_at_1": 100.0,
       "hit_rate_at_3": 100.0,
       "hit_rate_at_5": 100.0,
       "mean_precision_at_k": 0.2,
       "mean_recall_at_k": 1.0,
-      "mrr": 0.416,
+      "mrr": 1.0,
+      "mean_ndcg_at_k": 1.0,
+      "latency_ms_mean": 179.1,
+      "latency_ms_p50": 176.4,
+      "latency_ms_p95": 181.8,
+      "empty_expected_cases": 0,
+      "empty_check_passed_cases": 0,
+      "leak_violation_cases": 0,
+      "unknown_result_cases": 0
+    },
+    "cross_user_probe": {
+      "case_count": 2,
+      "evaluable_cases": 2,
+      "hit_rate_at_1": 100.0,
+      "hit_rate_at_3": 100.0,
+      "hit_rate_at_5": 100.0,
+      "mean_precision_at_k": 0.2,
+      "mean_recall_at_k": 1.0,
+      "mrr": 1.0,
+      "mean_ndcg_at_k": 1.0,
+      "latency_ms_mean": 145.7,
+      "latency_ms_p50": 123.8,
+      "latency_ms_p95": 167.6,
       "empty_expected_cases": 0,
       "empty_check_passed_cases": 0,
       "leak_violation_cases": 0,
@@ -68,12 +107,16 @@
     "date_reference": {
       "case_count": 2,
       "evaluable_cases": 2,
-      "hit_rate_at_1": 0.0,
+      "hit_rate_at_1": 100.0,
       "hit_rate_at_3": 100.0,
       "hit_rate_at_5": 100.0,
       "mean_precision_at_k": 0.3,
       "mean_recall_at_k": 1.0,
-      "mrr": 0.5,
+      "mrr": 1.0,
+      "mean_ndcg_at_k": 1.0,
+      "latency_ms_mean": 52.1,
+      "latency_ms_p50": 51.7,
+      "latency_ms_p95": 52.5,
       "empty_expected_cases": 0,
       "empty_check_passed_cases": 0,
       "leak_violation_cases": 0,
@@ -82,12 +125,16 @@
     "direct_recall": {
       "case_count": 10,
       "evaluable_cases": 10,
-      "hit_rate_at_1": 40.0,
-      "hit_rate_at_3": 80.0,
-      "hit_rate_at_5": 90.0,
-      "mean_precision_at_k": 0.18,
-      "mean_recall_at_k": 0.9,
-      "mrr": 0.587,
+      "hit_rate_at_1": 90.0,
+      "hit_rate_at_3": 100.0,
+      "hit_rate_at_5": 100.0,
+      "mean_precision_at_k": 0.2,
+      "mean_recall_at_k": 1.0,
+      "mrr": 0.933,
+      "mean_ndcg_at_k": 0.95,
+      "latency_ms_mean": 368.09,
+      "latency_ms_p50": 123.8,
+      "latency_ms_p95": 2491.0,
       "empty_expected_cases": 0,
       "empty_check_passed_cases": 0,
       "leak_violation_cases": 0,
@@ -102,20 +149,64 @@
       "mean_precision_at_k": null,
       "mean_recall_at_k": null,
       "mrr": null,
+      "mean_ndcg_at_k": null,
+      "latency_ms_mean": 19.0,
+      "latency_ms_p50": 19.0,
+      "latency_ms_p95": 19.0,
       "empty_expected_cases": 1,
       "empty_check_passed_cases": 1,
+      "leak_violation_cases": 0,
+      "unknown_result_cases": 0
+    },
+    "exact_date": {
+      "case_count": 4,
+      "evaluable_cases": 4,
+      "hit_rate_at_1": 100.0,
+      "hit_rate_at_3": 100.0,
+      "hit_rate_at_5": 100.0,
+      "mean_precision_at_k": 0.2,
+      "mean_recall_at_k": 1.0,
+      "mrr": 1.0,
+      "mean_ndcg_at_k": 1.0,
+      "latency_ms_mean": 22.75,
+      "latency_ms_p50": 23.2,
+      "latency_ms_p95": 24.3,
+      "empty_expected_cases": 0,
+      "empty_check_passed_cases": 0,
+      "leak_violation_cases": 0,
+      "unknown_result_cases": 0
+    },
+    "exact_entity": {
+      "case_count": 1,
+      "evaluable_cases": 1,
+      "hit_rate_at_1": 100.0,
+      "hit_rate_at_3": 100.0,
+      "hit_rate_at_5": 100.0,
+      "mean_precision_at_k": 0.2,
+      "mean_recall_at_k": 1.0,
+      "mrr": 1.0,
+      "mean_ndcg_at_k": 1.0,
+      "latency_ms_mean": 167.5,
+      "latency_ms_p50": 167.5,
+      "latency_ms_p95": 167.5,
+      "empty_expected_cases": 0,
+      "empty_check_passed_cases": 0,
       "leak_violation_cases": 0,
       "unknown_result_cases": 0
     },
     "hard_negative": {
       "case_count": 5,
       "evaluable_cases": 5,
-      "hit_rate_at_1": 80.0,
+      "hit_rate_at_1": 100.0,
       "hit_rate_at_3": 100.0,
       "hit_rate_at_5": 100.0,
       "mean_precision_at_k": 0.2,
       "mean_recall_at_k": 1.0,
-      "mrr": 0.867,
+      "mrr": 1.0,
+      "mean_ndcg_at_k": 1.0,
+      "latency_ms_mean": 133.26,
+      "latency_ms_p50": 127.1,
+      "latency_ms_p95": 175.3,
       "empty_expected_cases": 0,
       "empty_check_passed_cases": 0,
       "leak_violation_cases": 0,
@@ -124,26 +215,70 @@
     "multi_relevant": {
       "case_count": 4,
       "evaluable_cases": 4,
-      "hit_rate_at_1": 75.0,
+      "hit_rate_at_1": 50.0,
       "hit_rate_at_3": 100.0,
       "hit_rate_at_5": 100.0,
-      "mean_precision_at_k": 0.45,
-      "mean_recall_at_k": 1.0,
-      "mrr": 0.875,
+      "mean_precision_at_k": 0.35,
+      "mean_recall_at_k": 0.792,
+      "mrr": 0.708,
+      "mean_ndcg_at_k": 0.67,
+      "latency_ms_mean": 128.75,
+      "latency_ms_p50": 121.6,
+      "latency_ms_p95": 166.8,
       "empty_expected_cases": 0,
       "empty_check_passed_cases": 0,
+      "leak_violation_cases": 0,
+      "unknown_result_cases": 0
+    },
+    "no_match_date": {
+      "case_count": 1,
+      "evaluable_cases": 0,
+      "hit_rate_at_1": null,
+      "hit_rate_at_3": null,
+      "hit_rate_at_5": null,
+      "mean_precision_at_k": null,
+      "mean_recall_at_k": null,
+      "mrr": null,
+      "mean_ndcg_at_k": null,
+      "latency_ms_mean": 24.5,
+      "latency_ms_p50": 24.5,
+      "latency_ms_p95": 24.5,
+      "empty_expected_cases": 1,
+      "empty_check_passed_cases": 1,
       "leak_violation_cases": 0,
       "unknown_result_cases": 0
     },
     "paraphrase_recall": {
       "case_count": 6,
       "evaluable_cases": 6,
-      "hit_rate_at_1": 33.3,
+      "hit_rate_at_1": 66.7,
+      "hit_rate_at_3": 66.7,
+      "hit_rate_at_5": 83.3,
+      "mean_precision_at_k": 0.167,
+      "mean_recall_at_k": 0.833,
+      "mrr": 0.708,
+      "mean_ndcg_at_k": 0.739,
+      "latency_ms_mean": 135.2,
+      "latency_ms_p50": 133.3,
+      "latency_ms_p95": 177.4,
+      "empty_expected_cases": 0,
+      "empty_check_passed_cases": 0,
+      "leak_violation_cases": 0,
+      "unknown_result_cases": 0
+    },
+    "same_topic_different_date": {
+      "case_count": 1,
+      "evaluable_cases": 1,
+      "hit_rate_at_1": 100.0,
       "hit_rate_at_3": 100.0,
       "hit_rate_at_5": 100.0,
       "mean_precision_at_k": 0.2,
       "mean_recall_at_k": 1.0,
-      "mrr": 0.667,
+      "mrr": 1.0,
+      "mean_ndcg_at_k": 1.0,
+      "latency_ms_mean": 197.0,
+      "latency_ms_p50": 197.0,
+      "latency_ms_p95": 197.0,
       "empty_expected_cases": 0,
       "empty_check_passed_cases": 0,
       "leak_violation_cases": 0,
@@ -163,25 +298,25 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "hana-0625-jeju",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 2,
-          "label": "hana-0610-dinner",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 3,
           "label": "hana-0602-cafe",
           "relevant": true,
           "leaked_from": null
         },
         {
+          "rank": 2,
+          "label": "hana-0722-minsu-movie",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "hana-0610-dinner",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
           "rank": 4,
-          "label": "hana-0618-mom",
+          "label": "hana-0714-minsu-cafe",
           "relevant": false,
           "leaked_from": null
         },
@@ -193,13 +328,15 @@
         }
       ],
       "rank_metrics_evaluable": true,
-      "hit_at_1": false,
+      "hit_at_1": true,
       "hit_at_3": true,
       "hit_at_5": true,
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
-      "reciprocal_rank": 0.333,
-      "first_relevant_rank": 3,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 2491.0,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -229,19 +366,19 @@
         },
         {
           "rank": 3,
-          "label": "hana-0625-jeju",
+          "label": "hana-0618-sick",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 4,
-          "label": "hana-0602-cafe",
+          "label": "hana-0720-presentation",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 5,
-          "label": "hana-0602-deadline",
+          "label": "hana-0721-presentation",
           "relevant": false,
           "leaked_from": null
         }
@@ -253,7 +390,9 @@
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
       "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
       "first_relevant_rank": 1,
+      "search_latency_ms": 179.2,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -271,43 +410,45 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "hana-0625-jeju",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 2,
           "label": "hana-0618-sick",
           "relevant": true,
           "leaked_from": null
         },
         {
-          "rank": 3,
-          "label": "hana-0610-dinner",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 4,
+          "rank": 2,
           "label": "hana-0618-mom",
           "relevant": false,
           "leaked_from": null
         },
         {
-          "rank": 5,
+          "rank": 3,
           "label": "hana-0602-deadline",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "hana-0722-minsu-movie",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "hana-0610-dinner",
           "relevant": false,
           "leaked_from": null
         }
       ],
       "rank_metrics_evaluable": true,
-      "hit_at_1": false,
+      "hit_at_1": true,
       "hit_at_3": true,
       "hit_at_5": true,
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
-      "reciprocal_rank": 0.5,
-      "first_relevant_rank": 2,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 173.9,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -331,25 +472,25 @@
         },
         {
           "rank": 2,
-          "label": "doyun-0627-routine",
+          "label": "doyun-0627-marathon",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 3,
-          "label": "doyun-0611-lunch",
+          "label": "doyun-0627-routine",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 4,
-          "label": "doyun-0619-pt",
+          "label": "doyun-0611-lunch",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 5,
-          "label": "doyun-0619-squat",
+          "label": "doyun-0603-knee",
           "relevant": false,
           "leaked_from": null
         }
@@ -361,7 +502,9 @@
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
       "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
       "first_relevant_rank": 1,
+      "search_latency_ms": 119.2,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -379,13 +522,13 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "doyun-0611-lunch",
-          "relevant": false,
+          "label": "doyun-0611-review",
+          "relevant": true,
           "leaked_from": null
         },
         {
           "rank": 2,
-          "label": "doyun-0627-routine",
+          "label": "doyun-0611-lunch",
           "relevant": false,
           "leaked_from": null
         },
@@ -397,25 +540,27 @@
         },
         {
           "rank": 4,
-          "label": "doyun-0619-squat",
+          "label": "doyun-0627-routine",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 5,
-          "label": "doyun-0627-marathon",
+          "label": "doyun-0603-knee",
           "relevant": false,
           "leaked_from": null
         }
       ],
       "rank_metrics_evaluable": true,
-      "hit_at_1": false,
-      "hit_at_3": false,
-      "hit_at_5": false,
-      "precision_at_k": 0.0,
-      "recall_at_k": 0.0,
-      "reciprocal_rank": 0.0,
-      "first_relevant_rank": null,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 123.8,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -433,8 +578,8 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "sora-0621-party",
-          "relevant": false,
+          "label": "sora-0621-talk",
+          "relevant": true,
           "leaked_from": null
         },
         {
@@ -445,31 +590,33 @@
         },
         {
           "rank": 3,
-          "label": "sora-0621-talk",
-          "relevant": true,
+          "label": "sora-0621-party",
+          "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 4,
-          "label": "sora-0628-cafe",
+          "label": "sora-0613-walk",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 5,
-          "label": "sora-0613-walk",
+          "label": "sora-0628-cafe",
           "relevant": false,
           "leaked_from": null
         }
       ],
       "rank_metrics_evaluable": true,
-      "hit_at_1": false,
+      "hit_at_1": true,
       "hit_at_3": true,
       "hit_at_5": true,
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
-      "reciprocal_rank": 0.333,
-      "first_relevant_rank": 3,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 122.8,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -487,43 +634,45 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "sora-0613-practice",
-          "relevant": false,
+          "label": "sora-0605-fail",
+          "relevant": true,
           "leaked_from": null
         },
         {
           "rank": 2,
-          "label": "sora-0613-walk",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 3,
-          "label": "sora-0621-party",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 4,
           "label": "sora-0628-cafe",
           "relevant": false,
           "leaked_from": null
         },
         {
+          "rank": 3,
+          "label": "sora-0613-walk",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "sora-0613-practice",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
           "rank": 5,
-          "label": "sora-0605-fail",
-          "relevant": true,
+          "label": "sora-0621-party",
+          "relevant": false,
           "leaked_from": null
         }
       ],
       "rank_metrics_evaluable": true,
-      "hit_at_1": false,
-      "hit_at_3": false,
+      "hit_at_1": true,
+      "hit_at_3": true,
       "hit_at_5": true,
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
-      "reciprocal_rank": 0.2,
-      "first_relevant_rank": 5,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 118.6,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -541,43 +690,45 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "hana-0625-jeju",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 2,
-          "label": "hana-0602-cafe",
-          "relevant": true,
-          "leaked_from": null
-        },
-        {
-          "rank": 3,
           "label": "hana-0610-dinner",
           "relevant": false,
           "leaked_from": null
         },
         {
-          "rank": 4,
+          "rank": 2,
+          "label": "hana-0618-sick",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
           "label": "hana-0618-mom",
           "relevant": false,
           "leaked_from": null
         },
         {
+          "rank": 4,
+          "label": "hana-0714-minsu-cafe",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
           "rank": 5,
-          "label": "hana-0610-praise",
+          "label": "hana-0721-presentation",
           "relevant": false,
           "leaked_from": null
         }
       ],
       "rank_metrics_evaluable": true,
       "hit_at_1": false,
-      "hit_at_3": true,
-      "hit_at_5": true,
-      "precision_at_k": 0.2,
-      "recall_at_k": 1.0,
-      "reciprocal_rank": 0.5,
-      "first_relevant_rank": 2,
+      "hit_at_3": false,
+      "hit_at_5": false,
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank": 0.0,
+      "ndcg_at_k": 0.0,
+      "first_relevant_rank": null,
+      "search_latency_ms": 174.9,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -595,43 +746,45 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "doyun-0611-lunch",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 2,
           "label": "doyun-0603-knee",
           "relevant": true,
           "leaked_from": null
         },
         {
-          "rank": 3,
+          "rank": 2,
           "label": "doyun-0619-pt",
           "relevant": false,
           "leaked_from": null
         },
         {
+          "rank": 3,
+          "label": "doyun-0611-lunch",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
           "rank": 4,
-          "label": "doyun-0619-squat",
+          "label": "doyun-0603-run",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 5,
-          "label": "doyun-0627-routine",
+          "label": "doyun-0619-squat",
           "relevant": false,
           "leaked_from": null
         }
       ],
       "rank_metrics_evaluable": true,
-      "hit_at_1": false,
+      "hit_at_1": true,
       "hit_at_3": true,
       "hit_at_5": true,
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
-      "reciprocal_rank": 0.5,
-      "first_relevant_rank": 2,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 118.2,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -655,25 +808,25 @@
         },
         {
           "rank": 2,
-          "label": "sora-0613-practice",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 3,
-          "label": "sora-0621-party",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 4,
           "label": "sora-0628-cafe",
           "relevant": false,
           "leaked_from": null
         },
         {
+          "rank": 3,
+          "label": "sora-0605-fail",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "sora-0621-party",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
           "rank": 5,
-          "label": "sora-0621-talk",
+          "label": "sora-0720-recital",
           "relevant": false,
           "leaked_from": null
         }
@@ -685,7 +838,9 @@
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
       "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
       "first_relevant_rank": 1,
+      "search_latency_ms": 135.0,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -703,14 +858,14 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "hana-0625-jeju",
-          "relevant": false,
+          "label": "hana-0618-mom",
+          "relevant": true,
           "leaked_from": null
         },
         {
           "rank": 2,
-          "label": "hana-0618-mom",
-          "relevant": true,
+          "label": "hana-0618-sick",
+          "relevant": false,
           "leaked_from": null
         },
         {
@@ -721,25 +876,27 @@
         },
         {
           "rank": 4,
-          "label": "hana-0602-cafe",
+          "label": "hana-0722-minsu-movie",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 5,
-          "label": "hana-0618-sick",
+          "label": "hana-0602-cafe",
           "relevant": false,
           "leaked_from": null
         }
       ],
       "rank_metrics_evaluable": true,
-      "hit_at_1": false,
+      "hit_at_1": true,
       "hit_at_3": true,
       "hit_at_5": true,
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
-      "reciprocal_rank": 0.5,
-      "first_relevant_rank": 2,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 177.4,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -758,32 +915,32 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "hana-0625-jeju",
+          "label": "hana-0602-cafe",
           "relevant": true,
           "leaked_from": null
         },
         {
           "rank": 2,
-          "label": "hana-0618-mom",
+          "label": "hana-0722-minsu-movie",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 3,
-          "label": "hana-0610-praise",
+          "label": "hana-0714-minsu-cafe",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 4,
-          "label": "hana-0610-dinner",
-          "relevant": false,
+          "label": "hana-0625-jeju",
+          "relevant": true,
           "leaked_from": null
         },
         {
           "rank": 5,
-          "label": "hana-0602-cafe",
-          "relevant": true,
+          "label": "hana-0618-sick",
+          "relevant": false,
           "leaked_from": null
         }
       ],
@@ -794,7 +951,9 @@
       "precision_at_k": 0.4,
       "recall_at_k": 1.0,
       "reciprocal_rank": 1.0,
+      "ndcg_at_k": 0.877,
       "first_relevant_rank": 1,
+      "search_latency_ms": 166.8,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -814,25 +973,25 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "doyun-0627-marathon",
-          "relevant": true,
+          "label": "doyun-0611-lunch",
+          "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 2,
+          "label": "doyun-0611-review",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
           "label": "doyun-0627-routine",
           "relevant": true,
           "leaked_from": null
         },
         {
-          "rank": 3,
-          "label": "doyun-0619-squat",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
           "rank": 4,
-          "label": "doyun-0611-lunch",
+          "label": "doyun-0619-squat",
           "relevant": false,
           "leaked_from": null
         },
@@ -844,13 +1003,15 @@
         }
       ],
       "rank_metrics_evaluable": true,
-      "hit_at_1": true,
+      "hit_at_1": false,
       "hit_at_3": true,
       "hit_at_5": true,
-      "precision_at_k": 0.6,
-      "recall_at_k": 1.0,
-      "reciprocal_rank": 1.0,
-      "first_relevant_rank": 1,
+      "precision_at_k": 0.4,
+      "recall_at_k": 0.667,
+      "reciprocal_rank": 0.333,
+      "ndcg_at_k": 0.416,
+      "first_relevant_rank": 3,
+      "search_latency_ms": 114.8,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -881,20 +1042,20 @@
         },
         {
           "rank": 3,
-          "label": "sora-0621-party",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 4,
           "label": "sora-0628-cafe",
           "relevant": false,
           "leaked_from": null
         },
         {
+          "rank": 4,
+          "label": "sora-0605-fail",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
           "rank": 5,
-          "label": "sora-0621-talk",
-          "relevant": true,
+          "label": "sora-0621-party",
+          "relevant": false,
           "leaked_from": null
         }
       ],
@@ -902,10 +1063,12 @@
       "hit_at_1": false,
       "hit_at_3": true,
       "hit_at_5": true,
-      "precision_at_k": 0.4,
-      "recall_at_k": 1.0,
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
       "reciprocal_rank": 0.5,
+      "ndcg_at_k": 0.387,
       "first_relevant_rank": 2,
+      "search_latency_ms": 121.6,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -936,19 +1099,19 @@
         },
         {
           "rank": 3,
-          "label": "doyun-0603-knee",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 4,
           "label": "doyun-0603-run",
           "relevant": false,
           "leaked_from": null
         },
         {
-          "rank": 5,
+          "rank": 4,
           "label": "doyun-0627-routine",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "doyun-0611-lunch",
           "relevant": false,
           "leaked_from": null
         }
@@ -960,7 +1123,9 @@
       "precision_at_k": 0.4,
       "recall_at_k": 1.0,
       "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
       "first_relevant_rank": 1,
+      "search_latency_ms": 111.8,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -984,25 +1149,25 @@
         },
         {
           "rank": 2,
-          "label": "hana-0602-cafe",
+          "label": "hana-0722-minsu-movie",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 3,
-          "label": "hana-0625-jeju",
+          "label": "hana-0602-cafe",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 4,
-          "label": "hana-0610-praise",
+          "label": "hana-0618-sick",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 5,
-          "label": "hana-0618-sick",
+          "label": "hana-0618-mom",
           "relevant": false,
           "leaked_from": null
         }
@@ -1014,7 +1179,9 @@
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
       "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
       "first_relevant_rank": 1,
+      "search_latency_ms": 175.3,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -1038,25 +1205,25 @@
         },
         {
           "rank": 2,
-          "label": "doyun-0627-routine",
+          "label": "doyun-0611-lunch",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 3,
-          "label": "doyun-0603-run",
+          "label": "doyun-0627-routine",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 4,
-          "label": "doyun-0619-squat",
+          "label": "doyun-0603-run",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 5,
-          "label": "doyun-0611-lunch",
+          "label": "doyun-0619-pt",
           "relevant": false,
           "leaked_from": null
         }
@@ -1068,7 +1235,9 @@
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
       "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
       "first_relevant_rank": 1,
+      "search_latency_ms": 109.1,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -1092,25 +1261,25 @@
         },
         {
           "rank": 2,
-          "label": "sora-0621-party",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 3,
           "label": "sora-0613-walk",
           "relevant": false,
           "leaked_from": null
         },
         {
+          "rank": 3,
+          "label": "sora-0621-party",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
           "rank": 4,
-          "label": "sora-0613-practice",
+          "label": "sora-0605-fail",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 5,
-          "label": "sora-0621-talk",
+          "label": "sora-0605-meeting",
           "relevant": false,
           "leaked_from": null
         }
@@ -1122,7 +1291,9 @@
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
       "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
       "first_relevant_rank": 1,
+      "search_latency_ms": 116.1,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -1152,13 +1323,13 @@
         },
         {
           "rank": 3,
-          "label": "sora-0613-practice",
+          "label": "sora-0628-cafe",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 4,
-          "label": "sora-0628-cafe",
+          "label": "sora-0605-fail",
           "relevant": false,
           "leaked_from": null
         },
@@ -1176,7 +1347,9 @@
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
       "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
       "first_relevant_rank": 1,
+      "search_latency_ms": 127.1,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -1194,43 +1367,45 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "hana-0625-jeju",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 2,
           "label": "hana-0602-cafe",
           "relevant": true,
           "leaked_from": null
         },
         {
+          "rank": 2,
+          "label": "hana-0722-minsu-movie",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
           "rank": 3,
-          "label": "hana-0610-dinner",
+          "label": "hana-0618-sick",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 4,
-          "label": "hana-0610-praise",
+          "label": "hana-0610-dinner",
           "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 5,
-          "label": "hana-0618-sick",
+          "label": "hana-0714-minsu-cafe",
           "relevant": false,
           "leaked_from": null
         }
       ],
       "rank_metrics_evaluable": true,
-      "hit_at_1": false,
+      "hit_at_1": true,
       "hit_at_3": true,
       "hit_at_5": true,
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
-      "reciprocal_rank": 0.5,
-      "first_relevant_rank": 2,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 167.6,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -1248,25 +1423,25 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "sora-0613-walk",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 2,
-          "label": "sora-0621-party",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 3,
           "label": "sora-0628-cafe",
           "relevant": true,
           "leaked_from": null
         },
         {
+          "rank": 2,
+          "label": "sora-0613-walk",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "sora-0621-party",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
           "rank": 4,
-          "label": "sora-0613-practice",
+          "label": "sora-0605-fail",
           "relevant": false,
           "leaked_from": null
         },
@@ -1278,13 +1453,15 @@
         }
       ],
       "rank_metrics_evaluable": true,
-      "hit_at_1": false,
+      "hit_at_1": true,
       "hit_at_3": true,
       "hit_at_5": true,
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
-      "reciprocal_rank": 0.333,
-      "first_relevant_rank": 3,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 123.8,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -1303,43 +1480,27 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "hana-0625-jeju",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 2,
           "label": "hana-0618-mom",
           "relevant": true,
           "leaked_from": null
         },
         {
-          "rank": 3,
-          "label": "hana-0602-deadline",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 4,
+          "rank": 2,
           "label": "hana-0618-sick",
           "relevant": true,
-          "leaked_from": null
-        },
-        {
-          "rank": 5,
-          "label": "hana-0610-dinner",
-          "relevant": false,
           "leaked_from": null
         }
       ],
       "rank_metrics_evaluable": true,
-      "hit_at_1": false,
+      "hit_at_1": true,
       "hit_at_3": true,
       "hit_at_5": true,
       "precision_at_k": 0.4,
       "recall_at_k": 1.0,
-      "reciprocal_rank": 0.5,
-      "first_relevant_rank": 2,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 52.5,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -1357,43 +1518,27 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "doyun-0627-routine",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 2,
           "label": "doyun-0603-run",
           "relevant": true,
           "leaked_from": null
         },
         {
-          "rank": 3,
-          "label": "doyun-0627-marathon",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 4,
-          "label": "doyun-0619-pt",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 5,
-          "label": "doyun-0619-squat",
+          "rank": 2,
+          "label": "doyun-0603-knee",
           "relevant": false,
           "leaked_from": null
         }
       ],
       "rank_metrics_evaluable": true,
-      "hit_at_1": false,
+      "hit_at_1": true,
       "hit_at_3": true,
       "hit_at_5": true,
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
-      "reciprocal_rank": 0.5,
-      "first_relevant_rank": 2,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 51.7,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -1417,14 +1562,14 @@
         },
         {
           "rank": 2,
-          "label": "health-doyun-0603",
-          "relevant": true,
+          "label": "health-doyun-0619",
+          "relevant": false,
           "leaked_from": null
         },
         {
           "rank": 3,
-          "label": "health-doyun-0619",
-          "relevant": false,
+          "label": "health-doyun-0603",
+          "relevant": true,
           "leaked_from": null
         },
         {
@@ -1440,8 +1585,10 @@
       "hit_at_5": true,
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
-      "reciprocal_rank": 0.5,
-      "first_relevant_rank": 2,
+      "reciprocal_rank": 0.333,
+      "ndcg_at_k": 0.5,
+      "first_relevant_rank": 3,
+      "search_latency_ms": 142.0,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -1489,7 +1636,9 @@
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
       "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
       "first_relevant_rank": 1,
+      "search_latency_ms": 132.0,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -1507,37 +1656,39 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "health-doyun-0619",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 2,
-          "label": "health-doyun-0603",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 3,
           "label": "health-doyun-0628",
           "relevant": true,
           "leaked_from": null
         },
         {
-          "rank": 4,
+          "rank": 2,
           "label": "health-doyun-0627",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "health-doyun-0619",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "health-doyun-0603",
           "relevant": false,
           "leaked_from": null
         }
       ],
       "rank_metrics_evaluable": true,
-      "hit_at_1": false,
+      "hit_at_1": true,
       "hit_at_3": true,
       "hit_at_5": true,
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
-      "reciprocal_rank": 0.333,
-      "first_relevant_rank": 3,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 138.7,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -1573,7 +1724,9 @@
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
       "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
       "first_relevant_rank": 1,
+      "search_latency_ms": 78.4,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -1591,25 +1744,27 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "health-hana-0621",
-          "relevant": false,
+          "label": "health-hana-0620",
+          "relevant": true,
           "leaked_from": null
         },
         {
           "rank": 2,
-          "label": "health-hana-0620",
-          "relevant": true,
+          "label": "health-hana-0621",
+          "relevant": false,
           "leaked_from": null
         }
       ],
       "rank_metrics_evaluable": true,
-      "hit_at_1": false,
+      "hit_at_1": true,
       "hit_at_3": true,
       "hit_at_5": true,
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
-      "reciprocal_rank": 0.5,
-      "first_relevant_rank": 2,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 72.4,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
@@ -1630,7 +1785,9 @@
       "precision_at_k": null,
       "recall_at_k": null,
       "reciprocal_rank": null,
+      "ndcg_at_k": null,
       "first_relevant_rank": null,
+      "search_latency_ms": 19.0,
       "empty_expected": true,
       "empty_check_passed": true,
       "leaked_labels": [],
@@ -1648,25 +1805,145 @@
       "retrieved": [
         {
           "rank": 1,
-          "label": "health-doyun-0603",
-          "relevant": true,
-          "leaked_from": null
-        },
-        {
-          "rank": 2,
-          "label": "health-doyun-0619",
-          "relevant": false,
-          "leaked_from": null
-        },
-        {
-          "rank": 3,
           "label": "health-doyun-0628",
           "relevant": false,
           "leaked_from": null
         },
         {
-          "rank": 4,
+          "rank": 2,
           "label": "health-doyun-0627",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "health-doyun-0619",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "health-doyun-0603",
+          "relevant": true,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": false,
+      "hit_at_3": false,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.25,
+      "ndcg_at_k": 0.431,
+      "first_relevant_rank": 4,
+      "search_latency_ms": 133.3,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-024",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "exact_date",
+      "query": "7월 20일에 발표 어땠지?",
+      "relevant_chunk_ids": [
+        "hana-0720-presentation"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0720-presentation",
+          "relevant": true,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 22.4,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-025",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "exact_date",
+      "query": "7월 21일에 발표 다시 했던 거 기억나?",
+      "relevant_chunk_ids": [
+        "hana-0721-presentation"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0721-presentation",
+          "relevant": true,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 23.2,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-026",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "adjacent_date_hard_negative",
+      "query": "발표하다가 실수해서 속상했던 적 있었지?",
+      "relevant_chunk_ids": [
+        "hana-0720-presentation"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0720-presentation",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "hana-0721-presentation",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "hana-0602-deadline",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "hana-0610-praise",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "hana-0714-minsu-cafe",
           "relevant": false,
           "leaked_from": null
         }
@@ -1678,7 +1955,264 @@
       "precision_at_k": 0.2,
       "recall_at_k": 1.0,
       "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
       "first_relevant_rank": 1,
+      "search_latency_ms": 181.8,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-027",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "adjacent_date_hard_negative",
+      "query": "발표 잘 끝나서 뿌듯했던 날 있잖아",
+      "relevant_chunk_ids": [
+        "hana-0721-presentation"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0721-presentation",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "hana-0610-praise",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "hana-0610-dinner",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "hana-0722-minsu-movie",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "hana-0720-presentation",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 176.4,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-028",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "same_topic_different_date",
+      "query": "민수랑 연남동 카페 갔던 날 무슨 얘기 했지?",
+      "relevant_chunk_ids": [
+        "hana-0714-minsu-cafe"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0714-minsu-cafe",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "hana-0602-cafe",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "hana-0722-minsu-movie",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "hana-0610-praise",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "hana-0618-sick",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 197.0,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-029",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "exact_date",
+      "query": "7월 22일에 민수랑 뭐 했더라?",
+      "relevant_chunk_ids": [
+        "hana-0722-minsu-movie"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0722-minsu-movie",
+          "relevant": true,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 21.1,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-030",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "exact_entity",
+      "query": "민수랑 영화 본 날 어땠지?",
+      "relevant_chunk_ids": [
+        "hana-0722-minsu-movie"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "hana-0722-minsu-movie",
+          "relevant": true,
+          "leaked_from": null
+        },
+        {
+          "rank": 2,
+          "label": "hana-0618-sick",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 3,
+          "label": "hana-0618-mom",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 4,
+          "label": "hana-0610-dinner",
+          "relevant": false,
+          "leaked_from": null
+        },
+        {
+          "rank": 5,
+          "label": "hana-0714-minsu-cafe",
+          "relevant": false,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 167.5,
+      "empty_expected": false,
+      "empty_check_passed": null,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-diary-031",
+      "kind": "diary",
+      "device_id": "eval-user-hana",
+      "category": "no_match_date",
+      "query": "7월 25일에 민수 만났었나?",
+      "relevant_chunk_ids": [],
+      "retrieved": [],
+      "rank_metrics_evaluable": false,
+      "hit_at_1": null,
+      "hit_at_3": null,
+      "hit_at_5": null,
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank": null,
+      "ndcg_at_k": null,
+      "first_relevant_rank": null,
+      "search_latency_ms": 24.5,
+      "empty_expected": true,
+      "empty_check_passed": true,
+      "leaked_labels": [],
+      "unknown_ids": []
+    },
+    {
+      "case_id": "ret-health-008",
+      "kind": "health",
+      "device_id": "eval-user-hana",
+      "category": "exact_date",
+      "query": "6월 21일에 얼마나 걸었지?",
+      "relevant_chunk_ids": [
+        "health-hana-0621"
+      ],
+      "retrieved": [
+        {
+          "rank": 1,
+          "label": "health-hana-0621",
+          "relevant": true,
+          "leaked_from": null
+        }
+      ],
+      "rank_metrics_evaluable": true,
+      "hit_at_1": true,
+      "hit_at_3": true,
+      "hit_at_5": true,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "ndcg_at_k": 1.0,
+      "first_relevant_rank": 1,
+      "search_latency_ms": 24.3,
       "empty_expected": false,
       "empty_check_passed": null,
       "leaked_labels": [],
