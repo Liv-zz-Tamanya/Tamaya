@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     personal_assistant_model_retry_max_backoff_seconds: float = Field(default=2.0, ge=0)
     # DEC-022.4: Mock mode — NCP API 키 수령 전 true (디폴트 true)
     clova_mock_mode: bool = True
+    # ─── Retrieval 2단계 검색 (date filter + cross-encoder rerank) ───────────
+    # reranker_enabled=false면 기존 단일 단계 vector 검색으로 동작한다.
+    # 모델 선정 근거·실측은 evals/README.md 참고. CPU 추론이므로 교체 시 latency 확인.
+    reranker_enabled: bool = True
+    reranker_model: str = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
+    retrieval_candidate_k: int = Field(default=15, ge=5, le=50)
     # 평가 LLM judge 전용(런타임 미사용) — 키가 있으면 judge만 Gemini로 전환해
     # 자기 채점 편향을 피한다. evals/judge_provider.py 참고.
     gemini_api_key: str = ""
