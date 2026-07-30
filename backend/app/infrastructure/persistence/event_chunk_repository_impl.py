@@ -1,3 +1,4 @@
+from datetime import date
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -36,10 +37,18 @@ class EventChunkRepositoryImpl(EventChunkRepository):
         embedding: list[float],
         limit: int = 5,
         exclude_session_id: UUID | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
     ) -> list[EventChunk]:
+        # 날짜는 임베딩 유사도가 아니라 SQL metadata 조건 — 필터된 후보 안에서만
+        # cosine 검색한다. 조건에 맞는 행이 없으면 빈 결과(다른 날짜 fallback 없음).
         conditions = [ChatSessionModel.device_id == device_id]
         if exclude_session_id:
             conditions.append(EventChunkModel.chat_session_id != exclude_session_id)
+        if start_date is not None:
+            conditions.append(EventChunkModel.diary_date >= start_date)
+        if end_date is not None:
+            conditions.append(EventChunkModel.diary_date <= end_date)
 
         stmt = (
             sa.select(EventChunkModel)
