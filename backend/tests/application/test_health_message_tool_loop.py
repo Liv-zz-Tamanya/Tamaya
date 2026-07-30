@@ -56,6 +56,8 @@ class _FakeDiaryQuery:
         query: str,
         exclude_session_id: UUID | None = None,
         limit: int = 5,
+        start_date=None,
+        end_date=None,
     ) -> list:
         self.calls.append(
             {
@@ -73,7 +75,9 @@ class _FakeHealthQuery:
         self.chunks = chunks or []
         self.calls: list[dict] = []
 
-    async def search_similar(self, device_id: str, query: str, limit: int = 5) -> list[HealthChunk]:
+    async def search_similar(
+        self, device_id: str, query: str, limit: int = 5, start_date=None, end_date=None
+    ) -> list[HealthChunk]:
         self.calls.append({"device_id": device_id, "query": query, "limit": limit})
         return self.chunks
 

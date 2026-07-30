@@ -49,13 +49,16 @@ class EvaluationRecorder:
 
 class _EmptyDiaryQuery:
     async def search_similar(
-        self, device_id: str, query: str, exclude_session_id: UUID | None = None, limit: int = 5
+        self, device_id: str, query: str, exclude_session_id: UUID | None = None, limit: int = 5,
+        start_date=None, end_date=None,
     ) -> list[object]:
         return []
 
 
 class _EmptyHealthQuery:
-    async def search_similar(self, device_id: str, query: str, limit: int = 5) -> list[object]:
+    async def search_similar(
+        self, device_id: str, query: str, limit: int = 5, start_date=None, end_date=None
+    ) -> list[object]:
         return []
 
 

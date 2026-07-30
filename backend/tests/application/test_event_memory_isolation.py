@@ -111,6 +111,8 @@ class _MemoryEventChunkRepo(EventChunkRepository):
         embedding: list[float],
         limit: int = 5,
         exclude_session_id: UUID | None = None,
+        start_date=None,
+        end_date=None,
     ) -> list[EventChunk]:
         self.calls.append((device_id, exclude_session_id))
         scoped = [
@@ -136,6 +138,8 @@ class _FakeHealthChunkRepo(HealthChunkRepository):
         device_id: str,
         embedding: list[float],
         limit: int = 5,
+        start_date=None,
+        end_date=None,
     ) -> list:
         self.calls += 1
         return []

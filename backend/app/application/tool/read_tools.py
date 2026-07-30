@@ -3,7 +3,7 @@ from datetime import date
 from uuid import UUID
 
 from langchain_core.tools import BaseTool, StructuredTool
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.application.service.agent_execution_observability import (
     get_active_agent_execution_trace,
@@ -23,7 +23,37 @@ class AgentToolExecutionContext:
     session_id: UUID | None = None
 
 
-class SearchDiaryMemoriesInput(BaseModel):
+_DATE_ARG_DESCRIPTION = (
+    "Optional ISO date (YYYY-MM-DD). If the user explicitly mentioned a date, preserve it "
+    "here as a structured argument — never drop it, never widen it, and never guess a date "
+    "the user did not state. Use start_date == end_date for a single exact date."
+)
+
+
+class _DateRangeSearchInput(BaseModel):
+    """query + 선택적 날짜 범위 — 날짜는 임베딩이 아니라 SQL 필터로 처리된다."""
+
+    start_date: date | None = Field(default=None, description=_DATE_ARG_DESCRIPTION)
+    end_date: date | None = Field(default=None, description=_DATE_ARG_DESCRIPTION)
+
+    @field_validator("query", mode="before", check_fields=False)
+    @classmethod
+    def normalize_query(cls, value: str) -> str:
+        if isinstance(value, str):
+            value = value.strip()
+        if value == "":
+            raise ValueError("query must not be empty")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_date_range(self) -> "_DateRangeSearchInput":
+        if self.start_date is not None and self.end_date is not None:
+            if self.start_date > self.end_date:
+                raise ValueError("start_date must be on or before end_date")
+        return self
+
+
+class SearchDiaryMemoriesInput(_DateRangeSearchInput):
     query: str = Field(
         ...,
         min_length=1,
@@ -37,17 +67,8 @@ class SearchDiaryMemoriesInput(BaseModel):
         description="Maximum number of diary memories to return.",
     )
 
-    @field_validator("query", mode="before")
-    @classmethod
-    def normalize_query(cls, value: str) -> str:
-        if isinstance(value, str):
-            value = value.strip()
-        if value == "":
-            raise ValueError("query must not be empty")
-        return value
 
-
-class SearchHealthRecordsInput(BaseModel):
+class SearchHealthRecordsInput(_DateRangeSearchInput):
     query: str = Field(
         ...,
         min_length=1,
@@ -60,15 +81,6 @@ class SearchHealthRecordsInput(BaseModel):
         le=MAX_TOOL_SEARCH_LIMIT,
         description="Maximum number of health records to return.",
     )
-
-    @field_validator("query", mode="before")
-    @classmethod
-    def normalize_query(cls, value: str) -> str:
-        if isinstance(value, str):
-            value = value.strip()
-        if value == "":
-            raise ValueError("query must not be empty")
-        return value
 
 
 class DiaryMemoryToolItem(BaseModel):
@@ -106,8 +118,11 @@ SEARCH_DIARY_MEMORIES_DESCRIPTION = (
     "when: the user is discussing a current event or emotion; the current conversation can continue "
     "with reflection or a follow-up question; past or repetition is only implied; the information is "
     "already in the conversation; the request is about health records; or saved memories would only be "
-    "helpful rather than required; never infer a saved-record lookup from uncertainty alone. Input: a semantic query and optional limit. Output: matching diary "
-    "memories only."
+    "helpful rather than required; never infer a saved-record lookup from uncertainty alone. Input: a semantic query, optional limit, "
+    "and optional start_date/end_date (ISO). Date policy: if the user stated a date, pass it as "
+    "start_date/end_date and keep it exactly — do not drop, widen, or guess dates; when unsure, "
+    "leave dates empty. If no records exist for the given dates the result is empty — do not "
+    "retry with different dates. Output: matching diary memories only."
 )
 
 SEARCH_HEALTH_RECORDS_DESCRIPTION = (
@@ -115,8 +130,12 @@ SEARCH_HEALTH_RECORDS_DESCRIPTION = (
     "that is not in the current conversation. Use when: an answer needs stored sleep, symptom, "
     "medication, or other health history as evidence. Do not use when: general health support or "
     "empathy is enough; the information is already in the conversation; the request is about diary "
-    "memories; or the same-quality answer does not require stored records. Input: a semantic query "
-    "and optional limit. Output: matching health records only; never diagnose or prescribe."
+    "memories; or the same-quality answer does not require stored records. Input: a semantic query, "
+    "optional limit, and optional start_date/end_date (ISO). Date policy: if the user stated a "
+    "date, pass it as start_date/end_date and keep it exactly — do not drop, widen, or guess "
+    "dates; when unsure, leave dates empty. If no records exist for the given dates the result is "
+    "empty — do not retry with different dates. Output: matching health records only; never "
+    "diagnose or prescribe."
 )
 
 
@@ -124,12 +143,19 @@ def create_search_diary_memories_tool(
     query_service: DiaryMemoryQueryService,
     execution_context: AgentToolExecutionContext,
 ) -> BaseTool:
-    async def search_diary_memories(query: str, limit: int = 5) -> dict:
+    async def search_diary_memories(
+        query: str,
+        limit: int = 5,
+        start_date: date | None = None,
+        end_date: date | None = None,
+    ) -> dict:
         chunks = await query_service.search_similar(
             device_id=execution_context.device_id,
             query=query,
             exclude_session_id=execution_context.session_id,
             limit=limit,
+            start_date=start_date,
+            end_date=end_date,
         )
         trace = get_active_agent_execution_trace()
         if trace is not None:
@@ -149,11 +175,18 @@ def create_search_health_records_tool(
     query_service: HealthRecordQueryService,
     execution_context: AgentToolExecutionContext,
 ) -> BaseTool:
-    async def search_health_records(query: str, limit: int = 5) -> dict:
+    async def search_health_records(
+        query: str,
+        limit: int = 5,
+        start_date: date | None = None,
+        end_date: date | None = None,
+    ) -> dict:
         chunks = await query_service.search_similar(
             device_id=execution_context.device_id,
             query=query,
             limit=limit,
+            start_date=start_date,
+            end_date=end_date,
         )
         trace = get_active_agent_execution_trace()
         if trace is not None:

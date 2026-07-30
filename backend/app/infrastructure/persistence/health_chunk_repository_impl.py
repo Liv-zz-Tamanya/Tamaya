@@ -31,10 +31,18 @@ class HealthChunkRepositoryImpl(HealthChunkRepository):
         device_id: str,
         embedding: list[float],
         limit: int = 5,
+        start_date: date | None = None,
+        end_date: date | None = None,
     ) -> list[HealthChunk]:
+        # 날짜는 SQL metadata 조건으로 먼저 거른다 — 없는 날짜에 fallback하지 않는다.
+        conditions = [HealthChunkModel.device_id == device_id]
+        if start_date is not None:
+            conditions.append(HealthChunkModel.record_date >= start_date)
+        if end_date is not None:
+            conditions.append(HealthChunkModel.record_date <= end_date)
         stmt = (
             sa.select(HealthChunkModel)
-            .where(HealthChunkModel.device_id == device_id)
+            .where(*conditions)
             .order_by(HealthChunkModel.embedding.cosine_distance(embedding))
             .limit(limit)
         )

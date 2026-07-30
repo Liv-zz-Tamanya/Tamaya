@@ -14,7 +14,10 @@ class HealthChunkRepository(ABC):
         device_id: str,
         embedding: list[float],
         limit: int = 5,
-    ) -> list[HealthChunk]: ...
+        start_date: date | None = None,
+        end_date: date | None = None,
+    ) -> list[HealthChunk]:
+        """cosine 유사도 검색. 날짜가 주어지면 record_date 범위(SQL)로 먼저 거른다."""
 
     @abstractmethod
     async def find_by_date(self, device_id: str, record_date: date) -> list[HealthChunk]: ...

@@ -43,9 +43,37 @@ def reciprocal_rank(relevant_ids: Sequence[str], retrieved_labels: Sequence[str]
     return round(1 / rank, 3) if rank else 0.0
 
 
+def ndcg_at(k: int, relevant_ids: Sequence[str], retrieved_labels: Sequence[str]) -> float:
+    """이진 관련도 NDCG@k — 이상 순위는 정답을 상위에 몰아넣은 배치."""
+    from math import log2
+
+    relevant = set(relevant_ids)
+    if not relevant or k <= 0:
+        return 0.0
+    dcg = sum(
+        1 / log2(rank + 1)
+        for rank, label in enumerate(retrieved_labels[:k], start=1)
+        if label in relevant
+    )
+    ideal = sum(1 / log2(rank + 1) for rank in range(1, min(k, len(relevant)) + 1))
+    return round(dcg / ideal, 3) if ideal else 0.0
+
+
+def percentile(values: Sequence[float], q: float) -> float | None:
+    """nearest-rank 백분위 — 표본이 작아 보간 없이 결정론적으로 계산한다."""
+    if not values:
+        return None
+    ordered = sorted(values)
+    index = max(0, min(len(ordered) - 1, round(q * (len(ordered) - 1))))
+    return round(ordered[index], 1)
+
+
 def summarize_retrieval(results: Sequence[RetrievalCaseResult]) -> RetrievalSummary:
     evaluable = [result for result in results if result.rank_metrics_evaluable]
     empty_expected = [result for result in results if result.empty_expected]
+    latencies = [
+        result.search_latency_ms for result in results if result.search_latency_ms is not None
+    ]
     return RetrievalSummary(
         case_count=len(results),
         evaluable_cases=len(evaluable),
@@ -55,6 +83,10 @@ def summarize_retrieval(results: Sequence[RetrievalCaseResult]) -> RetrievalSumm
         mean_precision_at_k=_mean([result.precision_at_k for result in evaluable]),
         mean_recall_at_k=_mean([result.recall_at_k for result in evaluable]),
         mrr=_mean([result.reciprocal_rank for result in evaluable]),
+        mean_ndcg_at_k=_mean([result.ndcg_at_k for result in evaluable]),
+        latency_ms_mean=_mean(latencies) if latencies else None,
+        latency_ms_p50=percentile(latencies, 0.50),
+        latency_ms_p95=percentile(latencies, 0.95),
         empty_expected_cases=len(empty_expected),
         empty_check_passed_cases=sum(bool(result.empty_check_passed) for result in empty_expected),
         leak_violation_cases=sum(bool(result.leaked_labels) for result in results),

@@ -80,6 +80,32 @@ def test_empty_answers_require_user_without_data():
     assert ok == []
 
 
+def test_empty_answer_with_date_constraint_is_allowed():
+    # 날짜 조건이 있으면 데이터가 있는 사용자도 빈 정답이 성립한다
+    # (그 날짜에 기록이 없을 수 있음 — filter 모드에서 검증)
+    fixtures = load_fixture_set(FIXTURE_DIR)
+    ok = validate_retrieval_cases(
+        [_case(relevant_chunk_ids=[], category="no_match_date",
+               start_date="2026-07-25", end_date="2026-07-25")],
+        fixtures,
+        Path("x.jsonl"),
+    )
+    assert ok == []
+
+
+def test_inverted_date_range_rejected_by_schema():
+    import pytest
+
+    from evals.retrieval_schemas import RetrievalEvalCase
+
+    with pytest.raises(ValueError):
+        RetrievalEvalCase(
+            id="bad", kind="diary", device_id="eval-user-hana", query="q",
+            relevant_chunk_ids=["hana-0602-cafe"], category="exact_date",
+            start_date="2026-07-21", end_date="2026-07-20",
+        )
+
+
 def test_duplicate_case_id_is_reported():
     fixtures = load_fixture_set(FIXTURE_DIR)
     errors = validate_retrieval_cases([_case(), _case()], fixtures, Path("x.jsonl"))

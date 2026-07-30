@@ -63,7 +63,9 @@ class RecordingDiaryQuery:
         self._inner = inner
         self.calls: list[dict] = []
 
-    async def search_similar(self, device_id, query, exclude_session_id=None, limit=5):
+    async def search_similar(
+        self, device_id, query, exclude_session_id=None, limit=5, start_date=None, end_date=None
+    ):
         rows = await self._inner.search_similar(
             device_id, query, exclude_session_id=exclude_session_id, limit=limit
         )
@@ -81,7 +83,7 @@ class RecordingHealthQuery:
         self._inner = inner
         self.calls: list[dict] = []
 
-    async def search_similar(self, device_id, query, limit=5):
+    async def search_similar(self, device_id, query, limit=5, start_date=None, end_date=None):
         rows = await self._inner.search_similar(device_id, query, limit=limit)
         self.calls.append(
             {"tool": "search_health_records", "query": query, "ids": [row.id for row in rows]}

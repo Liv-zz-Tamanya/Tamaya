@@ -190,10 +190,58 @@ uv run python -m evals.run_retrieval_evaluation \
   소유 chunk가 나오면 `leaked_labels`(사용자 간 유출), fixture에 없는 행이 나오면
   `unknown_ids`로 잡힌다 — 두 카운트는 항상 0이어야 정상이다.
 - category: `direct_recall`, `paraphrase_recall`, `multi_relevant`, `hard_negative`,
-  `cross_user_probe`, `date_reference`(알려진 약점 정량화), `empty_retrieval`.
+  `cross_user_probe`, `date_reference`, `empty_retrieval` + 날짜·재정렬 검증용
+  `exact_date`, `adjacent_date_hard_negative`, `same_topic_different_date`,
+  `exact_entity`, `no_match_date`(날짜에 기록 없으면 빈 결과가 정답 — filter 모드 전용).
 - baseline: `evals/baselines/retrieval-baseline.json`(git 추적). 임베딩이 결정론적이라
   같은 코드·데이터에서 결과가 완전히 재현되며, `--fail-on-regression`으로 회귀를
-  잡는다. 개선 후에는 새 리포트로 baseline 파일을 교체한다.
+  잡는다. baseline은 CI(linux)에서 생성한 vector 모드 결과가 canonical이다 —
+  로컬(macOS)에서 재생성하지 않는다.
+
+### 2단계 검색 파이프라인 (date filter + cross-encoder rerank)
+
+```text
+기존:  query embedding → pgvector cosine search → top-k
+개선:  query embedding → (날짜 SQL filter) → pgvector candidate_k 후보
+       → cross-encoder rerank → final top-k
+```
+
+- **날짜를 임베딩이 아니라 SQL metadata filter로 처리하는 이유**: 임베딩은 "7월
+  20일"과 "7월 21일"을 사실상 구분하지 못한다(개선 전 date_reference Hit@1 0%).
+  날짜는 `diary_date`/`record_date` WHERE 조건으로 결정론 처리하고, 조건에 맞는
+  기록이 없으면 **빈 결과를 반환한다(다른 날짜 fallback 금지)**.
+- **Reranker를 전체 DB가 아니라 후보에만 적용하는 이유**: cross-encoder는 문서당
+  1회 추론이라 전체 스캔이 불가능하다. pgvector가 `candidate_k`(기본 15, 상한 50)
+  후보를 만들고 cross-encoder가 그 안에서만 재정렬한다.
+- **모델**: 기본 `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` (~470MB, CPU 가능).
+  mMARCO 학습셋에 한국어는 없지만 XLM-R 백본의 zero-shot 전이가 실측에서 충분했다
+  (Hit@1 86.5%). 한국어 특화 `Dongjin-kr/ko-reranker`(~1.1GB)는 Hit@1 89.2%로
+  +2.7pp지만 CPU p50 latency가 3.5배(446ms)라 기본값에서 제외 —
+  `RERANKER_MODEL` 환경변수로 교체 가능하다. `RERANKER_ENABLED=false`면
+  기존 단일 단계 검색으로 동작한다.
+- **fallback 정책**: reranker 로딩·실행 실패 시 요청을 죽이지 않고 vector 순서를
+  반환하며 `reranker_fallback` warning 로그를 남긴다.
+- **비교 실행**: `--mode vector|filter|filter-rerank`로 효과를 분리 측정한다.
+
+```bash
+uv run python -m evals.run_retrieval_evaluation --mode filter-rerank
+```
+
+2026-07-30 실측 (39 cases, macOS CPU / 로컬 임베딩·로컬 reranker):
+
+| Mode | Hit@1 | Hit@3 | Hit@5 | MRR | NDCG@5 | p50 | p95 |
+|---|---|---|---|---|---|---|---|
+| vector | 37.8% | 81.1% | 91.9% | 0.605 | 0.662 | 26ms | 87ms |
+| + date filter | 51.4% | 89.2% | 94.6% | 0.701 | 0.745 | 25ms | 90ms |
+| + filter + rerank | 86.5% | 94.6% | 97.3% | 0.903 | 0.908 | 127ms | 217ms |
+
+한계: 상대 날짜("어제", "지난주")는 tool이 구조화 날짜를 받는 방식이라 LLM의 변환
+정확도에 의존한다 — 확실하지 않으면 날짜를 비우라는 정책을 tool description에
+명시했고, 조용히 잘못 변환하는 것보다 필터 없는 검색을 택한다. `multi_relevant`는
+rerank 후 Hit@1 75→50으로 1건 후퇴했다(정답 2개 중 하나가 2위로 밀림 — Hit@3
+100% 유지). 운영: 모델은 최초 사용 시 lazy 다운로드·로드(캐시 후 ~7s)되며 CPU
+추론이 to_thread에서 돌지만 동시 요청이 많으면 스레드풀 병목 가능 — 필요 시
+동시 실행 수 제한을 후속으로 검토한다.
 
 ## Event Chunk 생성 평가
 

@@ -81,12 +81,12 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
-      # sentence-transformers 모델(~120MB) 다운로드 캐시
-      - name: Cache embedding model
+      # sentence-transformers 임베딩(~120MB) + cross-encoder reranker(~470MB) 캐시
+      - name: Cache embedding and reranker models
         uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
-          key: hf-paraphrase-multilingual-minilm-l12-v2
+          key: hf-minilm-l12-v2-and-mmarco-reranker
 
       - name: Seed eval database
         run: uv run python -m evals.seed_fixtures
@@ -96,6 +96,7 @@ jobs:
       - name: Run retrieval evaluation with regression gate
         run: >
           uv run python -m evals.run_retrieval_evaluation
+          --mode filter-rerank
           --baseline evals/baselines/retrieval-baseline.json
           --fail-on-regression
           --output retrieval-report.json

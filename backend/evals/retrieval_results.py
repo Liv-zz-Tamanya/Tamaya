@@ -32,7 +32,9 @@ class RetrievalCaseResult(BaseModel):
     precision_at_k: float | None = None
     recall_at_k: float | None = None
     reciprocal_rank: float | None = None
+    ndcg_at_k: float | None = None
     first_relevant_rank: int | None = None
+    search_latency_ms: float | None = None
     empty_expected: bool = False
     empty_check_passed: bool | None = None
     leaked_labels: list[str] = Field(default_factory=list)
@@ -48,6 +50,10 @@ class RetrievalSummary(BaseModel):
     mean_precision_at_k: float | None
     mean_recall_at_k: float | None
     mrr: float | None
+    mean_ndcg_at_k: float | None = None
+    latency_ms_mean: float | None = None
+    latency_ms_p50: float | None = None
+    latency_ms_p95: float | None = None
     empty_expected_cases: int
     empty_check_passed_cases: int
     leak_violation_cases: int
@@ -73,6 +79,12 @@ class RetrievalRunReport(BaseModel):
     completed_at: datetime
     top_k: int
     embedding_model: str
+    # 비교 실행 메타 — vector | filter | filter-rerank
+    mode: str = "vector"
+    candidate_k: int | None = None
+    reranker_model: str | None = None
+    reranker_load_seconds: float | None = None
+    reranker_fallback_count: int = 0
     git_commit: str | None = None
     git_dirty: bool | None = None
     summary: RetrievalSummary

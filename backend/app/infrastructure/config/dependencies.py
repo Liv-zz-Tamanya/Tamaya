@@ -14,6 +14,7 @@ from app.application.service.health_ai_service import HealthAiService
 from app.application.service.health_record_query_service import HealthRecordQueryService
 from app.application.service.model_retry_policy import ModelRetryPolicy
 from app.application.service.personal_assistant_timeout import PersonalAssistantTimeoutPolicy
+from app.application.service.reranking_service import RerankingService
 from app.application.service.retrying_tool_calling_chat_model import RetryingToolCallingChatModel
 from app.application.service.signal_extraction_service import SignalExtractionService
 from app.application.service.tool_calling_chat_model import ToolCallingChatModel
@@ -39,6 +40,7 @@ from app.infrastructure.external.clova_client import ClovaClient, HealthClovaCli
 from app.infrastructure.external.clova_connection_tester_impl import ClovaConnectionTesterImpl
 from app.infrastructure.external.clova_tool_calling import ClovaToolCallingChatModel
 from app.infrastructure.external.embedding_service_impl import SentenceTransformerEmbeddingService
+from app.infrastructure.external.reranking_service_impl import CrossEncoderRerankingService
 from app.infrastructure.external.signal_extraction_clova import SignalExtractionClovaClient
 from app.infrastructure.observability.personal_assistant_execution_logger import (
     StructuredLoggingAgentExecutionRecorder,
@@ -126,11 +128,28 @@ def get_extract_chunks_usecase(
     return ExtractChunksUseCase(ai, embedding, event_chunk_repo)
 
 
+_reranking_service: RerankingService | None = None
+
+
+def get_reranking_service() -> RerankingService | None:
+    # lazy singleton — 모델은 CrossEncoder 구현 안에서 최초 사용 시 로드된다.
+    # 비활성화면 None을 반환해 QueryService가 기존 단일 단계 검색으로 동작한다.
+    global _reranking_service
+    if not settings.reranker_enabled:
+        return None
+    if _reranking_service is None:
+        _reranking_service = CrossEncoderRerankingService()
+    return _reranking_service
+
+
 def get_diary_memory_query_service(
     embedding: EmbeddingService = Depends(get_embedding_service),
     event_chunk_repo: EventChunkRepository = Depends(get_event_chunk_repo),
+    reranking: RerankingService | None = Depends(get_reranking_service),
 ) -> DiaryMemoryQueryService:
-    return DiaryMemoryQueryService(embedding, event_chunk_repo)
+    return DiaryMemoryQueryService(
+        embedding, event_chunk_repo, reranking, settings.retrieval_candidate_k
+    )
 
 
 def get_tool_calling_chat_model(
@@ -242,8 +261,11 @@ def get_health_chunk_repo(db: AsyncSession = Depends(get_db)) -> HealthChunkRepo
 def get_health_record_query_service(
     embedding: EmbeddingService = Depends(get_embedding_service),
     health_chunk_repo: HealthChunkRepository = Depends(get_health_chunk_repo),
+    reranking: RerankingService | None = Depends(get_reranking_service),
 ) -> HealthRecordQueryService:
-    return HealthRecordQueryService(embedding, health_chunk_repo)
+    return HealthRecordQueryService(
+        embedding, health_chunk_repo, reranking, settings.retrieval_candidate_k
+    )
 
 
 def get_personal_assistant_timeout_policy() -> PersonalAssistantTimeoutPolicy:
