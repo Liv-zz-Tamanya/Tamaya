@@ -34,6 +34,8 @@ class _FakeDiaryMemoryQuery:
         query: str,
         exclude_session_id: UUID | None = None,
         limit: int = 5,
+        start_date=None,
+        end_date=None,
     ) -> list[EventChunk]:
         self.calls.append(
             {
@@ -63,6 +65,8 @@ class _FakeHealthRecordQuery:
         device_id: str,
         query: str,
         limit: int = 5,
+        start_date=None,
+        end_date=None,
     ) -> list[HealthChunk]:
         self.calls.append({"device_id": device_id, "query": query, "limit": limit})
         if self.error:
@@ -119,7 +123,9 @@ def test_search_diary_memories_tool_contract_and_input_schema():
     assert "find, verify, recall, or compare" in tool.description
     assert "explicitly asks" in tool.description
     assert tool.return_direct is False
-    assert set(tool.args_schema.model_json_schema()["properties"]) == {"query", "limit"}
+    assert set(tool.args_schema.model_json_schema()["properties"]) == {
+        "query", "limit", "start_date", "end_date"
+    }
     assert "device_id" not in tool.args_schema.model_json_schema()["properties"]
     assert "session_id" not in tool.args_schema.model_json_schema()["properties"]
 
@@ -221,7 +227,9 @@ def test_search_health_records_tool_contract_and_input_schema():
     assert "Use when:" in tool.description
     assert "Do not use when:" in tool.description
     assert tool.return_direct is False
-    assert set(tool.args_schema.model_json_schema()["properties"]) == {"query", "limit"}
+    assert set(tool.args_schema.model_json_schema()["properties"]) == {
+        "query", "limit", "start_date", "end_date"
+    }
     assert "device_id" not in tool.args_schema.model_json_schema()["properties"]
     assert "session_id" not in tool.args_schema.model_json_schema()["properties"]
 

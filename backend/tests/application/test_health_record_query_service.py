@@ -33,6 +33,8 @@ class _FakeHealthChunkRepo(HealthChunkRepository):
         device_id: str,
         embedding: list[float],
         limit: int = 5,
+        start_date=None,
+        end_date=None,
     ) -> list[HealthChunk]:
         self.search_calls.append({"device_id": device_id, "embedding": embedding, "limit": limit})
         return self.chunks

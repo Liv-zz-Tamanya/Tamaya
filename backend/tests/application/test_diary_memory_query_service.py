@@ -35,6 +35,8 @@ class _FakeEventChunkRepo(EventChunkRepository):
         embedding: list[float],
         limit: int = 5,
         exclude_session_id: UUID | None = None,
+        start_date=None,
+        end_date=None,
     ) -> list[EventChunk]:
         self.search_calls.append(
             {
