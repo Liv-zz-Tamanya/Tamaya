@@ -14,6 +14,7 @@ import argparse
 import asyncio
 import json
 import sys
+import time
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -28,6 +29,7 @@ from evals.retrieval_metrics import (
     compare_retrieval_baseline,
     first_relevant_rank,
     hit_at,
+    ndcg_at,
     precision_at,
     recall_at,
     reciprocal_rank,
@@ -49,6 +51,22 @@ from evals.validate_retrieval_dataset import (
 )
 
 DEFAULT_TOP_K = 5
+MODES = ("vector", "filter", "filter-rerank")
+
+
+class _FallbackCountingReranker:
+    """평가용 래퍼 — reranker 예외를 세고 그대로 전파한다(apply_reranking이 fallback)."""
+
+    def __init__(self, inner) -> None:
+        self._inner = inner
+        self.failures = 0
+
+    def rerank(self, query: str, documents: list[str]) -> list[float]:
+        try:
+            return self._inner.rerank(query, documents)
+        except Exception:
+            self.failures += 1
+            raise
 
 
 class ChunkCatalog:
@@ -75,7 +93,11 @@ class ChunkCatalog:
 
 
 def score_case(
-    case: RetrievalEvalCase, retrieved_ids: Sequence[UUID], catalog: ChunkCatalog, top_k: int
+    case: RetrievalEvalCase,
+    retrieved_ids: Sequence[UUID],
+    catalog: ChunkCatalog,
+    top_k: int,
+    search_latency_ms: float | None = None,
 ) -> RetrievalCaseResult:
     retrieved: list[RetrievedDoc] = []
     labels: list[str] = []
@@ -103,6 +125,7 @@ def score_case(
             query=case.query, relevant_chunk_ids=[], retrieved=retrieved,
             rank_metrics_evaluable=False, empty_expected=True,
             empty_check_passed=not retrieved, leaked_labels=leaked, unknown_ids=unknown,
+            search_latency_ms=search_latency_ms,
         )
     return RetrievalCaseResult(
         case_id=case.id, kind=case.kind, device_id=case.device_id, category=case.category,
@@ -113,8 +136,10 @@ def score_case(
         precision_at_k=precision_at(top_k, case.relevant_chunk_ids, labels),
         recall_at_k=recall_at(top_k, case.relevant_chunk_ids, labels),
         reciprocal_rank=reciprocal_rank(case.relevant_chunk_ids, labels),
+        ndcg_at_k=ndcg_at(top_k, case.relevant_chunk_ids, labels),
         first_relevant_rank=first_relevant_rank(case.relevant_chunk_ids, labels),
         leaked_labels=leaked, unknown_ids=unknown,
+        search_latency_ms=search_latency_ms,
     )
 
 
@@ -124,15 +149,27 @@ async def run_retrieval_cases(
     health_query,
     fixtures: FixtureSet,
     top_k: int = DEFAULT_TOP_K,
+    use_dates: bool = False,
 ) -> list[RetrievalCaseResult]:
     catalog = ChunkCatalog(fixtures)
     results: list[RetrievalCaseResult] = []
     for case in cases:
+        date_kwargs = (
+            {"start_date": case.start_date, "end_date": case.end_date} if use_dates else {}
+        )
+        started = time.perf_counter()
         if case.kind == RetrievalKind.DIARY:
-            rows = await diary_query.search_similar(case.device_id, case.query, limit=top_k)
+            rows = await diary_query.search_similar(
+                case.device_id, case.query, limit=top_k, **date_kwargs
+            )
         else:
-            rows = await health_query.search_similar(case.device_id, case.query, limit=top_k)
-        results.append(score_case(case, [row.id for row in rows], catalog, top_k))
+            rows = await health_query.search_similar(
+                case.device_id, case.query, limit=top_k, **date_kwargs
+            )
+        latency_ms = (time.perf_counter() - started) * 1000
+        results.append(
+            score_case(case, [row.id for row in rows], catalog, top_k, round(latency_ms, 1))
+        )
     return results
 
 
@@ -157,6 +194,11 @@ def build_retrieval_report(
     top_k: int,
     embedding_model: str,
     baseline: Sequence[RetrievalCaseResult] | None = None,
+    mode: str = "vector",
+    candidate_k: int | None = None,
+    reranker_model: str | None = None,
+    reranker_load_seconds: float | None = None,
+    reranker_fallback_count: int = 0,
 ) -> RetrievalRunReport:
     return RetrievalRunReport(
         run_id=started_at.strftime("%Y%m%dT%H%M%SZ"),
@@ -164,6 +206,11 @@ def build_retrieval_report(
         completed_at=datetime.now(UTC),
         top_k=top_k,
         embedding_model=embedding_model,
+        mode=mode,
+        candidate_k=candidate_k,
+        reranker_model=reranker_model,
+        reranker_load_seconds=reranker_load_seconds,
+        reranker_fallback_count=reranker_fallback_count,
         **_git_metadata(),
         summary=summarize_retrieval(results),
         by_kind={
@@ -199,10 +246,13 @@ def write_retrieval_report(report: RetrievalRunReport, output: Path) -> None:
 
 def print_retrieval_summary(report: RetrievalRunReport) -> None:
     summary = report.summary
-    print("\nRetrieval Evaluation\n")
+    print(f"\nRetrieval Evaluation (mode={report.mode})\n")
     print(f"Cases: {summary.case_count} (rank-evaluable {summary.evaluable_cases}, top_k={report.top_k})")
     print(f"Hit@1: {summary.hit_rate_at_1}%  Hit@3: {summary.hit_rate_at_3}%  Hit@5: {summary.hit_rate_at_5}%")
-    print(f"Recall@k: {summary.mean_recall_at_k}  Precision@k: {summary.mean_precision_at_k}  MRR: {summary.mrr}")
+    print(f"Recall@k: {summary.mean_recall_at_k}  Precision@k: {summary.mean_precision_at_k}  MRR: {summary.mrr}  NDCG@k: {summary.mean_ndcg_at_k}")
+    print(f"Latency ms: mean {summary.latency_ms_mean}  p50 {summary.latency_ms_p50}  p95 {summary.latency_ms_p95}")
+    if report.mode == "filter-rerank":
+        print(f"Reranker: {report.reranker_model} (load {report.reranker_load_seconds}s, candidate_k={report.candidate_k}, fallbacks={report.reranker_fallback_count})")
     print(f"Empty checks: {summary.empty_check_passed_cases}/{summary.empty_expected_cases}")
     print(f"Cross-user leaks: {summary.leak_violation_cases}  Unknown results: {summary.unknown_result_cases}")
     for kind, kind_summary in report.by_kind.items():
@@ -254,19 +304,53 @@ async def _run(args: argparse.Namespace) -> int:
             HealthChunkRepositoryImpl,
         )
 
-        print("LLM 호출 없음 — 로컬 임베딩과 평가 DB만 사용합니다.")
+        print(f"LLM 호출 없음 — 로컬 임베딩과 평가 DB만 사용합니다. (mode={args.mode})")
+        reranker = None
+        reranker_model_name: str | None = None
+        reranker_load_seconds: float | None = None
+        candidate_k: int | None = None
+        if args.mode == "filter-rerank":
+            from app.infrastructure.config.settings import settings
+            from app.infrastructure.external.reranking_service_impl import (
+                CrossEncoderRerankingService,
+            )
+
+            reranker_model_name = settings.reranker_model
+            candidate_k = settings.retrieval_candidate_k
+            inner = CrossEncoderRerankingService()
+            load_started = time.perf_counter()
+            inner.rerank("워밍업", ["모델 로딩 측정용 문서"])  # 최초 로드를 latency에서 분리
+            reranker_load_seconds = round(time.perf_counter() - load_started, 2)
+            reranker = _FallbackCountingReranker(inner)
+
         started_at = datetime.now(UTC)
         embedding = SentenceTransformerEmbeddingService()
         session_factory = async_sessionmaker(engine, expire_on_commit=False)
         async with session_factory() as session:
             results = await run_retrieval_cases(
                 cases,
-                DiaryMemoryQueryService(embedding, EventChunkRepositoryImpl(session)),
-                HealthRecordQueryService(embedding, HealthChunkRepositoryImpl(session)),
+                DiaryMemoryQueryService(
+                    embedding, EventChunkRepositoryImpl(session), reranker
+                ),
+                HealthRecordQueryService(
+                    embedding, HealthChunkRepositoryImpl(session), reranker
+                ),
                 fixtures,
                 top_k=args.top_k,
+                use_dates=args.mode in ("filter", "filter-rerank"),
             )
-        report = build_retrieval_report(results, started_at, args.top_k, _MODEL_NAME, baseline)
+        report = build_retrieval_report(
+            results,
+            started_at,
+            args.top_k,
+            _MODEL_NAME,
+            baseline,
+            mode=args.mode,
+            candidate_k=candidate_k,
+            reranker_model=reranker_model_name,
+            reranker_load_seconds=reranker_load_seconds,
+            reranker_fallback_count=reranker.failures if reranker is not None else 0,
+        )
     finally:
         await engine.dispose()
 
@@ -286,6 +370,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--database-url", default=None)
     parser.add_argument("--case-id")
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--mode", choices=MODES, default="vector")
     parser.add_argument("--top-k", type=int, default=DEFAULT_TOP_K)
     parser.add_argument("--baseline", type=Path)
     parser.add_argument("--output", type=Path)

@@ -114,3 +114,26 @@ def test_baseline_improved_and_added_removed():
     assert comparison.improved_cases == ["c1"]
     assert comparison.added_cases == ["new"]
     assert comparison.removed_cases == ["gone"]
+
+
+def test_ndcg_at_binary_relevance():
+    from evals.retrieval_metrics import ndcg_at
+
+    # 정답이 1위면 1.0
+    assert ndcg_at(5, ["a"], ["a", "x", "y"]) == 1.0
+    # 정답이 2위면 1/log2(3) ≈ 0.631
+    assert ndcg_at(5, ["a"], ["x", "a", "y"]) == 0.631
+    # 정답 없음 → 0
+    assert ndcg_at(5, ["a"], ["x", "y"]) == 0.0
+    # 정답 2개가 1·2위면 이상 배치 → 1.0
+    assert ndcg_at(5, ["a", "b"], ["b", "a", "x"]) == 1.0
+
+
+def test_percentile_nearest_rank():
+    from evals.retrieval_metrics import percentile
+
+    assert percentile([], 0.95) is None
+    assert percentile([10.0], 0.95) == 10.0
+    values = [float(v) for v in range(1, 101)]
+    assert percentile(values, 0.50) == 51.0
+    assert percentile(values, 0.95) == 95.0

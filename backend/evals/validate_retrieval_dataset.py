@@ -71,17 +71,21 @@ def validate_retrieval_cases(
                     f"case device({case.device_id})와 다릅니다"
                 )
         if not case.relevant_chunk_ids:
-            # 빈 정답은 해당 사용자가 그 kind의 데이터를 갖지 않을 때만 성립한다.
-            # (데이터가 있으면 벡터 검색은 항상 top-k를 반환하므로 0건이 될 수 없다)
+            # 빈 정답은 (a) 해당 사용자가 그 kind의 데이터를 아예 갖지 않거나
+            # (b) 날짜 조건이 있어 그 날짜에 기록이 없을 때만 성립한다.
+            # (a)도 (b)도 아니면 벡터 검색은 항상 top-k를 반환하므로 0건이 될 수 없다.
+            # 주의: (b)는 filter 모드에서만 통과한다 — vector 모드에서는 알려진
+            # 약점(없는 날짜에 다른 날짜 결과 반환)을 정량화하는 케이스가 된다.
+            has_date_constraint = case.start_date is not None or case.end_date is not None
             devices_with_data = (
                 diary_devices_with_chunks
                 if case.kind == RetrievalKind.DIARY
                 else health_devices_with_chunks
             )
-            if case.device_id in devices_with_data:
+            if case.device_id in devices_with_data and not has_date_constraint:
                 errors.append(
                     f"{path}: {case.id}: {case.device_id}는 {case.kind.value} 데이터가 있어 "
-                    "빈 정답 케이스가 될 수 없습니다"
+                    "날짜 조건 없는 빈 정답 케이스가 될 수 없습니다"
                 )
     return errors
 
