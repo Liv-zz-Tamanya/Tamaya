@@ -144,6 +144,25 @@ export const toCategory = (value: unknown): Category =>
     ? (value as Category)
     : LEGACY_CATEGORY[String(value)] ?? 'health';
 
+// ── 4 카테고리 그룹핑 (표시 SSOT) ──────────────────────────────────────────
+// 순서(건강→학습→자격증→취미)와 라벨을 여기 한 곳에서만 정한다. 낮 홈·밤 홈(S06/S07)·
+// 낮 기록(S08)·저녁 회고(S10)가 전부 이 헬퍼를 통해 그리므로 화면마다 순서가 갈리지 않는다.
+// category 값은 toCategory로 흡수 — 구버전 저장값이 섞여도 4 그룹 밖으로 새지 않는다.
+export type CategoryGroup<T> = { category: Category; label: string; items: T[] };
+
+export const groupByCategory = <T extends { category: Category }>(
+  items: T[],
+): CategoryGroup<T>[] =>
+  CATEGORIES.map((category) => ({
+    category,
+    label: CATEGORY_LABEL[category],
+    items: items.filter((item) => toCategory(item.category) === category),
+  }));
+
+// 그룹 헤더 없이 순서만 맞출 때 (일기 체크 스냅샷 등) — 합계·집계는 불변, 나열 순서만 정렬.
+export const sortByCategory = <T extends { category: Category }>(items: T[]): T[] =>
+  groupByCategory(items).flatMap((group) => group.items);
+
 const todayKeyOf = (now: Date = new Date()) =>
   `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
