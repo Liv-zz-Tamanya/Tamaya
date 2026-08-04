@@ -10,7 +10,8 @@ import {
   MOOD_LABEL,
   MOOD_BAR,
   WEEKDAY_KR,
-  INTERESTS,
+  CATEGORIES,
+  CATEGORY_LABEL,
   ROUTINE_PRESETS,
   checkLabelOf,
   dateParts,
@@ -821,7 +822,7 @@ export const S17_Insights = () => {
 
   // 다음주 추천(로드맵의 시작점): 아직 없는 예시 루틴에서 관심사 우선으로 최대 3개.
   // TODO(인사이트 agent): 추천 선정·문구를 agent 생성으로 교체
-  const candidates = [...state.interests, ...INTERESTS.filter((c) => !state.interests.includes(c))]
+  const candidates = [...state.interests, ...CATEGORIES.filter((c) => !state.interests.includes(c))]
     .flatMap((cat) => ROUTINE_PRESETS[cat].map((p) => ({ ...p, category: cat })))
     .filter((p) => !state.routines.some((r) => r.label === p.label))
     .slice(0, 3);
@@ -994,7 +995,7 @@ export const S17_Insights = () => {
                   >
                     <span style={{ fontSize: 18 }} aria-hidden="true">{p.emoji}</span>
                     <span style={{ flex: 1, fontFamily: 'Pretendard', fontWeight: 600 }}>{p.label}</span>
-                    <span className="tiny" style={{ color: 'var(--pencil)' }}>{p.category}</span>
+                    <span className="tiny" style={{ color: 'var(--pencil)' }}>{CATEGORY_LABEL[p.category]}</span>
                     {added ? (
                       <span className="chip">진행중</span>
                     ) : (

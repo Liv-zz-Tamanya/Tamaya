@@ -11,6 +11,7 @@ import {
   type ChatSessionMaxTurns,
 } from '../lib/api';
 import {
+  CATEGORY_LABEL,
   CHAT_DIARY_FIVE_TURNS,
   CHAT_DIARY_FREE_TURNS,
   CHAT_DIARY_INTRO,
@@ -129,7 +130,7 @@ export const S10_RecapStart = () => {
   // 낮 동안의 기록(루틴 체크·한 줄 메모)을 회고 입력으로 인계 — 없으면 빈상태. (C)경계: 로컬 유지.
   const log = dayLogFor(state.dayLog, nav.now);
   const memos: string[] = [
-    ...log.memos.slice(-3).map((m) => `📝 [${m.category}] ${m.text.trim().slice(0, 18)}`),
+    ...log.memos.slice(-3).map((m) => `📝 [${CATEGORY_LABEL[m.category]}] ${m.text.trim().slice(0, 18)}`),
     ...state.routines
       .filter((r) => log.checks[r.id])
       .slice(0, 4)
