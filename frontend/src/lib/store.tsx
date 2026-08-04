@@ -44,56 +44,105 @@ export type DiaryEntry = {
 };
 
 // ── 루틴 · 낮 기록(리스트업) ────────────────────────────────────────────────
-// 관심사 어휘는 온보딩 선택지 = 낮 메모 컬럼 = 루틴 카테고리로 공유한다.
-export const INTERESTS = ['건강', '스터디', '취미', '생활'] as const;
-export type Interest = (typeof INTERESTS)[number];
+// 카테고리 어휘는 온보딩 선택지 = 낮 메모 태그 = 루틴 그룹으로 공유한다.
+// 키는 영문 enum, 화면 표기는 CATEGORY_LABEL 한 곳에서만 (표기 SSOT).
+export const CATEGORIES = ['health', 'learning', 'cert', 'hobby'] as const;
+export type Category = (typeof CATEGORIES)[number];
 
-export type Routine = { id: string; label: string; emoji: string; category: Interest };
-export type DayMemo = { id: string; text: string; category: Interest };
+export const CATEGORY_LABEL: Record<Category, string> = {
+  health: '건강',
+  learning: '학습',
+  cert: '자격증',
+  hobby: '취미',
+};
+
+export type Routine = { id: string; label: string; emoji: string; category: Category };
+export type DayMemo = { id: string; text: string; category: Category };
 // 하루 단위 낮 기록 — date가 오늘이 아니면 소비처에서 dayLogFor()로 리셋해 읽는다.
 export type DayLog = { date: string; checks: Record<string, boolean>; memos: DayMemo[] };
 
-export const ROUTINE_PRESETS: Record<Interest, { label: string; emoji: string }[]> = {
-  건강: [
+// 각 카테고리 앞 3개 = 기본 12건(DEFAULT_ROUTINES), 나머지는 [관리]·추천의 제안 후보.
+export const ROUTINE_PRESETS: Record<Category, { label: string; emoji: string }[]> = {
+  health: [
     { label: '물 6컵 마시기', emoji: '💧' },
     { label: '30분 걷기', emoji: '🚶' },
+    { label: '스트레칭 5분', emoji: '🤸' },
     { label: '12시 전에 자기', emoji: '😴' },
     { label: '아침 챙겨 먹기', emoji: '🍚' },
-    { label: '스트레칭 5분', emoji: '🤸' },
   ],
-  스터디: [
-    { label: '공부 30분', emoji: '📖' },
-    { label: '책 10쪽 읽기', emoji: '📚' },
-    { label: '배운 것 한 줄 정리', emoji: '✏️' },
+  learning: [
+    { label: '30분 독서', emoji: '📖' },
+    { label: '오늘 배운 것 한 줄 정리', emoji: '✍️' },
+    { label: '영어 단어 10개', emoji: '🔤' },
+    { label: '강의 노트 다시 보기', emoji: '📚' },
+    { label: '관심 분야 글 하나 읽기', emoji: '📰' },
   ],
-  취미: [
-    { label: '취미 시간 30분', emoji: '🎨' },
+  cert: [
+    { label: '기출문제 5문제', emoji: '✅' },
+    { label: '인강 1강 듣기', emoji: '🎧' },
+    { label: '오답노트 정리', emoji: '📒' },
+    { label: '개념 한 챕터 훑기', emoji: '📗' },
+    { label: '시험 일정 확인', emoji: '🗓️' },
+  ],
+  hobby: [
+    { label: '좋아하는 일 15분', emoji: '🎨' },
+    { label: '새로운 것 하나 시도', emoji: '✨' },
+    { label: '오늘의 감상 한 줄', emoji: '🎵' },
     { label: '사진 한 장 남기기', emoji: '📷' },
-    { label: '새로운 것 하나 해보기', emoji: '✨' },
-  ],
-  생활: [
-    { label: '방 정리 10분', emoji: '🧹' },
-    { label: '이불 정리', emoji: '🛏️' },
-    { label: '지출 기록하기', emoji: '💸' },
+    { label: '좋아하는 음악 한 곡', emoji: '🎼' },
   ],
 };
 
-// 관심사 선택 → 기본 루틴 ~5개 자동 세팅 (라운드로빈으로 골고루).
-export const seedRoutines = (interests: Interest[]): Routine[] => {
-  const picked = interests.length > 0 ? interests : (['건강'] as Interest[]);
-  const routines: Routine[] = [];
-  for (let round = 0; routines.length < 5; round += 1) {
-    let added = false;
-    for (const cat of picked) {
-      const preset = ROUTINE_PRESETS[cat][round];
-      if (!preset || routines.length >= 5) continue;
-      routines.push({ id: `r-${cat}-${round}`, label: preset.label, emoji: preset.emoji, category: cat });
-      added = true;
-    }
-    if (!added) break;
-  }
-  return routines;
+// 기본 루틴 12건 = 4 카테고리 × 3. id는 고정(마이그레이션·중복 판정 기준).
+const DEFAULT_ROUTINES_BY_CATEGORY: Record<Category, Routine[]> = Object.fromEntries(
+  CATEGORIES.map((cat) => [
+    cat,
+    ROUTINE_PRESETS[cat].slice(0, 3).map((p, i) => ({
+      id: `r-${cat}-${i}`,
+      label: p.label,
+      emoji: p.emoji,
+      category: cat,
+    })),
+  ]),
+) as Record<Category, Routine[]>;
+
+export const DEFAULT_ROUTINES: Routine[] = CATEGORIES.flatMap(
+  (cat) => DEFAULT_ROUTINES_BY_CATEGORY[cat],
+);
+
+// 기본 12건은 항상 시드하고, 고른 관심사 카테고리를 앞으로 당겨 보여준다.
+// (관심사는 "무엇을 지울지"가 아니라 "무엇을 먼저 볼지"만 정한다 — 강요 0.)
+export const seedRoutines = (interests: Category[]): Routine[] => {
+  const ordered: Category[] = [
+    ...interests.filter((c) => CATEGORIES.includes(c)),
+    ...CATEGORIES.filter((c) => !interests.includes(c)),
+  ];
+  return ordered.flatMap((cat) => DEFAULT_ROUTINES_BY_CATEGORY[cat]);
 };
+
+// 커스텀 루틴 이모지 후보 — 별도 라이브러리 없이 고르기만.
+export const ROUTINE_EMOJIS = [
+  '💧', '🚶', '🤸', '🍚', '😴',
+  '📖', '✍️', '🔤', '📚', '📰',
+  '✅', '🎧', '📒', '📗', '🗓️',
+  '🎨', '✨', '🎵', '📷', '☑️',
+];
+
+// v2 = 한글 카테고리(건강/스터디/취미/생활) → 영문 4분류 + 기본 12건 시드.
+const ROUTINE_SCHEMA_VERSION = 2;
+
+// 구버전 저장값 → 신 카테고리. '생활'(정리·지출 등 일상 활동)은 취미로 흡수한다.
+const LEGACY_CATEGORY: Record<string, Category> = {
+  건강: 'health',
+  스터디: 'learning',
+  취미: 'hobby',
+  생활: 'hobby',
+};
+
+export const toCategory = (value: unknown): Category =>
+  CATEGORIES.includes(value as Category)
+    ? (value as Category)
+    : LEGACY_CATEGORY[String(value)] ?? 'health';
 
 const todayKeyOf = (now: Date = new Date()) =>
   `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -110,7 +159,8 @@ export const dayLogFor = (log: DayLog, now: Date = new Date()): DayLog =>
 
 export type State = {
   character: { name: string; color: CatColor; personalities: Personality[] };
-  interests: Interest[];       // 온보딩에서 선택 — 루틴 시드·메모 컬럼과 어휘 공유
+  schemaVersion?: number;      // 루틴 카테고리 스키마 버전 (마이그레이션 1회 실행용)
+  interests: Category[];       // 온보딩에서 선택 — 루틴 노출 순서·메모 태그와 어휘 공유
   routines: Routine[];         // 사용자 루틴 (가변, 커스터마이징 가능)
   dayLog: DayLog;              // 오늘의 낮 기록 — 루틴 체크 + 메모
   chatDiary: ChatMsg[];
@@ -179,8 +229,9 @@ const SEED_DIARIES: DiaryEntry[] = [
 
 const DEFAULT_STATE: State = {
   character: { name: '이음이', color: '#a66838', personalities: ['다정한'] },
-  interests: ['건강'],
-  routines: seedRoutines(['건강']),
+  schemaVersion: ROUTINE_SCHEMA_VERSION,
+  interests: ['health'],
+  routines: seedRoutines(['health']),
   dayLog: emptyDayLog(),
   chatDiary: [],
   chatDiaryMode: 'five',
@@ -198,11 +249,12 @@ const DEFAULT_STATE: State = {
 
 type Action =
   | { type: 'character/set'; patch: Partial<State['character']> }
-  | { type: 'interests/set'; interests: Interest[] }
-  | { type: 'routine/add'; label: string; emoji?: string; category: Interest }
+  | { type: 'interests/set'; interests: Category[] }
+  | { type: 'routine/add'; label: string; emoji?: string; category: Category }
+  | { type: 'routine/update'; id: string; label: string; emoji: string; category: Category }
   | { type: 'routine/remove'; id: string }
   | { type: 'routine/toggle'; id: string }
-  | { type: 'memo/add'; text: string; category: Interest }
+  | { type: 'memo/add'; text: string; category: Category }
   | { type: 'memo/remove'; id: string }
   | { type: 'chat-diary/configure'; mode: ChatDiaryMode; maxTurns: 5 | 50 }
   | { type: 'chat-diary/append'; msg: ChatMsg }
@@ -233,9 +285,13 @@ function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'character/set':
       return { ...state, character: { ...state.character, ...action.patch } };
-    case 'interests/set':
-      // 온보딩 전용 — 관심사에 맞춰 기본 루틴을 다시 시드한다.
-      return { ...state, interests: action.interests, routines: seedRoutines(action.interests) };
+    case 'interests/set': {
+      // 온보딩 전용 — 기본 12건을 관심사 순으로 다시 시드하되, 사용자가 만든 루틴은 보존한다.
+      const seeded = seedRoutines(action.interests);
+      const seededIds = new Set(seeded.map((r) => r.id));
+      const custom = state.routines.filter((r) => !seededIds.has(r.id));
+      return { ...state, interests: action.interests, routines: [...seeded, ...custom] };
+    }
     case 'routine/add': {
       const label = action.label.trim();
       if (!label || state.routines.some((r) => r.label === label)) return state;
@@ -246,6 +302,18 @@ function reducer(state: State, action: Action): State {
         category: action.category,
       };
       return { ...state, routines: [...state.routines, routine] };
+    }
+    case 'routine/update': {
+      const label = action.label.trim();
+      if (!label) return state;
+      // 다른 루틴과 이름이 겹치면 무시 (체크 스냅샷이 라벨 기준이라 중복 금지).
+      if (state.routines.some((r) => r.id !== action.id && r.label === label)) return state;
+      return {
+        ...state,
+        routines: state.routines.map((r) =>
+          r.id === action.id ? { ...r, label, emoji: action.emoji || r.emoji, category: action.category } : r,
+        ),
+      };
     }
     case 'routine/remove': {
       const log = dayLogFor(state.dayLog);
@@ -359,6 +427,39 @@ export const suppressPersistence = () => {
   persistSuppressed = true;
 };
 
+// 저장된 구버전 state → 현 스키마. 사용자가 쌓은 일기·체크·커스텀 루틴은 절대 버리지 않는다.
+const migrateState = (saved: State, savedVersion: number | undefined): State => {
+  const routines: Routine[] = (saved.routines ?? []).map((r) => ({
+    ...r,
+    category: toCategory(r.category),
+  }));
+  const interests = Array.from(new Set((saved.interests ?? []).map(toCategory)));
+  const dayLog = saved.dayLog
+    ? {
+        ...saved.dayLog,
+        memos: (saved.dayLog.memos ?? []).map((m) => ({ ...m, category: toCategory(m.category) })),
+      }
+    : saved.dayLog;
+
+  // 기본 12건은 스키마 승격 시 1회만 합류시킨다 (이후 사용자가 지운 건 다시 살아나지 않음).
+  // 버전은 반드시 "저장된 값"으로 판정한다 — DEFAULT_STATE와 머지된 뒤엔 항상 최신값이라 무의미.
+  let merged = routines;
+  if (savedVersion !== ROUTINE_SCHEMA_VERSION) {
+    const haveIds = new Set(routines.map((r) => r.id));
+    const haveLabels = new Set(routines.map((r) => r.label));
+    const missing = DEFAULT_ROUTINES.filter((d) => !haveIds.has(d.id) && !haveLabels.has(d.label));
+    merged = [...routines, ...missing];
+  }
+
+  return {
+    ...saved,
+    schemaVersion: ROUTINE_SCHEMA_VERSION,
+    interests: interests.length > 0 ? interests : ['health'],
+    routines: merged,
+    dayLog: dayLog ?? emptyDayLog(),
+  };
+};
+
 const StoreContext = createContext<{
   state: State;
   dispatch: React.Dispatch<Action>;
@@ -369,7 +470,8 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     try {
       const raw = localStorage.getItem(LS_KEY);
       if (raw) {
-        const saved = { ...init, ...(JSON.parse(raw) as State) };
+        const parsed = JSON.parse(raw) as Partial<State>;
+        const saved = { ...init, ...parsed } as State;
         // 레거시 모드 마이그레이션: full(50턴)→free, short(3턴 폐지)→five.
         // maxTurns는 항상 mode에서 다시 유도해 저장값 불일치를 흡수한다.
         const legacyMode = saved.chatDiaryMode as string;
@@ -377,7 +479,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
         else if (legacyMode === 'short') saved.chatDiaryMode = 'five';
         saved.chatDiaryMaxTurns =
           saved.chatDiaryMode === 'free' ? CHAT_DIARY_FREE_TURNS : CHAT_DIARY_FIVE_TURNS;
-        return saved;
+        return migrateState(saved, parsed.schemaVersion);
       }
     } catch {
       // ignore parse errors
