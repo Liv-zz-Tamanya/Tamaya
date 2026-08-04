@@ -9,6 +9,7 @@ import {
   ROUTINE_PRESETS,
   WEEKDAY_KR,
   dayLogFor,
+  groupByCategory,
   isWithinLastWeek,
   latestEntry,
   useStore,
@@ -87,17 +88,32 @@ const EmojiChips = ({ value, onChange }: { value: string; onChange: (e: string) 
   </div>
 );
 
+// 카테고리 섹션 헤더 — 라벨 칩 + 우측 카운트. 낮 홈·밤 홈·낮 기록이 같은 모양을 공유한다.
+const CategoryHeader = ({ label, count }: { label: string; count: string }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <span className="chip" style={{ fontWeight: 700 }}>
+      {label}
+    </span>
+    <span className="tiny" style={{ color: 'var(--pencil)' }}>
+      {count}
+    </span>
+  </div>
+);
+
 export const S06_HomeDay = ({ night = false }: { night?: boolean }) => {
   const nav = useNav();
   const { state, dispatch } = useStore();
   const { toast, flash } = useToast();
-  const routineScrollRef = useRef<HTMLDivElement>(null);
+  // 카테고리별 가로 스크롤이 여러 개지만 마우스 드래그는 한 번에 하나뿐 → ref 하나 공유.
   const routineDragRef = useRef({ active: false, startX: 0, startScroll: 0, didDrag: false });
   const minutesUntilOpen = getTimeUntilNextOpen(nav.now, nav.nightOpenTime);
   const remaining = `${Math.floor(minutesUntilOpen / 60)}시간 ${minutesUntilOpen % 60}분`;
   const log = dayLogFor(state.dayLog, nav.now);
   const routines = state.routines;
   const dailyDone = routines.filter((r) => log.checks[r.id]).length;
+  // 낮·밤 홈 공용 4 카테고리 그룹 (건강→학습→자격증→취미). 합계·포인트는 전 카테고리 합산 유지.
+  const routineGroups = groupByCategory(routines);
+  const memoGroups = groupByCategory(log.memos);
   // 로컬 store 실값 바인딩(서버 미전송, (C)경계 = 온디바이스 유지) + 빈상태.
   const latest = latestEntry(state.diaries);
   // v4 S06: 카드 수치는 텍스트만(이모지 없음) — "N / 7 일" · "N pt" · "옷장" 표기
@@ -222,77 +238,132 @@ export const S06_HomeDay = ({ night = false }: { night?: boolean }) => {
           <div className="h-section">오늘의 루틴</div>
           <span className="tiny">{dailyDone} / {routines.length}</span>
         </div>
-        <div
-          aria-label="오늘의 루틴 목록"
-          className="routine-scroll"
-          ref={routineScrollRef}
-          onMouseDown={(event) => {
-            const el = event.currentTarget;
-            routineDragRef.current = { active: true, startX: event.clientX, startScroll: el.scrollLeft, didDrag: false };
-            el.style.cursor = 'grabbing';
-          }}
-          onMouseMove={(event) => {
-            const drag = routineDragRef.current;
-            const el = event.currentTarget;
-            if (!drag.active) return;
-            const delta = event.clientX - drag.startX;
-            if (Math.abs(delta) > 4) drag.didDrag = true;
-            el.scrollLeft = drag.startScroll - delta;
-          }}
-          onMouseUp={(event) => {
-            routineDragRef.current.active = false;
-            event.currentTarget.style.cursor = 'grab';
-          }}
-          onMouseLeave={(event) => {
-            routineDragRef.current.active = false;
-            event.currentTarget.style.cursor = 'grab';
-          }}
-          style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollSnapType: 'x proximity', cursor: 'grab', userSelect: 'none' }}
-        >
-          {routines.map((r) => {
-            const on = !!log.checks[r.id];
-            return (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => toggleRoutineFromHome(r)}
-                aria-pressed={on}
-                aria-label={`${r.label} ${on ? '완료' : '미완료'}`}
-                className="as-button"
-                style={{ flex: '0 0 62px', scrollSnapAlign: 'start', textAlign: 'center', cursor: 'pointer', fontFamily: 'inherit' }}
+        {routines.length === 0 && (
+          <div className="tiny" style={{ color: 'var(--pencil)' }}>
+            아직 루틴이 없어요 — 아래 [오늘 기록하기]에서 하나 골라봐요
+          </div>
+        )}
+        {/* 건강→학습→자격증→취미 4 카테고리 (빈 카테고리는 접힘) — 낮·밤 홈 공통 */}
+        {routineGroups.map((group) => {
+          if (group.items.length === 0) return null;
+          const groupDone = group.items.filter((r) => log.checks[r.id]).length;
+          return (
+            <div key={group.category} style={{ marginTop: 8 }}>
+              <CategoryHeader label={group.label} count={`${groupDone} / ${group.items.length}`} />
+              <div
+                aria-label={`${group.label} 루틴 목록`}
+                className="routine-scroll"
+                onMouseDown={(event) => {
+                  const el = event.currentTarget;
+                  routineDragRef.current = { active: true, startX: event.clientX, startScroll: el.scrollLeft, didDrag: false };
+                  el.style.cursor = 'grabbing';
+                }}
+                onMouseMove={(event) => {
+                  const drag = routineDragRef.current;
+                  const el = event.currentTarget;
+                  if (!drag.active) return;
+                  const delta = event.clientX - drag.startX;
+                  if (Math.abs(delta) > 4) drag.didDrag = true;
+                  el.scrollLeft = drag.startScroll - delta;
+                }}
+                onMouseUp={(event) => {
+                  routineDragRef.current.active = false;
+                  event.currentTarget.style.cursor = 'grab';
+                }}
+                onMouseLeave={(event) => {
+                  routineDragRef.current.active = false;
+                  event.currentTarget.style.cursor = 'grab';
+                }}
+                style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollSnapType: 'x proximity', cursor: 'grab', userSelect: 'none', marginTop: 6 }}
               >
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    margin: '0 auto',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 14,
-                    border: '0.5px solid var(--ink)',
-                    background: on ? 'var(--ink)' : 'var(--paper)',
-                    fontSize: 20,
-                  }}
-                >
-                  {r.emoji}
+                {group.items.map((r) => {
+                  const on = !!log.checks[r.id];
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => toggleRoutineFromHome(r)}
+                      aria-pressed={on}
+                      aria-label={`${group.label} · ${r.label} ${on ? '완료' : '미완료'}`}
+                      className="as-button"
+                      style={{ flex: '0 0 62px', scrollSnapAlign: 'start', textAlign: 'center', cursor: 'pointer', fontFamily: 'inherit' }}
+                    >
+                      <div
+                        style={{
+                          width: 44,
+                          height: 44,
+                          margin: '0 auto',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: 14,
+                          border: '0.5px solid var(--ink)',
+                          background: on ? 'var(--ink)' : 'var(--paper)',
+                          fontSize: 20,
+                        }}
+                      >
+                        {r.emoji}
+                      </div>
+                      <div
+                        className="tiny"
+                        style={{
+                          marginTop: 4,
+                          overflow: 'hidden',
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {r.label}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </section>
+
+      {/* 오늘의 메모(행동) — 루틴과 같은 4 카테고리로. 낮·밤 홈 공통, 없으면 섹션 자체가 없음 */}
+      {log.memos.length > 0 && (
+        <section
+          className="hbox r-l"
+          aria-label={`오늘의 메모 ${log.memos.length}건`}
+          style={{ padding: 14, marginTop: 12 }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 4,
+            }}
+          >
+            <div className="h-section">오늘의 메모</div>
+            <span className="tiny">{log.memos.length}건</span>
+          </div>
+          {memoGroups.map((group) => {
+            if (group.items.length === 0) return null;
+            return (
+              <div key={group.category} style={{ marginTop: 8 }}>
+                <CategoryHeader label={group.label} count={`${group.items.length}건`} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
+                  {group.items.map((m) => (
+                    <div key={m.id} style={{ display: 'flex', gap: 6 }}>
+                      <span className="tiny" style={{ color: 'var(--pencil)', flex: 'none' }} aria-hidden="true">
+                        ·
+                      </span>
+                      <span className="body" style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
+                        {m.text}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-                <div
-                  className="tiny"
-                  style={{
-                    marginTop: 4,
-                    overflow: 'hidden',
-                    whiteSpace: 'nowrap',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {r.label}
-                </div>
-              </button>
+              </div>
             );
           })}
-        </div>
-      </section>
+        </section>
+      )}
 
       <button
         type="button"
@@ -462,6 +533,8 @@ export const S08_DayLog = () => {
   const routines = state.routines;
   // 완료·포인트 카운터는 카테고리와 무관한 전체 합산 (그룹핑 전과 동일).
   const doneCount = routines.filter((r) => log.checks[r.id]).length;
+  // 기록된 한 줄 메모도 루틴과 같은 4 카테고리 순서로 묶어 보여준다.
+  const memoGroups = groupByCategory(log.memos);
 
   const toggle = (r: Routine) => {
     const was = !!log.checks[r.id];
@@ -581,12 +654,7 @@ export const S08_DayLog = () => {
               aria-label={`${CATEGORY_LABEL[cat]} 루틴 ${catDone} / ${items.length}`}
               style={{ marginTop: 12 }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="chip" style={{ fontWeight: 700 }}>{CATEGORY_LABEL[cat]}</span>
-                <span className="tiny" style={{ color: 'var(--pencil)' }}>
-                  {catDone} / {items.length}
-                </span>
-              </div>
+              <CategoryHeader label={CATEGORY_LABEL[cat]} count={`${catDone} / ${items.length}`} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
                 {items.length === 0 && (
                   <div className="tiny" style={{ color: 'var(--pencil)' }}>
@@ -781,25 +849,38 @@ export const S08_DayLog = () => {
             남기기
           </button>
         </form>
-        {log.memos.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
-            {log.memos.map((m) => (
-              <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="chip" style={{ flex: 'none' }}>{CATEGORY_LABEL[m.category]}</span>
-                <span className="body" style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{m.text}</span>
-                <button
-                  type="button"
-                  onClick={() => dispatch({ type: 'memo/remove', id: m.id })}
-                  aria-label="메모 삭제"
-                  className="tiny as-button"
-                  style={{ cursor: 'pointer', color: 'var(--pencil)', background: 'none', border: 'none' }}
-                >
-                  ✕
-                </button>
+        {/* 기록된 메모도 루틴과 같은 4 카테고리 섹션 (빈 카테고리는 접힘 — 루틴 리스트와 동일 규칙) */}
+        {memoGroups.map((group) => {
+          if (group.items.length === 0) return null;
+          return (
+            <section
+              key={group.category}
+              aria-label={`${group.label} 메모 ${group.items.length}건`}
+              style={{ marginTop: 12 }}
+            >
+              <CategoryHeader label={group.label} count={`${group.items.length}건`} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                {group.items.map((m) => (
+                  <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="tiny" style={{ color: 'var(--pencil)', flex: 'none' }} aria-hidden="true">
+                      ·
+                    </span>
+                    <span className="body" style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{m.text}</span>
+                    <button
+                      type="button"
+                      onClick={() => dispatch({ type: 'memo/remove', id: m.id })}
+                      aria-label={`${group.label} 메모 삭제`}
+                      className="tiny as-button"
+                      style={{ cursor: 'pointer', color: 'var(--pencil)', background: 'none', border: 'none' }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            </section>
+          );
+        })}
       </div>
 
       {/* 낮 대화는 프리미엄 예정 — 잠금 티저 (이음이는 자는 중) */}
