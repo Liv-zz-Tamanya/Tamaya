@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from app.domain.repository.diary_repository import DiaryRepository
 from app.infrastructure.auth.jwt_handler import issue_access_token, issue_refresh_token
+from app.infrastructure.auth.password import hash_password
 from app.infrastructure.config.database import get_db
 from app.infrastructure.config.dependencies import get_diary_repo
 from app.infrastructure.persistence.models import UserModel, UserSessionModel
@@ -105,7 +106,7 @@ async def test_get_current_session_rejects_revoked_access_token():
 @pytest.mark.asyncio
 async def test_get_current_session_rejects_refresh_token():
     db = _FakeDb(_make_session())
-    refresh_token, _ = issue_refresh_token("dev-1")
+    refresh_token, _ = issue_refresh_token("dev-1", "device")
 
     with pytest.raises(HTTPException) as exc_info:
         await get_current_session(authorization=f"Bearer {refresh_token}", db=db)
@@ -235,6 +236,127 @@ def test_logout_revokes_current_session_from_authorization_header():
     assert db.session is not None
     assert db.session.revoked_at is not None
     assert db.commit_count == 1
+
+
+def _signup_body(nickname: str = "hana", password: str = "pass1234") -> dict:
+    return {"nickname": nickname, "password": password}
+
+
+def test_signup_hashes_password_and_returns_nickname_token():
+    db = _FakeDb(None)
+    app.dependency_overrides[get_db] = lambda: db
+
+    client = TestClient(app)
+    resp = client.post("/auth/nickname/signup", json=_signup_body())
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["device_id"] == "nick-hana"
+    assert data["is_new"] is True
+    created_user = db.added[0]
+    assert isinstance(created_user, UserModel)
+    assert created_user.password_hash.startswith("$2b$")
+    assert created_user.password_hash != "pass1234"
+
+
+def test_signup_rejects_duplicate_nickname_with_409():
+    db = _FakeDb(UserModel(id=uuid.uuid4(), nickname="hana", password_hash="x"))
+    app.dependency_overrides[get_db] = lambda: db
+
+    resp = TestClient(app).post("/auth/nickname/signup", json=_signup_body())
+
+    assert resp.status_code == 409
+
+
+def test_signup_rejects_short_password_with_400():
+    db = _FakeDb(None)
+    app.dependency_overrides[get_db] = lambda: db
+
+    resp = TestClient(app).post("/auth/nickname/signup", json=_signup_body(password="abc"))
+
+    assert resp.status_code == 400
+
+
+def test_login_rejects_wrong_password_with_401():
+    user = UserModel(id=uuid.uuid4(), nickname="hana", password_hash=hash_password("pass1234"))
+    db = _FakeDb(user)
+    app.dependency_overrides[get_db] = lambda: db
+
+    resp = TestClient(app).post("/auth/nickname/login", json=_signup_body(password="wrong999"))
+
+    assert resp.status_code == 401
+
+
+def test_login_accepts_correct_password():
+    user = UserModel(id=uuid.uuid4(), nickname="hana", password_hash=hash_password("pass1234"))
+    db = _FakeDb(user)
+    app.dependency_overrides[get_db] = lambda: db
+
+    resp = TestClient(app).post("/auth/nickname/login", json=_signup_body())
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["device_id"] == "nick-hana"
+    assert data["is_new"] is False
+
+
+def test_login_rejects_unknown_nickname_with_404():
+    db = _FakeDb(None)
+    app.dependency_overrides[get_db] = lambda: db
+
+    resp = TestClient(app).post("/auth/nickname/login", json=_signup_body())
+
+    assert resp.status_code == 404
+
+
+def test_device_login_rejects_nickname_namespace():
+    """nick-* device_id로 비밀번호 우회 로그인이 불가능해야 한다."""
+    db = _FakeDb(None)
+    app.dependency_overrides[get_db] = lambda: db
+
+    resp = TestClient(app).post("/auth/device", json={"device_id": "nick-hana"})
+
+    assert resp.status_code == 400
+
+
+def test_refresh_recreates_device_session_for_nickname_identity():
+    """ "nick-*" sub가 kakao_id로 오분류되지 않고 device 세션으로 재발급돼야 한다."""
+    db = _FakeDb(None)
+    app.dependency_overrides[get_db] = lambda: db
+    refresh_token, _ = issue_refresh_token("nick-hana", "device")
+
+    resp = TestClient(app).post("/auth/refresh", json={"refresh_token": refresh_token})
+
+    assert resp.status_code == 200
+    new_session = db.added[0]
+    assert new_session.device_id == "nick-hana"
+    assert new_session.kakao_id is None
+
+
+def test_refresh_rejects_token_without_identity_type():
+    """identity_type claim 없는 구형 refresh token은 재로그인을 유도한다(401)."""
+    from jose import jwt
+
+    from app.infrastructure.config.settings import settings
+
+    now = datetime.now(UTC)
+    legacy = jwt.encode(
+        {
+            "sub": "nick-hana",
+            "jti": str(uuid.uuid4()),
+            "type": "refresh",
+            "iat": now,
+            "exp": now + timedelta(days=30),
+        },
+        settings.jwt_secret,
+        algorithm="HS256",
+    )
+    db = _FakeDb(None)
+    app.dependency_overrides[get_db] = lambda: db
+
+    resp = TestClient(app).post("/auth/refresh", json={"refresh_token": legacy})
+
+    assert resp.status_code == 401
 
 
 def test_logout_then_same_token_is_rejected_by_protected_route():

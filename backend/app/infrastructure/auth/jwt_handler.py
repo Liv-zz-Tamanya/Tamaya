@@ -41,8 +41,13 @@ def issue_access_token(identity: str, jti: str) -> str:
         return f"mock_access_{identity}_{jti}"
 
 
-def issue_refresh_token(identity: str) -> tuple[str, str]:
-    """refresh token — 30일 만료. 반환: (token, jti)"""
+def issue_refresh_token(identity: str, identity_type: str) -> tuple[str, str]:
+    """refresh token — 30일 만료. 반환: (token, jti)
+
+    identity_type("device" | "kakao")을 claim으로 넣어, refresh 시 sub 형식을
+    추론하지 않고 어떤 identity 컬럼으로 세션을 재발급할지 결정한다.
+    (기존 추론 방식은 "nick-*"/"dev-*" device_id를 kakao로 오분류했다 — DEC-023 정합 버그)
+    """
     jti = str(uuid.uuid4())
     try:
         from jose import jwt  # type: ignore[import]
@@ -51,6 +56,7 @@ def issue_refresh_token(identity: str) -> tuple[str, str]:
             "sub": identity,
             "jti": jti,
             "type": "refresh",
+            "identity_type": identity_type,
             "iat": datetime.now(UTC),
             "exp": datetime.now(UTC) + timedelta(days=_REFRESH_EXPIRE_DAYS),
         }
