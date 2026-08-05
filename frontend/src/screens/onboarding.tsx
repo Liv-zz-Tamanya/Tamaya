@@ -1,4 +1,5 @@
 import { CSSProperties, useEffect, useState } from 'react';
+import { getNickname, getToken } from '../lib/api';
 import { CatSketch } from '../components/primitives';
 import { useNav } from '../lib/router';
 import {
@@ -47,8 +48,13 @@ const OnbProgress = ({
 export const S01_Splash = () => {
   const nav = useNav();
   // Auto-advance after 1.5s — match the design intent (splash → welcome).
+  // 닉네임 세션(토큰+닉네임)이 남아 있으면 온보딩 대신 홈으로 복귀 — 새로고침해도
+  // 로그인이 유지된다. 홈 낮/밤 구분은 셸(displayRoute)이 시간 기준으로 정규화한다.
   useEffect(() => {
-    const t = setTimeout(() => nav.go('welcome'), 1500);
+    const t = setTimeout(() => {
+      if (getToken() && getNickname()) nav.reset('home-night');
+      else nav.go('welcome');
+    }, 1500);
     return () => clearTimeout(t);
   }, [nav]);
   return (
