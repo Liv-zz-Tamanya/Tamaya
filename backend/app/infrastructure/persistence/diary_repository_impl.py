@@ -31,6 +31,7 @@ class DiaryRepositoryImpl(DiaryRepository):
             existing.satisfaction = diary.satisfaction
             existing.satisfaction_estimated = diary.satisfaction_estimated
             existing.keywords = diary.keywords
+            existing.tomorrow = diary.tomorrow
             existing.chat_session_id = diary.chat_session_id
         else:
             self._db.add(
@@ -44,6 +45,7 @@ class DiaryRepositoryImpl(DiaryRepository):
                     satisfaction=diary.satisfaction,
                     satisfaction_estimated=diary.satisfaction_estimated,
                     keywords=diary.keywords,
+                    tomorrow=diary.tomorrow,
                     chat_session_id=diary.chat_session_id,
                     created_at=diary.created_at,
                 )
@@ -109,6 +111,7 @@ class DiaryRepositoryImpl(DiaryRepository):
             satisfaction=model.satisfaction,
             satisfaction_estimated=model.satisfaction_estimated,
             keywords=model.keywords,
+            tomorrow=model.tomorrow,
             chat_session_id=model.chat_session_id,
             created_at=model.created_at,
         )

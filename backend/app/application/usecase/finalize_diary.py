@@ -3,7 +3,10 @@ from uuid import UUID
 
 from app.application.service.ai_chat_service import AiChatService
 from app.application.service.diary_parsing import parse_satisfaction
-from app.application.usecase.diary_keywords import normalize_diary_keywords
+from app.application.usecase.diary_keywords import (
+    normalize_diary_keywords,
+    normalize_diary_tomorrow,
+)
 from app.application.usecase.extract_chunks import ExtractChunksUseCase
 from app.domain.model.diary import Diary
 from app.domain.model.emotion import Emotion
@@ -50,6 +53,7 @@ class FinalizeDiaryUseCase:
             satisfaction=satisfaction,
             satisfaction_estimated=satisfaction_estimated,
             keywords=normalize_diary_keywords(diary_data.get("keywords")),
+            tomorrow=normalize_diary_tomorrow(diary_data.get("tomorrow")),
             chat_session_id=session.id,
         )
 

@@ -46,6 +46,7 @@ _MOCK_DIARY_RESPONSES = [
         "emotion": "calm",
         "satisfaction": 60,
         "keywords": ["피곤", "회고", "휴식"],
+        "tomorrow": "나에게 조금 더 친절하게 대하기",
     },
     {
         "title": "소소한 하루",
@@ -53,6 +54,7 @@ _MOCK_DIARY_RESPONSES = [
         "emotion": "tired",
         "satisfaction": 50,
         "keywords": ["버팀", "피곤", "기록"],
+        "tomorrow": None,  # 언급 없음(null) 케이스 — FE 섹션 숨김 경로 검증
     },
     {
         # 판단 불가(null) 케이스 — satisfaction_estimated 경로를 API 비용 없이 검증

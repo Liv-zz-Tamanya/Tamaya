@@ -16,5 +16,6 @@ class Diary:
     satisfaction: int = 50  # BUG-07: 0-100 (DEC-020)
     satisfaction_estimated: bool = False  # True = LLM 판단 불가·값 부적절로 채운 중립값 (분석 제외 대상)
     keywords: list[str] = field(default_factory=list)
+    tomorrow: str | None = None  # 대화에서 언급된 '내일 한 가지' (없으면 None — 지어내지 않음)
     chat_session_id: UUID | None = None
     created_at: datetime = field(default_factory=datetime.now)
