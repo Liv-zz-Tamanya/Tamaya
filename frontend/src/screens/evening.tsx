@@ -6,6 +6,7 @@ import { scrollBehavior } from '../lib/scroll';
 import {
   AI_ENABLED,
   clearChatSessionCache,
+  recoverGeneratedDiary,
   sendAiChat,
   startAiChatSession,
   type ChatSessionMaxTurns,
@@ -15,6 +16,7 @@ import {
   CHAT_DIARY_FREE_TURNS,
   CHAT_DIARY_INTRO,
   CHAT_DIARY_TURNS,
+  MOOD_LABEL,
   dateParts,
   dayLogFor,
   entryForDate,
@@ -51,65 +53,9 @@ const moodsFromEmotion = (emotion?: string): Mood[] => {
   }
 };
 
-const emotionSummary = (emotion?: string): [string, string, string][] => {
-  switch (emotion) {
-    case 'happy':
-      return [
-        ['기쁨', 'var(--paper-2)', '45%'],
-        ['차분', 'var(--accent-soft)', '30%'],
-        ['뿌듯', '#fff', '25%'],
-      ];
-    case 'sad':
-      return [
-        ['슬픔', 'var(--paper-2)', '45%'],
-        ['피곤', 'var(--accent-soft)', '30%'],
-        ['차분', '#fff', '25%'],
-      ];
-    case 'angry':
-      return [
-        ['답답', 'var(--paper-2)', '40%'],
-        ['피곤', 'var(--accent-soft)', '35%'],
-        ['차분', '#fff', '25%'],
-      ];
-    case 'anxious':
-      return [
-        ['불안', 'var(--paper-2)', '45%'],
-        ['피곤', 'var(--accent-soft)', '30%'],
-        ['안도', '#fff', '25%'],
-      ];
-    case 'grateful':
-      return [
-        ['고마움', 'var(--paper-2)', '45%'],
-        ['차분', 'var(--accent-soft)', '30%'],
-        ['기쁨', '#fff', '25%'],
-      ];
-    case 'tired':
-      return [
-        ['피곤', 'var(--paper-2)', '45%'],
-        ['차분', 'var(--accent-soft)', '30%'],
-        ['안도', '#fff', '25%'],
-      ];
-    case 'calm':
-    default:
-      return [
-        ['차분', 'var(--paper-2)', '45%'],
-        ['안도', 'var(--accent-soft)', '30%'],
-        ['뿌듯', '#fff', '25%'],
-      ];
-  }
-};
-
-const fallbackKeywordsFromAnswers = (answers: string[]): string[] =>
-  answers.length > 0
-    ? Array.from(
-        new Set(
-          answers
-            .slice(0, 3)
-            .map((a) => a.trim().split(/[\s,.!?·]+/).filter(Boolean)[0])
-            .filter((w): w is string => Boolean(w)),
-        ),
-      ).slice(0, 3)
-    : ['오늘', '기록'];
+// 감정별 고정 % 요약(emotionSummary)·답변 첫 단어 키워드(fallbackKeywords)는 제거 —
+// 분석된 적 없는 수치를 분석 결과처럼 보여주던 표시라, 실측값(satisfaction)과
+// 서버 키워드만 남기고 없을 땐 정직하게 숨긴다.
 
 export const S10_RecapStart = () => {
   const nav = useNav();
@@ -487,6 +433,7 @@ export const S11_ChatDiary = () => {
               emotion: diary.emotion,
               satisfaction: diary.satisfaction,
               keywords: diary.keywords,
+              tomorrow: diary.tomorrow,
             },
           });
           clearChatSessionCache(maxTurns);
@@ -619,7 +566,9 @@ export const S12_MoodFinalize = () => {
   const { toast, flash } = useToast();
   const generatedDiary = state.chatDiaryGeneratedDiary;
   const diaryMoods = moodsFromEmotion(generatedDiary?.emotion);
-  const summaryRows = emotionSummary(generatedDiary?.emotion);
+  const satisfaction = generatedDiary
+    ? Math.max(0, Math.min(100, Math.round(generatedDiary.satisfaction ?? 50)))
+    : null;
 
   // Pull recent user answers from chat-diary to build a fresh diary preview.
   const userAnswers = state.chatDiary.filter((m) => m.role === 'user').map((m) => m.text);
@@ -638,22 +587,52 @@ export const S12_MoodFinalize = () => {
           .join('\n')}`
       : `${datePrefix}. 점심으로 우동 한 그릇이 위로였다.\n긴 회의로 피곤했고, 끝난 뒤에 숨 돌릴 5분이\n없었던 게 가장 무거웠다. 내일은 일정 사이에\n3분의 틈을 만들어보기로 했다.`;
 
-  const tomorrowLine =
-    userAnswers[userAnswers.length - 1] ?? '회의 종료 후 · 3분 호흡 알람';
+  // '내일 한 가지'는 대화에서 실제 언급된 것만(서버 tomorrow 필드). 마지막 답변을
+  // 그대로 쓰던 휴리스틱은 고정 5턴 스크립트(5번째 질문=내일 계획) 유산이라 제거 —
+  // AI 동적 질문에선 마지막 답변이 아무 얘기나 될 수 있다. 없으면 섹션 숨김.
+  const tomorrowLine = generatedDiary?.tomorrow?.trim() || null;
 
-  // 서버 AI 키워드가 없을 때만 로컬 휴리스틱으로 fallback한다.
-  const keywords =
-    generatedDiary?.keywords && generatedDiary.keywords.length > 0
-      ? generatedDiary.keywords.slice(0, 3)
-      : fallbackKeywordsFromAnswers(userAnswers);
+  // 키워드는 서버 생성값만 — 없으면 숨긴다 (답변 첫 단어 조합은 가짜 분석처럼 보임).
+  const keywords = generatedDiary?.keywords?.slice(0, 3) ?? [];
 
   // 분석 로딩 → 결과(성공) 전환 (온디바이스 시뮬, 서버 미전송 — (C)경계).
   const [analyzing, setAnalyzing] = useState(true);
+  const [retrying, setRetrying] = useState(false);
   const savedRef = useRef(false);
   useEffect(() => {
     const t = setTimeout(() => setAnalyzing(false), 1100);
     return () => clearTimeout(t);
   }, []);
+
+  // 일기 생성 실패 복구 — 대화 재진행 없이 세션 finalize 재시도(또는 서버가 이미
+  // 만든 오늘 일기 회수). 성공하면 이 화면이 서버 결과로 다시 그려진다.
+  const retryGenerate = () => {
+    if (retrying) return;
+    setRetrying(true);
+    void (async () => {
+      const diary = await recoverGeneratedDiary(todayKey, {
+        maxTurns: state.chatDiaryMaxTurns as ChatSessionMaxTurns,
+      });
+      setRetrying(false);
+      if (diary) {
+        dispatch({
+          type: 'chat-diary/set-generated-diary',
+          diary: {
+            diary_date: diary.diary_date,
+            title: diary.title,
+            content: diary.content,
+            emotion: diary.emotion,
+            satisfaction: diary.satisfaction,
+            keywords: diary.keywords,
+            tomorrow: diary.tomorrow,
+          },
+        });
+        flash('일기를 다시 정리했어요');
+      } else {
+        flash('아직 정리하지 못했어요 · 잠시 후 다시 시도해 주세요');
+      }
+    })();
+  };
 
   const save = () => {
     // 더블클릭으로 save 가 두 번 돌면 (state 반영 전이라) 보상이 이중 적립되므로 1회로 잠근다.
@@ -682,7 +661,7 @@ export const S12_MoodFinalize = () => {
             !!dayLogFor(state.dayLog).checks[r.id],
           ]),
         ),
-        tomorrow: tomorrowLine,
+        tomorrow: tomorrowLine ?? undefined,
         createdAt: Date.now(),
       },
     });
@@ -720,44 +699,57 @@ export const S12_MoodFinalize = () => {
         </div>
       ) : (
         <>
-      <div className="hbox r-l" style={{ padding: 14, marginTop: 14, border: '1.5px solid var(--ink)' }}>
-        <div className="tiny" style={{ color: 'var(--pencil)' }}>이음이가 읽은 오늘 감정</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 10 }}>
-          <div
-            className="ph-circle"
-            style={{ width: 56, height: 56, background: 'var(--paper-2)', overflow: 'hidden', flex: 'none' }}
-          >
-            <MoodFace mood={diaryMoods[0]} size={48} />
-          </div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {summaryRows.map(([n, , p], i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="tiny" style={{ width: 32, flex: 'none' }}>{n}</span>
+      {generatedDiary && satisfaction != null ? (
+        <div className="hbox r-l" style={{ padding: 14, marginTop: 14, border: '1.5px solid var(--ink)' }}>
+          <div className="tiny" style={{ color: 'var(--pencil)' }}>이음이가 읽은 오늘 감정</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 10 }}>
+            <div
+              className="ph-circle"
+              style={{ width: 56, height: 56, background: 'var(--paper-2)', overflow: 'hidden', flex: 'none' }}
+            >
+              <MoodFace mood={diaryMoods[0]} size={48} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700 }}>{MOOD_LABEL[diaryMoods[0]]}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
                 <div className="bar" style={{ flex: 1, height: 8, background: 'var(--paper-2)' }}>
-                  <i
-                    style={{
-                      width: p,
-                      background: i === 0 ? 'rgba(168,86,75,0.75)' : 'rgba(43,24,16,0.39)',
-                      borderRight: 'none',
-                    }}
-                  />
+                  <i style={{ width: `${satisfaction}%`, background: 'rgba(168,86,75,0.75)', borderRight: 'none' }} />
                 </div>
                 <span className="tiny" style={{ width: 30, flex: 'none', textAlign: 'right', fontWeight: 700 }}>
-                  {p}
+                  {satisfaction}
                 </span>
               </div>
-            ))}
+              <div className="tiny" style={{ marginTop: 4, color: 'var(--pencil)' }}>오늘 만족도</div>
+            </div>
           </div>
+          {keywords.length > 0 && (
+            <div className="tiny" style={{ marginTop: 10 }}>
+              키워드:{' '}
+              {keywords.map((k, i) => (
+                <span key={i} className="chip" style={{ marginRight: 4, borderWidth: '0.5px', background: 'var(--paper)' }}>
+                  {k}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="tiny" style={{ marginTop: 10 }}>
-          키워드:{' '}
-          {keywords.map((k, i) => (
-            <span key={i} className="chip" style={{ marginRight: 4, borderWidth: '0.5px', background: 'var(--paper)' }}>
-              {k}
-            </span>
-          ))}
+      ) : (
+        <div className="hbox dashed r-l" style={{ padding: 14, marginTop: 14 }}>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>이음이가 일기를 정리하지 못했어요</div>
+          <div className="tiny" style={{ marginTop: 4, color: 'var(--pencil)' }}>
+            아래에는 네 답변을 그대로 담아뒀어. 대화를 다시 하지 않고도 정리를 다시 시도할 수 있어.
+          </div>
+          <button
+            type="button"
+            onClick={retryGenerate}
+            disabled={retrying}
+            className="btn"
+            style={{ marginTop: 10, cursor: retrying ? 'wait' : 'pointer', fontFamily: 'inherit' }}
+          >
+            {retrying ? '정리하는 중…' : '다시 정리하기'}
+          </button>
         </div>
-      </div>
+      )}
 
       <div
         className="hbox r-r"
@@ -787,32 +779,35 @@ export const S12_MoodFinalize = () => {
         </div>
       </div>
 
-      <div className="hbox night r-l" style={{ padding: 12, marginTop: 12, border: '1.5px solid var(--ink)' }}>
-        <div className="tiny" style={{ color: 'var(--cream)' }}>
-          내일 한 가지
+      {/* 대화에서 내일 계획이 실제 언급됐을 때만 — 없는데 아무 문장을 채워 넣지 않는다. */}
+      {tomorrowLine && (
+        <div className="hbox night r-l" style={{ padding: 12, marginTop: 12, border: '1.5px solid var(--ink)' }}>
+          <div className="tiny" style={{ color: 'var(--cream)' }}>
+            내일 한 가지
+          </div>
+          <div className="h-title" style={{ color: 'var(--paper)', fontSize: 18, marginTop: 4 }}>
+            {tomorrowLine}
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+            <button
+              type="button"
+              onClick={() => flash('⏰ 내일 알람으로 추가했어요')}
+              className="chip chip-btn"
+              style={{ background: 'var(--banner)', color: 'var(--paper)', borderWidth: '1.5px', cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              설정
+            </button>
+            <button
+              type="button"
+              onClick={() => flash('다음에 알려줄게요')}
+              className="chip chip-btn"
+              style={{ background: 'var(--paper)', borderWidth: '1.5px', cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              나중에
+            </button>
+          </div>
         </div>
-        <div className="h-title" style={{ color: 'var(--paper)', fontSize: 18, marginTop: 4 }}>
-          {tomorrowLine}
-        </div>
-        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-          <button
-            type="button"
-            onClick={() => flash('⏰ 내일 알람으로 추가했어요')}
-            className="chip chip-btn"
-            style={{ background: 'var(--banner)', color: 'var(--paper)', borderWidth: '1.5px', cursor: 'pointer', fontFamily: 'inherit' }}
-          >
-            설정
-          </button>
-          <button
-            type="button"
-            onClick={() => flash('다음에 알려줄게요')}
-            className="chip chip-btn"
-            style={{ background: 'var(--paper)', borderWidth: '1.5px', cursor: 'pointer', fontFamily: 'inherit' }}
-          >
-            나중에
-          </button>
-        </div>
-      </div>
+      )}
         </>
       )}
     </div>
