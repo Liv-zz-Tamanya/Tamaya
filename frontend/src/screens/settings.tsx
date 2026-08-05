@@ -8,10 +8,24 @@ import { updateNightChatPreference } from '../lib/api';
 
 export const S22_Settings = () => {
   const nav = useNav();
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
   const [openTime, setOpenTime] = useState(nav.nightOpenTime);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  // 이름만 인라인 수정 — 온보딩(create-cat)으로 보내면 관심사 재시드까지 다시 타므로 금지.
+  const [catName, setCatName] = useState(state.character.name);
+  const [nameStatus, setNameStatus] = useState<string | null>(null);
+
+  const saveCatName = () => {
+    const name = catName.trim();
+    if (!name) {
+      setNameStatus('이름을 입력해 주세요.');
+      return;
+    }
+    dispatch({ type: 'character/set', patch: { name } });
+    setCatName(name);
+    setNameStatus('저장했어요.');
+  };
 
   const saveNightChatTime = async () => {
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(openTime) || openTime < '18:00') {
@@ -42,10 +56,7 @@ export const S22_Settings = () => {
     value: string;
     onClick?: () => void;
     danger?: boolean;
-  }[] = [
-    { label: '이음이 이름', value: state.character.name, onClick: () => nav.go('create-cat') },
-    { label: '버전', value: 'v1.0 · tamaya.online' },
-  ];
+  }[] = [{ label: '버전', value: 'v1.0 · tamaya.online' }];
 
   const rowNodes = rows.map((r, i) => {
     const rowContent = (
@@ -93,7 +104,40 @@ export const S22_Settings = () => {
         </div>
 
         <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {rowNodes[0]}
+          <div className="hbox" style={{ padding: '12px 14px' }}>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>이음이 이름</div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+              <input
+                aria-label="이음이 이름"
+                value={catName}
+                onChange={(event) => { setCatName(event.target.value); setNameStatus(null); }}
+                maxLength={10}
+                placeholder="이음이"
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  border: '1.5px solid var(--ink)',
+                  borderRadius: 999,
+                  padding: '9px 14px',
+                  background: 'var(--paper)',
+                  fontFamily: 'Pretendard',
+                  fontSize: 16, /* iOS Safari 자동 줌 방지 */
+                  color: 'var(--ink)',
+                  outline: 'none',
+                }}
+              />
+              <button
+                type="button"
+                className="btn"
+                onClick={saveCatName}
+                disabled={catName.trim() === state.character.name}
+                style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                저장
+              </button>
+            </div>
+            {nameStatus && <div className="tiny" role="status" style={{ marginTop: 6, color: 'var(--pencil)' }}>{nameStatus}</div>}
+          </div>
           <div className="hbox" style={{ padding: '12px 14px' }}>
             <div style={{ fontWeight: 700, fontSize: 14 }}>밤 채팅 시작 시간</div>
             <div className="tiny" style={{ marginTop: 3, color: 'var(--pencil)' }}>매일 설정한 시간부터 다음 날 06:00까지</div>
@@ -114,7 +158,7 @@ export const S22_Settings = () => {
             </div>
             {saveStatus && <div className="tiny" role="status" style={{ marginTop: 6, color: 'var(--pencil)' }}>{saveStatus}</div>}
           </div>
-          {rowNodes[1]}
+          {rowNodes[0]}
         </div>
       </div>
       <TabBar active="home" />
