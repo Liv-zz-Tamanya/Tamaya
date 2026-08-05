@@ -1,7 +1,7 @@
 // AI 채팅 — backend 채팅 세션/메시지 왕복.
 // 사용자 발화는 전송 직전 maskPII()로 PII를 제거한다(원문 평문은 기기를 안 떠남, liv-I1).
 // PRE-SEND GUARD 확인 2026-07-22
-import { apiFetch, clearToken, ApiError } from './client';
+import { apiFetch, ApiError } from './client';
 import { ensureDeviceToken } from './auth';
 import { maskPII, MaskResult } from './masking';
 
@@ -118,11 +118,13 @@ export async function sendAiChat(
   try {
     return await run();
   } catch (e) {
-    // 토큰/세션 무효(만료·완료·소유권 불일치) → 캐시 리셋 후 1회 재시도.
+    // 세션 무효(완료·소유권 불일치·유실) → 세션 캐시만 리셋 후 1회 재시도.
     // 400: 캐시된 세션이 완료됐거나 남의 세션(백엔드 device 스코핑). resetSession 후
     //      새 세션을 발급받으면 정상화된다.
-    if (e instanceof ApiError && (e.status === 400 || e.status === 401 || e.status === 404)) {
-      clearToken();
+    // 401은 여기서 다루지 않는다 — apiFetch가 refresh rotation을 이미 시도했고,
+    // 그래도 401이면 재로그인이 필요한 상태다. 예전처럼 /auth/device로 조용히
+    // 재발급하면 닉네임 계정("nick-*")은 BE가 400으로 거부한다(비밀번호 우회 차단).
+    if (e instanceof ApiError && (e.status === 400 || e.status === 404)) {
       clearChatSessionCache(maxTurns);
       await ensureDeviceToken();
       return await run();
