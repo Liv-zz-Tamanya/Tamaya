@@ -237,13 +237,15 @@ class UserSessionModel(Base):
 
 
 class UserModel(Base):
-    """닉네임 기반 데모 계정 — 닉네임 UNIQUE로 회원가입/로그인을 식별한다.
-    비밀번호 없는 데모용. 앱 데이터는 여전히 device_id(= f"nick-{nickname}")로 키잉된다."""
+    """닉네임+비밀번호 계정 — 닉네임 UNIQUE로 회원가입/로그인을 식별한다.
+    앱 데이터는 여전히 device_id(= f"nick-{nickname}")로 키잉된다."""
 
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     nickname: Mapped[str] = mapped_column(String(32), unique=True, nullable=False, index=True)
+    # bcrypt 해시(60자 고정)지만 알고리즘 교체 여지를 두고 여유 길이로 저장
+    password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     night_chat_preference: Mapped["UserPreferenceModel | None"] = relationship(

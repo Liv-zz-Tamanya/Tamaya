@@ -26,6 +26,7 @@ from app.infrastructure.auth.jwt_handler import (
     issue_access_token,
     issue_refresh_token,
 )
+from app.infrastructure.auth.password import hash_password_async, verify_password_async
 from app.infrastructure.config.database import get_db
 from app.infrastructure.config.settings import settings
 from app.infrastructure.persistence.models import UserModel, UserSessionModel
@@ -51,6 +52,7 @@ class RefreshRequest(BaseModel):
 
 class NicknameLoginRequest(BaseModel):
     nickname: str
+    password: str
 
 
 class TokenResponse(BaseModel):
@@ -72,6 +74,8 @@ class NicknameTokenResponse(TokenResponse):
 
 _NICKNAME_MIN = 1
 _NICKNAME_MAX = 16
+_PASSWORD_MIN = 4
+_PASSWORD_MAX = 64
 
 
 def _normalize_nickname(raw: str) -> str:
@@ -83,6 +87,16 @@ def _normalize_nickname(raw: str) -> str:
             detail=f"닉네임은 {_NICKNAME_MIN}~{_NICKNAME_MAX}자여야 합니다",
         )
     return nickname
+
+
+def _validate_password(raw: str) -> str:
+    """비밀번호 길이 검증(데모 수준 정책). 공백만 있는 값 방지 위해 strip 없이 원문 사용."""
+    if not (_PASSWORD_MIN <= len(raw) <= _PASSWORD_MAX) or not raw.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"비밀번호는 {_PASSWORD_MIN}~{_PASSWORD_MAX}자여야 합니다",
+        )
+    return raw
 
 
 # ─── 동시접속 strict 1세션 헬퍼 ────────────────────────────────────────────────
@@ -172,8 +186,9 @@ async def _create_session(
         await db.rollback()
         raise
 
+    identity_type = "device" if device_id else "kakao"
     access_token = issue_access_token(identity, access_jti)
-    refresh_token, _ = issue_refresh_token(identity)
+    refresh_token, _ = issue_refresh_token(identity, identity_type)
     return access_token, refresh_token, access_jti, identity
 
 
@@ -185,7 +200,15 @@ async def login_device(body: DeviceLoginRequest, db: AsyncSession = Depends(get_
     """
     device_id 기반 익명 인증. 동일 device_id 재로그인 시 기존 세션 자동 revoke.
     Phase 1 Closed Beta 전용. Open Beta 직전 카카오/Apple OAuth로 머지.
+
+    "nick-" 접두 device_id는 닉네임 계정의 데이터 네임스페이스이므로 거부한다.
+    (허용하면 비밀번호 검증 없이 타인 닉네임 계정 데이터에 접근 가능)
     """
+    if body.device_id.startswith("nick-"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="닉네임 계정은 /auth/nickname/login으로 로그인해 주세요",
+        )
     access_token, refresh_token, _, identity = await _create_session(db, device_id=body.device_id)
     return TokenResponse(access_token=access_token, refresh_token=refresh_token, identity=identity)
 
@@ -223,14 +246,16 @@ async def _issue_nickname_token(
     summary="닉네임 회원가입",
 )
 async def signup_nickname(body: NicknameLoginRequest, db: AsyncSession = Depends(get_db)):
-    """닉네임 회원가입 (데모: 비밀번호 없음). 이미 있으면 409."""
+    """닉네임+비밀번호 회원가입. 이미 있으면 409."""
     name = _normalize_nickname(body.nickname)
+    password = _validate_password(body.password)
     existing = await db.scalar(select(UserModel).where(UserModel.nickname == name))
     if existing is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="이미 사용 중인 닉네임입니다"
         )
-    db.add(UserModel(id=uuid.uuid4(), nickname=name))
+    password_hash = await hash_password_async(password)
+    db.add(UserModel(id=uuid.uuid4(), nickname=name, password_hash=password_hash))
     await db.commit()
     return await _issue_nickname_token(db, name, is_new=True)
 
@@ -241,13 +266,19 @@ async def signup_nickname(body: NicknameLoginRequest, db: AsyncSession = Depends
     summary="닉네임 로그인",
 )
 async def login_nickname(body: NicknameLoginRequest, db: AsyncSession = Depends(get_db)):
-    """닉네임 로그인 (데모: 비밀번호 없음). 없는 닉네임이면 404."""
+    """닉네임+비밀번호 로그인. 없는 닉네임이면 404, 비밀번호 불일치면 401."""
     name = _normalize_nickname(body.nickname)
+    password = _validate_password(body.password)
     existing = await db.scalar(select(UserModel).where(UserModel.nickname == name))
     if existing is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="존재하지 않는 닉네임입니다. 회원가입해 주세요",
+        )
+    if not await verify_password_async(password, existing.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="비밀번호가 일치하지 않습니다",
         )
     return await _issue_nickname_token(db, name, is_new=False)
 
@@ -317,11 +348,17 @@ async def refresh_token(body: RefreshRequest, db: AsyncSession = Depends(get_db)
         )
 
     identity = payload.get("sub", "")
-    # identity 형식 추론: kakao_id는 숫자 문자열, device_id는 UUID
-    try:
-        uuid.UUID(identity)
+    # identity_type claim으로 device/kakao 구분 (sub 형식 추론은 "nick-*"/"dev-*"를
+    # kakao로 오분류해 strict 1세션이 깨졌음). claim 없는 구형 토큰은 재로그인 유도.
+    identity_type = payload.get("identity_type")
+    if not identity or identity_type not in ("device", "kakao"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="다시 로그인해 주세요",
+        )
+    if identity_type == "device":
         device_id, kakao_id = identity, None
-    except ValueError:
+    else:
         device_id, kakao_id = None, identity
 
     access_token, new_refresh, _, ident = await _create_session(
