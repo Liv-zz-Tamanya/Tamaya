@@ -17,6 +17,7 @@ import {
   CHAT_DIARY_TURNS,
   dateParts,
   dayLogFor,
+  entryForDate,
   formatDateKey,
   groupByCategory,
   sortByCategory,
@@ -648,15 +649,22 @@ export const S12_MoodFinalize = () => {
 
   // 분석 로딩 → 결과(성공) 전환 (온디바이스 시뮬, 서버 미전송 — (C)경계).
   const [analyzing, setAnalyzing] = useState(true);
+  const savedRef = useRef(false);
   useEffect(() => {
     const t = setTimeout(() => setAnalyzing(false), 1100);
     return () => clearTimeout(t);
   }, []);
 
   const save = () => {
+    // 더블클릭으로 save 가 두 번 돌면 (state 반영 전이라) 보상이 이중 적립되므로 1회로 잠근다.
+    if (savedRef.current) return;
+    savedRef.current = true;
     // 서버가 준 diary_date 우선, 없으면 항상 실제 오늘(todayKey)로 저장.
     const diaryDate = generatedDiary?.diary_date ?? todayKey;
     const diaryDay = dateParts(diaryDate).day;
+    // 같은 날짜 재회고 시 일기는 diary/save 가 날짜 기준으로 교체하지만,
+    // +80 보상·스트릭은 하루 1회만 — 첫 저장일 때만 지급한다.
+    const firstSaveOfDay = !entryForDate(state.diaries, diaryDate);
     dispatch({
       type: 'diary/save',
       entry: {
@@ -678,11 +686,14 @@ export const S12_MoodFinalize = () => {
         createdAt: Date.now(),
       },
     });
-    dispatch({ type: 'points/add', delta: 80 });
-    dispatch({ type: 'streak/inc' });
+    if (firstSaveOfDay) {
+      dispatch({ type: 'points/add', delta: 80 });
+      dispatch({ type: 'streak/inc' });
+    }
     clearChatSessionCache(state.chatDiaryMaxTurns as ChatSessionMaxTurns);
     dispatch({ type: 'chat-diary/reset' });
-    nav.go('reward');
+    // 보상 화면은 "+80 포인트"를 보여주므로 실제 지급된 첫 저장에만 진입한다.
+    nav.go(firstSaveOfDay ? 'reward' : 'home-night');
   };
 
   return (

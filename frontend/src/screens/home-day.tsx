@@ -100,6 +100,19 @@ const CategoryHeader = ({ label, count }: { label: string; count: string }) => (
   </div>
 );
 
+// 루틴 체크 토글 + 포인트 대칭 반영 — 체크 +10 · 해제 -10. 낮/밤 홈과 낮 기록 화면이
+// 같은 규칙을 공유해, 체크·해제를 반복해도 포인트가 중복 적립되지 않는다.
+const toggleRoutineChecked = (
+  dispatch: ReturnType<typeof useStore>['dispatch'],
+  flash: (msg: string) => void,
+  wasDone: boolean,
+  routine: Routine,
+) => {
+  dispatch({ type: 'routine/toggle', id: routine.id });
+  dispatch({ type: 'points/add', delta: wasDone ? -10 : 10 });
+  flash(`${wasDone ? '-10' : '+10'} ◉  ${routine.label}`);
+};
+
 export const S06_HomeDay = ({ night = false }: { night?: boolean }) => {
   const nav = useNav();
   const { state, dispatch } = useStore();
@@ -130,12 +143,7 @@ export const S06_HomeDay = ({ night = false }: { night?: boolean }) => {
       routineDragRef.current.didDrag = false;
       return;
     }
-    const wasDone = !!log.checks[routine.id];
-    dispatch({ type: 'routine/toggle', id: routine.id });
-    if (!wasDone) {
-      dispatch({ type: 'points/add', delta: 10 });
-      flash(`+10 ◉  ${routine.label}`);
-    }
+    toggleRoutineChecked(dispatch, flash, !!log.checks[routine.id], routine);
   };
   return (
   <div className="screen">
@@ -537,12 +545,7 @@ export const S08_DayLog = () => {
   const memoGroups = groupByCategory(log.memos);
 
   const toggle = (r: Routine) => {
-    const was = !!log.checks[r.id];
-    dispatch({ type: 'routine/toggle', id: r.id });
-    if (!was) {
-      dispatch({ type: 'points/add', delta: 10 });
-      flash(`+10 ◉  ${r.label}`);
-    }
+    toggleRoutineChecked(dispatch, flash, !!log.checks[r.id], r);
   };
 
   const addRoutine = (label: string, emoji?: string) => {
