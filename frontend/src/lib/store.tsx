@@ -422,7 +422,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, selectedDate: action.date, selectedDay: entry?.day ?? null };
     }
     case 'points/add':
-      return { ...state, points: state.points + action.delta };
+      // 차감(음수 delta)이 섞여도 잔액이 음수로 내려가지는 않게 바닥을 0으로 고정.
+      return { ...state, points: Math.max(0, state.points + action.delta) };
     case 'streak/inc':
       return { ...state, streak: state.streak + 1 };
     case 'item/equip':
