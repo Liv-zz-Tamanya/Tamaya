@@ -306,9 +306,14 @@ function reducer(state: State, action: Action): State {
       return { ...state, character: { ...state.character, ...action.patch } };
     case 'interests/set': {
       // 온보딩 전용 — 기본 12건을 관심사 순으로 다시 시드하되, 사용자가 만든 루틴은 보존한다.
+      // 라벨도 dedup — v1 마이그레이션을 거친 루틴은 구 id(r-건강-0)라 id만으로는 기본 시드와
+      // 같은 라벨이 중복 합류할 수 있다 (체크 스냅샷이 라벨 키라 라벨 중복은 불변식 위반).
       const seeded = seedRoutines(action.interests);
       const seededIds = new Set(seeded.map((r) => r.id));
-      const custom = state.routines.filter((r) => !seededIds.has(r.id));
+      const seededLabels = new Set(seeded.map((r) => r.label));
+      const custom = state.routines.filter(
+        (r) => !seededIds.has(r.id) && !seededLabels.has(r.label),
+      );
       return { ...state, interests: action.interests, routines: [...seeded, ...custom] };
     }
     case 'routine/add': {
