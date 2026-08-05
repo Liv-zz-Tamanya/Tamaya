@@ -20,6 +20,7 @@ from app.infrastructure.config.dependencies import (
     get_sleep_record_repo,
 )
 from app.main import app
+from app.presentation.auth_deps import get_current_device_id
 from app.presentation.router.insight_schemas import WellbeingReportResponse
 from tests.application.test_get_insight import (
     FakeDiaryRepo,
@@ -35,6 +36,8 @@ def _use_repos(diaries: list[Diary] | None = None, summaries=None) -> None:
     app.dependency_overrides[get_health_record_repo] = lambda: FakeHealthRepo(summaries)
     app.dependency_overrides[get_sleep_record_repo] = lambda: FakeSleepRepo()
     app.dependency_overrides[get_medical_visit_repo] = lambda: FakeVisitRepo()
+    # device_id는 이제 Bearer 세션에서 추출 — 테스트에서는 dependency로 고정한다.
+    app.dependency_overrides[get_current_device_id] = lambda: "dev-1"
 
 
 def _diary(day: date, satisfaction: int = 70) -> Diary:
@@ -57,7 +60,7 @@ def _clear_overrides():
 def test_weekly_endpoint_returns_structure():
     _use_repos(diaries=[_diary(date(2026, 6, 1), 80)])
     client = TestClient(app)
-    resp = client.get("/api/v1/insights/weekly", params={"device_id": "dev-1", "week": "2026-W23"})
+    resp = client.get("/api/v1/insights/weekly", params={"week": "2026-W23"})
 
     assert resp.status_code == 200
     body = resp.json()
@@ -71,7 +74,7 @@ def test_weekly_endpoint_returns_structure():
 def test_weekly_empty_period_no_500():
     _use_repos()
     client = TestClient(app)
-    resp = client.get("/api/v1/insights/weekly", params={"device_id": "dev-1", "week": "2026-W23"})
+    resp = client.get("/api/v1/insights/weekly", params={"week": "2026-W23"})
 
     assert resp.status_code == 200
     body = resp.json()
@@ -86,7 +89,7 @@ def test_weekly_lifelog_only_takes_empty_path():
     start = date(2026, 6, 1)  # 2026-W23 월요일
     _use_repos(summaries=[_summary(start + timedelta(days=i), 8000) for i in range(7)])
     client = TestClient(app)
-    resp = client.get("/api/v1/insights/weekly", params={"device_id": "dev-1", "week": "2026-W23"})
+    resp = client.get("/api/v1/insights/weekly", params={"week": "2026-W23"})
 
     assert resp.status_code == 200
     body = resp.json()
@@ -98,7 +101,7 @@ def test_weekly_lifelog_only_takes_empty_path():
 def test_weekly_bad_week_format_returns_400():
     _use_repos()
     client = TestClient(app)
-    resp = client.get("/api/v1/insights/weekly", params={"device_id": "dev-1", "week": "2026-23"})
+    resp = client.get("/api/v1/insights/weekly", params={"week": "2026-23"})
 
     assert resp.status_code == 400
 
@@ -106,7 +109,7 @@ def test_weekly_bad_week_format_returns_400():
 def test_weekly_nonexistent_week53_returns_400_not_500():
     _use_repos()
     client = TestClient(app)
-    resp = client.get("/api/v1/insights/weekly", params={"device_id": "dev-1", "week": "2025-W53"})
+    resp = client.get("/api/v1/insights/weekly", params={"week": "2025-W53"})
 
     assert resp.status_code == 400
 
@@ -114,7 +117,7 @@ def test_weekly_nonexistent_week53_returns_400_not_500():
 def test_monthly_endpoint_returns_structure():
     _use_repos(diaries=[_diary(date(2026, 6, 16), 60)])
     client = TestClient(app)
-    resp = client.get("/api/v1/insights/monthly", params={"device_id": "dev-1", "month": "2026-06"})
+    resp = client.get("/api/v1/insights/monthly", params={"month": "2026-06"})
 
     assert resp.status_code == 200
     body = resp.json()
@@ -126,7 +129,7 @@ def test_monthly_endpoint_returns_structure():
 def test_monthly_bad_month_returns_400():
     _use_repos()
     client = TestClient(app)
-    resp = client.get("/api/v1/insights/monthly", params={"device_id": "dev-1", "month": "2026-13"})
+    resp = client.get("/api/v1/insights/monthly", params={"month": "2026-13"})
 
     assert resp.status_code == 400
 
