@@ -2,33 +2,118 @@ import { useRef, useState } from 'react';
 import { BackButton, CatSketch, MoodFace, TabBar, useToast } from '../components/primitives';
 import { useNav } from '../lib/router';
 import {
-  INTERESTS,
+  CATEGORIES,
+  CATEGORY_LABEL,
   MOOD_LABEL,
+  ROUTINE_EMOJIS,
   ROUTINE_PRESETS,
   WEEKDAY_KR,
   dayLogFor,
+  groupByCategory,
   isWithinLastWeek,
   latestEntry,
   useStore,
 } from '../lib/store';
-import type { Interest, Routine } from '../lib/store';
+import type { Category, Routine } from '../lib/store';
 import { HEALTH_SURVEY_URL, openSurvey } from '../lib/surveys';
 import { formatKoreanTime, getTimeUntilNextOpen } from '../lib/nightChat';
 
 // 06-08 · Home Day / Home Night / Day Log(낮 기록: 루틴 체크 + 메모)
 // 낮엔 이음이가 자므로 대화 없음 — 기록형만. (낮 채팅은 프리미엄 예정)
 
+const inputStyle = {
+  flex: 1,
+  minWidth: 0,
+  border: '1.5px solid var(--ink)',
+  borderRadius: 999,
+  padding: '9px 14px',
+  background: 'var(--paper)',
+  fontFamily: 'Pretendard',
+  fontSize: 16, /* iOS Safari 자동 줌 방지 */
+  color: 'var(--ink)',
+  outline: 'none',
+} as const;
+
+// 카테고리 선택 칩 — 루틴 추가/수정·메모 태그가 같은 어휘를 쓴다.
+const CategoryChips = ({
+  value,
+  onChange,
+  label,
+}: {
+  value: Category;
+  onChange: (c: Category) => void;
+  label: string;
+}) => (
+  <div role="group" aria-label={label} style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+    {CATEGORIES.map((c) => (
+      <button
+        key={c}
+        type="button"
+        onClick={() => onChange(c)}
+        className={'chip chip-btn ' + (value === c ? 'solid' : 'dashed')}
+        aria-pressed={value === c}
+        style={{ cursor: 'pointer', fontFamily: 'inherit', background: value === c ? undefined : 'transparent' }}
+      >
+        {CATEGORY_LABEL[c]}
+      </button>
+    ))}
+  </div>
+);
+
+const EmojiChips = ({ value, onChange }: { value: string; onChange: (e: string) => void }) => (
+  <div role="group" aria-label="이모지 고르기" style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+    {ROUTINE_EMOJIS.map((e) => (
+      <button
+        key={e}
+        type="button"
+        onClick={() => onChange(e)}
+        aria-pressed={value === e}
+        aria-label={`이모지 ${e}`}
+        className="as-button"
+        style={{
+          width: 32,
+          height: 32,
+          fontSize: 17,
+          lineHeight: '30px',
+          textAlign: 'center',
+          borderRadius: 10,
+          cursor: 'pointer',
+          border: '1.5px solid var(--ink)',
+          background: value === e ? 'var(--accent-soft)' : 'var(--paper)',
+        }}
+      >
+        {e}
+      </button>
+    ))}
+  </div>
+);
+
+// 카테고리 섹션 헤더 — 라벨 칩 + 우측 카운트. 낮 홈·밤 홈·낮 기록이 같은 모양을 공유한다.
+const CategoryHeader = ({ label, count }: { label: string; count: string }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <span className="chip" style={{ fontWeight: 700 }}>
+      {label}
+    </span>
+    <span className="tiny" style={{ color: 'var(--pencil)' }}>
+      {count}
+    </span>
+  </div>
+);
+
 export const S06_HomeDay = ({ night = false }: { night?: boolean }) => {
   const nav = useNav();
   const { state, dispatch } = useStore();
   const { toast, flash } = useToast();
-  const routineScrollRef = useRef<HTMLDivElement>(null);
+  // 카테고리별 가로 스크롤이 여러 개지만 마우스 드래그는 한 번에 하나뿐 → ref 하나 공유.
   const routineDragRef = useRef({ active: false, startX: 0, startScroll: 0, didDrag: false });
   const minutesUntilOpen = getTimeUntilNextOpen(nav.now, nav.nightOpenTime);
   const remaining = `${Math.floor(minutesUntilOpen / 60)}시간 ${minutesUntilOpen % 60}분`;
   const log = dayLogFor(state.dayLog, nav.now);
   const routines = state.routines;
   const dailyDone = routines.filter((r) => log.checks[r.id]).length;
+  // 낮·밤 홈 공용 4 카테고리 그룹 (건강→학습→자격증→취미). 합계·포인트는 전 카테고리 합산 유지.
+  const routineGroups = groupByCategory(routines);
+  const memoGroups = groupByCategory(log.memos);
   // 로컬 store 실값 바인딩(서버 미전송, (C)경계 = 온디바이스 유지) + 빈상태.
   const latest = latestEntry(state.diaries);
   // v4 S06: 카드 수치는 텍스트만(이모지 없음) — "N / 7 일" · "N pt" · "옷장" 표기
@@ -153,77 +238,132 @@ export const S06_HomeDay = ({ night = false }: { night?: boolean }) => {
           <div className="h-section">오늘의 루틴</div>
           <span className="tiny">{dailyDone} / {routines.length}</span>
         </div>
-        <div
-          aria-label="오늘의 루틴 목록"
-          className="routine-scroll"
-          ref={routineScrollRef}
-          onMouseDown={(event) => {
-            const el = event.currentTarget;
-            routineDragRef.current = { active: true, startX: event.clientX, startScroll: el.scrollLeft, didDrag: false };
-            el.style.cursor = 'grabbing';
-          }}
-          onMouseMove={(event) => {
-            const drag = routineDragRef.current;
-            const el = event.currentTarget;
-            if (!drag.active) return;
-            const delta = event.clientX - drag.startX;
-            if (Math.abs(delta) > 4) drag.didDrag = true;
-            el.scrollLeft = drag.startScroll - delta;
-          }}
-          onMouseUp={(event) => {
-            routineDragRef.current.active = false;
-            event.currentTarget.style.cursor = 'grab';
-          }}
-          onMouseLeave={(event) => {
-            routineDragRef.current.active = false;
-            event.currentTarget.style.cursor = 'grab';
-          }}
-          style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollSnapType: 'x proximity', cursor: 'grab', userSelect: 'none' }}
-        >
-          {routines.map((r) => {
-            const on = !!log.checks[r.id];
-            return (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => toggleRoutineFromHome(r)}
-                aria-pressed={on}
-                aria-label={`${r.label} ${on ? '완료' : '미완료'}`}
-                className="as-button"
-                style={{ flex: '0 0 62px', scrollSnapAlign: 'start', textAlign: 'center', cursor: 'pointer', fontFamily: 'inherit' }}
+        {routines.length === 0 && (
+          <div className="tiny" style={{ color: 'var(--pencil)' }}>
+            아직 루틴이 없어요 — 아래 [오늘 기록하기]에서 하나 골라봐요
+          </div>
+        )}
+        {/* 건강→학습→자격증→취미 4 카테고리 (빈 카테고리는 접힘) — 낮·밤 홈 공통 */}
+        {routineGroups.map((group) => {
+          if (group.items.length === 0) return null;
+          const groupDone = group.items.filter((r) => log.checks[r.id]).length;
+          return (
+            <div key={group.category} style={{ marginTop: 8 }}>
+              <CategoryHeader label={group.label} count={`${groupDone} / ${group.items.length}`} />
+              <div
+                aria-label={`${group.label} 루틴 목록`}
+                className="routine-scroll"
+                onMouseDown={(event) => {
+                  const el = event.currentTarget;
+                  routineDragRef.current = { active: true, startX: event.clientX, startScroll: el.scrollLeft, didDrag: false };
+                  el.style.cursor = 'grabbing';
+                }}
+                onMouseMove={(event) => {
+                  const drag = routineDragRef.current;
+                  const el = event.currentTarget;
+                  if (!drag.active) return;
+                  const delta = event.clientX - drag.startX;
+                  if (Math.abs(delta) > 4) drag.didDrag = true;
+                  el.scrollLeft = drag.startScroll - delta;
+                }}
+                onMouseUp={(event) => {
+                  routineDragRef.current.active = false;
+                  event.currentTarget.style.cursor = 'grab';
+                }}
+                onMouseLeave={(event) => {
+                  routineDragRef.current.active = false;
+                  event.currentTarget.style.cursor = 'grab';
+                }}
+                style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollSnapType: 'x proximity', cursor: 'grab', userSelect: 'none', marginTop: 6 }}
               >
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    margin: '0 auto',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 14,
-                    border: '0.5px solid var(--ink)',
-                    background: on ? 'var(--ink)' : 'var(--paper)',
-                    fontSize: 20,
-                  }}
-                >
-                  {r.emoji}
+                {group.items.map((r) => {
+                  const on = !!log.checks[r.id];
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => toggleRoutineFromHome(r)}
+                      aria-pressed={on}
+                      aria-label={`${group.label} · ${r.label} ${on ? '완료' : '미완료'}`}
+                      className="as-button"
+                      style={{ flex: '0 0 62px', scrollSnapAlign: 'start', textAlign: 'center', cursor: 'pointer', fontFamily: 'inherit' }}
+                    >
+                      <div
+                        style={{
+                          width: 44,
+                          height: 44,
+                          margin: '0 auto',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: 14,
+                          border: '0.5px solid var(--ink)',
+                          background: on ? 'var(--ink)' : 'var(--paper)',
+                          fontSize: 20,
+                        }}
+                      >
+                        {r.emoji}
+                      </div>
+                      <div
+                        className="tiny"
+                        style={{
+                          marginTop: 4,
+                          overflow: 'hidden',
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {r.label}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </section>
+
+      {/* 오늘의 메모(행동) — 루틴과 같은 4 카테고리로. 낮·밤 홈 공통, 없으면 섹션 자체가 없음 */}
+      {log.memos.length > 0 && (
+        <section
+          className="hbox r-l"
+          aria-label={`오늘의 메모 ${log.memos.length}건`}
+          style={{ padding: 14, marginTop: 12 }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 4,
+            }}
+          >
+            <div className="h-section">오늘의 메모</div>
+            <span className="tiny">{log.memos.length}건</span>
+          </div>
+          {memoGroups.map((group) => {
+            if (group.items.length === 0) return null;
+            return (
+              <div key={group.category} style={{ marginTop: 8 }}>
+                <CategoryHeader label={group.label} count={`${group.items.length}건`} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
+                  {group.items.map((m) => (
+                    <div key={m.id} style={{ display: 'flex', gap: 6 }}>
+                      <span className="tiny" style={{ color: 'var(--pencil)', flex: 'none' }} aria-hidden="true">
+                        ·
+                      </span>
+                      <span className="body" style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
+                        {m.text}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-                <div
-                  className="tiny"
-                  style={{
-                    marginTop: 4,
-                    overflow: 'hidden',
-                    whiteSpace: 'nowrap',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {r.label}
-                </div>
-              </button>
+              </div>
             );
           })}
-        </div>
-      </section>
+        </section>
+      )}
 
       <button
         type="button"
@@ -379,13 +519,22 @@ export const S08_DayLog = () => {
   const { toast, flash } = useToast();
   const [manage, setManage] = useState(false);
   const [newLabel, setNewLabel] = useState('');
-  const [newCat, setNewCat] = useState<Interest>(state.interests[0] ?? '건강');
+  const [newCat, setNewCat] = useState<Category>(state.interests[0] ?? 'health');
+  const [newEmoji, setNewEmoji] = useState('☑️');
+  // 인라인 수정 — 편집 중인 루틴 1건만 폼으로 바뀐다.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState('');
+  const [editEmoji, setEditEmoji] = useState('☑️');
+  const [editCat, setEditCat] = useState<Category>('health');
   const [memoText, setMemoText] = useState('');
-  const [memoCat, setMemoCat] = useState<Interest>(state.interests[0] ?? '건강');
+  const [memoCat, setMemoCat] = useState<Category>(state.interests[0] ?? 'health');
 
   const log = dayLogFor(state.dayLog, nav.now);
   const routines = state.routines;
+  // 완료·포인트 카운터는 카테고리와 무관한 전체 합산 (그룹핑 전과 동일).
   const doneCount = routines.filter((r) => log.checks[r.id]).length;
+  // 기록된 한 줄 메모도 루틴과 같은 4 카테고리 순서로 묶어 보여준다.
+  const memoGroups = groupByCategory(log.memos);
 
   const toggle = (r: Routine) => {
     const was = !!log.checks[r.id];
@@ -399,8 +548,31 @@ export const S08_DayLog = () => {
   const addRoutine = (label: string, emoji?: string) => {
     const trimmed = label.trim();
     if (!trimmed) return;
-    dispatch({ type: 'routine/add', label: trimmed, emoji, category: newCat });
+    if (routines.some((r) => r.label === trimmed)) {
+      flash('이미 같은 이름의 루틴이 있어요');
+      return;
+    }
+    dispatch({ type: 'routine/add', label: trimmed, emoji: emoji ?? newEmoji, category: newCat });
     setNewLabel('');
+  };
+
+  const startEdit = (r: Routine) => {
+    setEditingId(r.id);
+    setEditLabel(r.label);
+    setEditEmoji(r.emoji);
+    setEditCat(r.category);
+  };
+
+  const saveEdit = () => {
+    if (!editingId) return;
+    const label = editLabel.trim();
+    if (!label) return;
+    if (routines.some((r) => r.id !== editingId && r.label === label)) {
+      flash('이미 같은 이름의 루틴이 있어요');
+      return;
+    }
+    dispatch({ type: 'routine/update', id: editingId, label, emoji: editEmoji, category: editCat });
+    setEditingId(null);
   };
 
   const addMemo = () => {
@@ -414,19 +586,6 @@ export const S08_DayLog = () => {
   const suggestions = ROUTINE_PRESETS[newCat]
     .filter((p) => !routines.some((r) => r.label === p.label))
     .slice(0, 3);
-
-  const inputStyle = {
-    flex: 1,
-    minWidth: 0,
-    border: '1.5px solid var(--ink)',
-    borderRadius: 999,
-    padding: '9px 14px',
-    background: 'var(--paper)',
-    fontFamily: 'Pretendard',
-    fontSize: 16, /* iOS Safari 자동 줌 방지 */
-    color: 'var(--ink)',
-    outline: 'none',
-  } as const;
 
   return (
   <div className="screen">
@@ -462,13 +621,16 @@ export const S08_DayLog = () => {
         </div>
       )}
 
-      {/* 루틴 투두리스트 */}
+      {/* 루틴 투두리스트 — 건강·학습·자격증·취미 4 섹션 (완료 카운터는 전체 합산) */}
       <div className="hbox r-l" style={{ padding: 14, marginTop: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className="h-label">오늘의 루틴</h2>
           <button
             type="button"
-            onClick={() => setManage((m) => !m)}
+            onClick={() => {
+              setManage((m) => !m);
+              setEditingId(null);
+            }}
             className={'chip chip-btn ' + (manage ? 'solid' : '')}
             aria-pressed={manage}
             style={{ cursor: 'pointer', fontFamily: 'inherit' }}
@@ -476,84 +638,152 @@ export const S08_DayLog = () => {
             {manage ? '완료' : '관리'}
           </button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
-          {routines.length === 0 && (
-            <div className="tiny" style={{ color: 'var(--pencil)' }}>
-              아직 루틴이 없어요 — [관리]에서 추가해봐요
-            </div>
-          )}
-          {routines.map((r) => {
-            const on = !!log.checks[r.id];
-            return (
-              <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <button
-                  type="button"
-                  onClick={() => toggle(r)}
-                  aria-pressed={on}
-                  aria-label={`${r.label} ${on ? '완료됨' : '체크하기'}`}
-                  className="as-button"
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '8px 10px',
-                    border: '1.5px solid var(--ink)',
-                    borderRadius: 12,
-                    background: on ? 'var(--paper-2)' : 'var(--paper)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
-                >
-                  <div className={'check sq ' + (on ? 'on' : '')} style={{ width: 22, height: 22 }}>
-                    {on ? '✓' : ''}
+        {routines.length === 0 && (
+          <div className="tiny" style={{ color: 'var(--pencil)', marginTop: 10 }}>
+            아직 루틴이 없어요 — [관리]에서 하나 골라봐요
+          </div>
+        )}
+
+        {CATEGORIES.map((cat) => {
+          const items = routines.filter((r) => r.category === cat);
+          if (items.length === 0 && !manage) return null;
+          const catDone = items.filter((r) => log.checks[r.id]).length;
+          return (
+            <section
+              key={cat}
+              aria-label={`${CATEGORY_LABEL[cat]} 루틴 ${catDone} / ${items.length}`}
+              style={{ marginTop: 12 }}
+            >
+              <CategoryHeader label={CATEGORY_LABEL[cat]} count={`${catDone} / ${items.length}`} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                {items.length === 0 && (
+                  <div className="tiny" style={{ color: 'var(--pencil)' }}>
+                    여긴 아직 비어 있어요 — 원하면 아래에서 하나 추가해요
                   </div>
-                  <span style={{ fontSize: 18 }} aria-hidden="true">{r.emoji}</span>
-                  <span
-                    style={{
-                      flex: 1,
-                      fontFamily: 'Pretendard',
-                      fontWeight: 600,
-                      textDecoration: on ? 'line-through' : 'none',
-                      opacity: on ? 0.6 : 1,
-                    }}
-                  >
-                    {r.label}
-                  </span>
-                  <span className="tiny" style={{ color: 'var(--pencil)' }}>{r.category}</span>
-                </button>
-                {manage && (
-                  <button
-                    type="button"
-                    onClick={() => dispatch({ type: 'routine/remove', id: r.id })}
-                    aria-label={`${r.label} 삭제`}
-                    className="chip chip-btn"
-                    style={{ cursor: 'pointer', fontFamily: 'inherit' }}
-                  >
-                    ✕
-                  </button>
                 )}
+                {items.map((r) => {
+                  const on = !!log.checks[r.id];
+                  if (editingId === r.id)
+                    return (
+                      <form
+                        key={r.id}
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          saveEdit();
+                        }}
+                        aria-label={`${r.label} 수정`}
+                        style={{
+                          padding: 10,
+                          border: '1.5px solid var(--ink)',
+                          borderRadius: 12,
+                          background: 'var(--paper-2)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 8,
+                        }}
+                      >
+                        <CategoryChips value={editCat} onChange={setEditCat} label="루틴 카테고리 수정" />
+                        <EmojiChips value={editEmoji} onChange={setEditEmoji} />
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <input
+                            value={editLabel}
+                            onChange={(e) => setEditLabel(e.target.value)}
+                            maxLength={20}
+                            aria-label="루틴 이름 수정"
+                            style={inputStyle}
+                            autoFocus
+                          />
+                          <button type="submit" className="btn" style={{ cursor: 'pointer', fontFamily: 'inherit' }}>
+                            저장
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingId(null)}
+                            className="chip chip-btn"
+                            style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+                          >
+                            취소
+                          </button>
+                        </div>
+                      </form>
+                    );
+                  return (
+                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <button
+                            type="button"
+                            onClick={() => toggle(r)}
+                            aria-pressed={on}
+                            aria-label={`${r.label} ${on ? '완료됨' : '체크하기'}`}
+                            className="as-button"
+                            style={{
+                              flex: 1,
+                              minWidth: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                              padding: '8px 10px',
+                              border: '1.5px solid var(--ink)',
+                              borderRadius: 12,
+                              background: on ? 'var(--paper-2)' : 'var(--paper)',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                            }}
+                          >
+                            <div className={'check sq ' + (on ? 'on' : '')} style={{ width: 22, height: 22 }}>
+                              {on ? '✓' : ''}
+                            </div>
+                            <span style={{ fontSize: 18 }} aria-hidden="true">{r.emoji}</span>
+                            <span
+                              style={{
+                                flex: 1,
+                                minWidth: 0,
+                                fontFamily: 'Pretendard',
+                                fontWeight: 600,
+                                textDecoration: on ? 'line-through' : 'none',
+                                opacity: on ? 0.6 : 1,
+                              }}
+                            >
+                              {r.label}
+                            </span>
+                          </button>
+                          {manage && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => startEdit(r)}
+                                aria-label={`${r.label} 수정`}
+                                className="chip chip-btn"
+                                style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+                              >
+                                ✎
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => dispatch({ type: 'routine/remove', id: r.id })}
+                                aria-label={`${r.label} 삭제`}
+                                className="chip chip-btn"
+                                style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+                              >
+                                ✕
+                              </button>
+                            </>
+                          )}
+                        </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+            </section>
+          );
+        })}
 
         {manage && (
-          <div style={{ marginTop: 12, borderTop: '1.5px dashed var(--muted)', paddingTop: 12 }}>
+          <div style={{ marginTop: 14, borderTop: '1.5px dashed var(--muted)', paddingTop: 12 }}>
             <div className="tiny" style={{ marginBottom: 6 }}>새 루틴 추가</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-              {INTERESTS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setNewCat(c)}
-                  className={'chip chip-btn ' + (newCat === c ? 'solid' : 'dashed')}
-                  aria-pressed={newCat === c}
-                  style={{ background: newCat === c ? undefined : 'transparent' }}
-                >
-                  {c}
-                </button>
-              ))}
+            <div style={{ marginBottom: 8 }}>
+              <CategoryChips value={newCat} onChange={setNewCat} label="새 루틴 카테고리" />
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              <EmojiChips value={newEmoji} onChange={setNewEmoji} />
             </div>
             <form
               onSubmit={(e) => {
@@ -582,7 +812,7 @@ export const S08_DayLog = () => {
                     type="button"
                     onClick={() => addRoutine(p.label, p.emoji)}
                     className="chip chip-btn dashed"
-                    style={{ background: 'transparent' }}
+                    style={{ cursor: 'pointer', fontFamily: 'inherit', background: 'transparent' }}
                   >
                     + {p.emoji} {p.label}
                   </button>
@@ -593,23 +823,12 @@ export const S08_DayLog = () => {
         )}
       </div>
 
-      {/* 한 줄 메모장 — 컬럼(카테고리)은 온보딩 관심사와 같은 어휘 */}
+      {/* 한 줄 메모장 — 태그는 루틴 카테고리와 같은 4분류 어휘 */}
       <div className="hbox r-r" style={{ padding: 14, marginTop: 10 }}>
         <h2 className="h-label">한 줄 메모</h2>
-        <div className="tiny" style={{ marginTop: 2 }}>오늘 있었던 일을 컬럼에 짧게 — 밤에 같이 정리해요</div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
-          {INTERESTS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setMemoCat(c)}
-              className={'chip chip-btn ' + (memoCat === c ? 'solid' : 'dashed')}
-              aria-pressed={memoCat === c}
-              style={{ background: memoCat === c ? undefined : 'transparent' }}
-            >
-              {c}
-            </button>
-          ))}
+        <div className="tiny" style={{ marginTop: 2 }}>오늘 있었던 일을 태그와 함께 짧게 — 밤에 같이 정리해요</div>
+        <div style={{ marginTop: 10 }}>
+          <CategoryChips value={memoCat} onChange={setMemoCat} label="메모 태그" />
         </div>
         <form
           onSubmit={(e) => {
@@ -622,7 +841,7 @@ export const S08_DayLog = () => {
             value={memoText}
             onChange={(e) => setMemoText(e.target.value)}
             maxLength={60}
-            placeholder={`${memoCat}에 남길 한 줄...`}
+            placeholder={`${CATEGORY_LABEL[memoCat]}에 남길 한 줄...`}
             aria-label="한 줄 메모"
             style={inputStyle}
           />
@@ -630,25 +849,38 @@ export const S08_DayLog = () => {
             남기기
           </button>
         </form>
-        {log.memos.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
-            {log.memos.map((m) => (
-              <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="chip" style={{ flex: 'none' }}>{m.category}</span>
-                <span className="body" style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{m.text}</span>
-                <button
-                  type="button"
-                  onClick={() => dispatch({ type: 'memo/remove', id: m.id })}
-                  aria-label="메모 삭제"
-                  className="tiny as-button"
-                  style={{ cursor: 'pointer', color: 'var(--pencil)', background: 'none', border: 'none' }}
-                >
-                  ✕
-                </button>
+        {/* 기록된 메모도 루틴과 같은 4 카테고리 섹션 (빈 카테고리는 접힘 — 루틴 리스트와 동일 규칙) */}
+        {memoGroups.map((group) => {
+          if (group.items.length === 0) return null;
+          return (
+            <section
+              key={group.category}
+              aria-label={`${group.label} 메모 ${group.items.length}건`}
+              style={{ marginTop: 12 }}
+            >
+              <CategoryHeader label={group.label} count={`${group.items.length}건`} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                {group.items.map((m) => (
+                  <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="tiny" style={{ color: 'var(--pencil)', flex: 'none' }} aria-hidden="true">
+                      ·
+                    </span>
+                    <span className="body" style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{m.text}</span>
+                    <button
+                      type="button"
+                      onClick={() => dispatch({ type: 'memo/remove', id: m.id })}
+                      aria-label={`${group.label} 메모 삭제`}
+                      className="tiny as-button"
+                      style={{ cursor: 'pointer', color: 'var(--pencil)', background: 'none', border: 'none' }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            </section>
+          );
+        })}
       </div>
 
       {/* 낮 대화는 프리미엄 예정 — 잠금 티저 (이음이는 자는 중) */}

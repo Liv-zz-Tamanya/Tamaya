@@ -1,7 +1,15 @@
 import { CSSProperties, useEffect, useState } from 'react';
 import { CatSketch } from '../components/primitives';
 import { useNav } from '../lib/router';
-import { CatColor, INTERESTS, Interest, Personality, ROUTINE_PRESETS, useStore } from '../lib/store';
+import {
+  CATEGORIES,
+  CATEGORY_LABEL,
+  CatColor,
+  Category,
+  Personality,
+  ROUTINE_PRESETS,
+  useStore,
+} from '../lib/store';
 import { setInitialAuthMode } from './login';
 
 // 01-05 · Onboarding sequence (6 screens) — v4 Figma Section1 시각 언어 적용
@@ -381,26 +389,26 @@ export const S04_CreateCat = () => {
   );
 };
 
-// 04/05 · 관심사 — 선택한 카테고리로 데일리 루틴 ~5개 자동 세팅.
-// 이 어휘(INTERESTS)는 낮 기록의 메모 컬럼·루틴 카테고리와 공유된다.
+// 04/05 · 관심사 — 기본 루틴 12건(4 카테고리 × 3)을 고른 순서대로 앞에 놓아준다.
+// 이 어휘(CATEGORIES)는 낮 기록의 메모 태그·루틴 카테고리와 공유된다.
 export const S04b_Interests = () => {
   const nav = useNav();
   const { state, dispatch } = useStore();
-  const [picked, setPicked] = useState<Interest[]>(state.interests);
+  const [picked, setPicked] = useState<Category[]>(state.interests);
 
-  const toggle = (c: Interest) =>
+  const toggle = (c: Category) =>
     setPicked((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
 
   const next = () => {
-    dispatch({ type: 'interests/set', interests: picked.length > 0 ? picked : ['건강'] });
+    dispatch({ type: 'interests/set', interests: picked.length > 0 ? picked : ['health'] });
     nav.go('first-meet');
   };
 
-  const CATEGORY_DESC: Record<Interest, string> = {
-    건강: '물 · 걷기 · 수면 같은 몸 돌보기',
-    스터디: '공부 · 독서 · 배움 기록',
-    취미: '그림 · 사진 · 새로운 시도',
-    생활: '정리 · 지출 · 소소한 살림',
+  const CATEGORY_DESC: Record<Category, string> = {
+    health: '물 · 걷기 · 스트레칭 같은 몸 돌보기',
+    learning: '독서 · 배움 기록 · 언어',
+    cert: '기출 · 인강 · 오답노트',
+    hobby: '좋아하는 일 · 새로운 시도 · 감상',
   };
 
   return (
@@ -415,14 +423,14 @@ export const S04b_Interests = () => {
           보내고 싶어?
         </h1>
         <div className="body" style={{ color: 'var(--ink)' }}>
-          고른 관심사에 맞춰 데일리 루틴을 미리 챙겨둘게요.
+          기본 루틴 12개를 미리 챙겨뒀어요 — 고른 쪽을 맨 위에 놓아둘게요.
           <br />
-          나중에 언제든 바꿀 수 있어요.
+          하고 싶은 만큼만 골라도 괜찮고, 나중에 언제든 바꿀 수 있어요.
         </div>
       </div>
 
       <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {INTERESTS.map((c) => {
+        {CATEGORIES.map((c) => {
           const on = picked.includes(c);
           const preview = ROUTINE_PRESETS[c]
             .slice(0, 2)
@@ -451,7 +459,7 @@ export const S04b_Interests = () => {
                 {on ? '✓' : ''}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>{c}</div>
+                <div style={{ fontFamily: 'Pretendard', fontWeight: 700 }}>{CATEGORY_LABEL[c]}</div>
                 <div className="tiny" style={{ color: 'var(--pencil)' }}>{CATEGORY_DESC[c]}</div>
               </div>
               <span aria-hidden="true">{preview}</span>
@@ -461,7 +469,7 @@ export const S04b_Interests = () => {
       </div>
 
       <div className="tiny" style={{ marginTop: 14, color: 'var(--pencil)' }}>
-        아무것도 안 고르면 [건강] 루틴으로 시작해요.
+        아무것도 안 골라도 괜찮아요 — 건강부터 보여줄게요.
       </div>
     </div>
     <div className="pin-bottom" style={{ bottom: 'calc(28px + var(--safe-b, 0px))' }}>
@@ -471,7 +479,9 @@ export const S04b_Interests = () => {
         className="btn primary block"
         style={{ cursor: 'pointer', fontFamily: 'inherit' }}
       >
-        {picked.length > 0 ? `${picked.join(' · ')} 루틴으로 시작` : '건강 루틴으로 시작'}
+        {picked.length > 0
+          ? `${picked.map((c) => CATEGORY_LABEL[c]).join(' · ')} 먼저 보기`
+          : '건강 루틴부터 시작'}
       </button>
     </div>
   </div>

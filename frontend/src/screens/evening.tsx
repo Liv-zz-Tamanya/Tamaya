@@ -18,9 +18,11 @@ import {
   dateParts,
   dayLogFor,
   formatDateKey,
+  groupByCategory,
+  sortByCategory,
   useStore,
 } from '../lib/store';
-import type { ChatDiaryMode, Mood } from '../lib/store';
+import type { Category, ChatDiaryMode, Mood } from '../lib/store';
 
 // 10-13 · Evening recap entry / Chat Diary / Mood finalize / Reward modal
 
@@ -127,14 +129,20 @@ export const S10_RecapStart = () => {
     return () => document.removeEventListener('keydown', onKey);
   }, [voiceModalOpen]);
   // 낮 동안의 기록(루틴 체크·한 줄 메모)을 회고 입력으로 인계 — 없으면 빈상태. (C)경계: 로컬 유지.
+  // 인계 분량(메모 최근 3건 + 체크 루틴 4건)은 그대로, 표시만 낮 화면과 같은 4 카테고리로 묶는다.
   const log = dayLogFor(state.dayLog, nav.now);
-  const memos: string[] = [
-    ...log.memos.slice(-3).map((m) => `📝 [${m.category}] ${m.text.trim().slice(0, 18)}`),
+  const summaryItems: { key: string; category: Category; text: string }[] = [
+    ...log.memos.slice(-3).map((m) => ({
+      key: `memo-${m.id}`,
+      category: m.category,
+      text: `📝 ${m.text.trim().slice(0, 18)}`,
+    })),
     ...state.routines
       .filter((r) => log.checks[r.id])
       .slice(0, 4)
-      .map((r) => `${r.emoji} ${r.label}`),
+      .map((r) => ({ key: `routine-${r.id}`, category: r.category, text: `${r.emoji} ${r.label}` })),
   ];
+  const summaryGroups = groupByCategory(summaryItems);
 
   const selectMode = (mode: ChatDiaryMode) => {
     const maxTurns = modeToTurns(mode);
@@ -215,23 +223,35 @@ export const S10_RecapStart = () => {
         }}
       >
         <div className="tiny" style={{ color: 'var(--pencil)' }}>낮 동안 메모 요약</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-          {memos.length > 0 ? (
-            memos.map((t, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div className="check on sq" style={{ width: 16, height: 16 }}>
-                  ✓
+        {/* 낮 화면과 같은 4 카테고리 순서(건강→학습→자격증→취미), 빈 카테고리는 접힘 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+          {summaryItems.length > 0 ? (
+            summaryGroups.map((group) =>
+              group.items.length === 0 ? null : (
+                <div key={group.category}>
+                  <span className="chip" style={{ fontWeight: 700 }}>
+                    {group.label}
+                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+                    {group.items.map((item) => (
+                      <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div className="check on sq" style={{ width: 16, height: 16 }}>
+                          ✓
+                        </div>
+                        <span className="body">{item.text}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <span className="body">{t}</span>
-              </div>
-            ))
+              ),
+            )
           ) : (
             <span className="body" style={{ opacity: 0.85 }}>
               오늘은 낮 기록이 없어요 — 그래도 천천히 시작해요 🌙
             </span>
           )}
         </div>
-        {memos.length > 0 && (
+        {summaryItems.length > 0 && (
           <div className="tiny" style={{ marginTop: 8, color: 'var(--accent)' }}>
             ↳ 대화에서 이걸 바탕으로 물어볼게
           </div>
@@ -645,9 +665,14 @@ export const S12_MoodFinalize = () => {
         moods: diaryMoods,
         keywords,
         body: bodyPreview,
-        // 루틴 라벨 → 오늘 체크 여부 스냅샷 (통계·일기 디테일이 라벨로 읽음)
+        // 루틴 라벨 → 오늘 체크 여부 스냅샷 (통계·일기 디테일이 라벨로 읽음).
+        // 키 순서를 4 카테고리 순(건강→학습→자격증→취미)으로 맞춰 일기 디테일의 나열도
+        // 낮·밤 화면과 같은 순서가 되게 한다 — 값·집계(statsFor)는 순서 무관하게 불변.
         check: Object.fromEntries(
-          state.routines.map((r) => [r.label, !!dayLogFor(state.dayLog).checks[r.id]]),
+          sortByCategory(state.routines).map((r) => [
+            r.label,
+            !!dayLogFor(state.dayLog).checks[r.id],
+          ]),
         ),
         tomorrow: tomorrowLine,
         createdAt: Date.now(),
