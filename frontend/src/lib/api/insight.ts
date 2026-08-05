@@ -1,7 +1,7 @@
 // 웰빙 인사이트 — 일기(satisfaction) + 라이프로그(걸음·수면) 기반 주/월 스코어 + trend.
-// device_id 키잉, 인증 불요. (BE: GET /api/v1/insights/{weekly,monthly})
+// device_id는 Bearer 세션에서 서버가 추출. (BE: GET /api/v1/insights/{weekly,monthly})
 import { apiFetch } from './client';
-import { getDeviceId } from './auth';
+import { ensureDeviceToken } from './auth';
 
 export type WellbeingReport = {
   score: number | null; // 0–100, 기간에 일기가 없으면 null
@@ -47,11 +47,13 @@ export function monthOf(d: Date = new Date()): string {
 }
 
 export async function getWeeklyInsight(week: string = isoWeekOf()): Promise<InsightResponse> {
-  const q = `device_id=${encodeURIComponent(getDeviceId())}&week=${encodeURIComponent(week)}`;
-  return apiFetch<InsightResponse>(`/api/v1/insights/weekly?${q}`, { auth: false });
+  await ensureDeviceToken();
+  const q = `week=${encodeURIComponent(week)}`;
+  return apiFetch<InsightResponse>(`/api/v1/insights/weekly?${q}`);
 }
 
 export async function getMonthlyInsight(month: string = monthOf()): Promise<InsightResponse> {
-  const q = `device_id=${encodeURIComponent(getDeviceId())}&month=${encodeURIComponent(month)}`;
-  return apiFetch<InsightResponse>(`/api/v1/insights/monthly?${q}`, { auth: false });
+  await ensureDeviceToken();
+  const q = `month=${encodeURIComponent(month)}`;
+  return apiFetch<InsightResponse>(`/api/v1/insights/monthly?${q}`);
 }
