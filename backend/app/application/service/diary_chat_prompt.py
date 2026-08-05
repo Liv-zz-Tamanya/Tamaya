@@ -86,6 +86,7 @@ def build_diary_chat_system_prompt(
   ('잘 자', '좋은 꿈', '푹 쉬어', '내일 봐', '재충전', '일기 쓸게' 등 금지).
 - 매 턴 오늘 이야기에 짧게 호응한 뒤, 반드시 질문 하나로 대화를 이어가.
 - {narrow_turn}턴째부터는 새 주제를 벌이지 말고, 오늘 이야기를 정리하는 방향으로 좁혀가.
+- 좁혀가는 턴 중 한 번은 내일 해보고 싶은 것 하나를 자연스럽게 물어봐 (일기의 '내일 한 가지'가 돼).
 """
     if context.suggest_finalize:
         prompt += CHAT_FINALIZE_HINT

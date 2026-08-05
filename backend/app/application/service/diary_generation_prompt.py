@@ -32,7 +32,7 @@ DIARY_USER_REQUEST = """위 대화를 바탕으로 일기를 JSON 형식으로 �
 
 반드시 아래 형식의 JSON만 출력해:
 
-{"title":"제목","content":"본문 (반드시 4~5문장)","emotion":"happy/sad/angry/anxious/calm/excited/tired/grateful 중 하나","satisfaction":0~100 숫자 또는 null,"keywords":["키워드1","키워드2","키워드3"]}
+{"title":"제목","content":"본문 (반드시 4~5문장)","emotion":"happy/sad/angry/anxious/calm/excited/tired/grateful 중 하나","satisfaction":0~100 숫자 또는 null,"keywords":["키워드1","키워드2","키워드3"],"tomorrow":"내일 하고 싶다고 말한 한 가지 또는 null"}
 
 규칙:
 - content는 4~5문장.
@@ -49,5 +49,8 @@ DIARY_USER_REQUEST = """위 대화를 바탕으로 일기를 JSON 형식으로 �
 - keywords는 사용자의 하루를 대표하는 짧은 명사/명사구 2~3개.
 - keywords에는 조사, 어미, 부사보다 핵심 사건·활동·감정 단어를 넣어.
 - 너무 일반적인 단어(오늘, 기분, 생각, 하루)는 피하고, 사용자가 말하지 않은 내용은 넣지 마.
+- tomorrow는 사용자가 내일 하고 싶다·해보겠다고 말한 것이 있을 때만
+  그 말을 30자 이내 한 문장으로 정리해. 언급이 없으면 null.
+  절대 지어내지 말고, 오늘 한 일을 내일 계획으로 바꿔 쓰지 마.
 - 현실 사건 중심으로 작성.
 """

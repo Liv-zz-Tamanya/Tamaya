@@ -8,7 +8,10 @@ from app.application.service.chat_message_adapter import (
 )
 from app.application.service.diary_chat_prompt import DiaryConversationContext
 from app.application.service.diary_parsing import parse_satisfaction
-from app.application.usecase.diary_keywords import normalize_diary_keywords
+from app.application.usecase.diary_keywords import (
+    normalize_diary_keywords,
+    normalize_diary_tomorrow,
+)
 from app.application.usecase.extract_chunks import ExtractChunksUseCase
 from app.application.usecase.personal_assistant_agent import PersonalAssistantMode
 from app.application.usecase.personal_assistant_agent_factory import PersonalAssistantAgentFactory
@@ -101,6 +104,7 @@ class SendMessageUseCase:
             satisfaction=satisfaction,
             satisfaction_estimated=satisfaction_estimated,
             keywords=normalize_diary_keywords(diary_data.get("keywords")),
+            tomorrow=normalize_diary_tomorrow(diary_data.get("tomorrow")),
             chat_session_id=session.id,
         )
 

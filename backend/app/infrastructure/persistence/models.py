@@ -80,6 +80,8 @@ class DiaryModel(Base):
         Boolean, nullable=False, default=False, server_default="false"
     )
     keywords: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
+    # '내일 한 가지' — 대화에서 언급됐을 때만 채워진다 (alembic c0d1e2f3a4b5)
+    tomorrow: Mapped[str | None] = mapped_column(String(100), nullable=True)
     chat_session_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("chat_sessions.id"), nullable=True
     )
