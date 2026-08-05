@@ -231,11 +231,13 @@ html, body { background: var(--canvas); }
   padding-inline: max(14px, calc((100% - var(--app-fluid, 100%)) / 2));
   background: rgba(251,248,243,0.95);
   border-top: 1.5px dashed var(--line, #c9a877);
-  display: flex; gap: 8px; align-items: center;
+  /* flex-end: 입력란이 여러 줄로 자라도 전송 버튼은 마지막 줄 옆에 고정 */
+  display: flex; gap: 8px; align-items: flex-end;
 }
 /* 탭바 위에 얹히는 입력바 — safe-area 는 탭바가 이미 소화하므로 중복 패딩 금지 */
 .input-row.above-tabbar { bottom: var(--tabbar-h, 64px); padding-bottom: 16px; }
-.input-row input {
+.input-row input,
+.input-row textarea {
   flex: 1;
   background: #fff;
   border: 1.5px solid var(--ink, #3a2414);
@@ -247,8 +249,18 @@ html, body { background: var(--canvas); }
   outline: none;
   min-width: 0;
 }
-.input-row input::placeholder { color: var(--muted, #b39570); }
-.input-row input:focus { border-color: var(--accent, #8c4a1f); box-shadow: 0 0 0 2px rgba(140,74,31,0.15); }
+/* 자동 확장 입력란 — 내용이 줄바꿈되면 최대 4줄까지 늘어나고 이후 내부 스크롤 */
+.input-row textarea {
+  resize: none;
+  border-radius: 22px;
+  line-height: 1.45;
+  max-height: 108px;
+  overflow-y: auto;
+}
+.input-row input::placeholder,
+.input-row textarea::placeholder { color: var(--muted, #b39570); }
+.input-row input:focus,
+.input-row textarea:focus { border-color: var(--accent, #8c4a1f); box-shadow: 0 0 0 2px rgba(140,74,31,0.15); }
 
 /* a11y: 키보드 포커스 가시화 — 마우스 클릭 시엔 미표시, Tab 탐색 시에만 링 표시 (WCAG 2.4.7).
    input 은 위 :focus 의 border+shadow 를 유지(높은 specificity)하고, 그 외 버튼/탭/링크에 적용. */

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { BackButton, CatSketch, MoodFace, useToast } from '../components/primitives';
-import { ChatThread } from '../components/chat';
+import { ChatThread, GrowingChatTextarea } from '../components/chat';
 import { useNav } from '../lib/router';
 import { scrollBehavior } from '../lib/scroll';
 import {
@@ -398,6 +398,7 @@ export const S11_ChatDiary = () => {
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const initedRef = useRef(false);
   const maxTurns = state.chatDiaryMaxTurns as ChatSessionMaxTurns;
 
@@ -433,6 +434,11 @@ export const S11_ChatDiary = () => {
   const userTurns = state.chatDiary.filter((m) => m.role === 'user').length;
   const turn = Math.min(userTurns, maxTurns);
   const done = turn >= maxTurns;
+
+  // 전송 중(typing)엔 입력란이 disabled 라 포커스가 풀린다 — 응답이 오면 다시 입력란으로.
+  useEffect(() => {
+    if (!typing && !done) inputRef.current?.focus();
+  }, [typing, done]);
   // 자유 모드: 턴 상한(50)은 백엔드 세션 캡일 뿐이라 카운터·진행바로 노출하지 않는다.
   const isFree = maxTurns === CHAT_DIARY_FREE_TURNS;
 
@@ -583,13 +589,14 @@ export const S11_ChatDiary = () => {
       }}
       className="input-row"
     >
-      <input
+      <GrowingChatTextarea
         value={input}
-        onChange={(e) => setInput(e.target.value)}
+        onChange={setInput}
+        onSubmit={send}
         placeholder={done ? '회고 완료 — 일기로 정리 중...' : '이음이에게 답해주세요...'}
-        aria-label="이음이에게 답하기"
+        ariaLabel="이음이에게 답하기"
         disabled={done || typing}
-        autoFocus
+        inputRef={inputRef}
       />
       <button
         type="submit"
