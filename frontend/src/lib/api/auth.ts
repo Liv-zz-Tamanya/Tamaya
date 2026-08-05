@@ -1,5 +1,5 @@
 // 익명 device 인증 — device_id를 발급/캐시하고 토큰을 확보한다.
-import { apiFetch, getToken, setTokens } from './client';
+import { apiFetch, clearToken, getToken, setTokens } from './client';
 
 const DEVICE_KEY = 'tamaya-device-id';
 
@@ -119,4 +119,22 @@ export function loginWithNickname(
   password: string,
 ): Promise<{ isNew: boolean }> {
   return nicknameAuth('/auth/nickname/login', nickname, password);
+}
+
+/** 로그아웃 — 서버 세션 revoke(베스트 에포트) 후 로컬 세션(토큰·닉네임) 제거.
+ *  서버 revoke가 실패해도(만료·네트워크) 로컬 로그아웃은 항상 완료한다.
+ *  device_id는 남겨둔다 — 닉네임(nick-*) id는 다음 익명 진입 시
+ *  ensureDeviceToken이 새 익명 id로 교체하는 기존 경로가 처리. */
+export async function logout(): Promise<void> {
+  try {
+    await apiFetch<void>('/auth/logout', { method: 'POST' });
+  } catch {
+    // 서버 revoke 실패는 무시 — 세션은 만료로도 결국 revoke된다.
+  }
+  try {
+    localStorage.removeItem(NICKNAME_KEY);
+  } catch {
+    // ignore
+  }
+  clearToken();
 }
