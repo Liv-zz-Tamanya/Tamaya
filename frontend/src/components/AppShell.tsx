@@ -7,7 +7,7 @@ import {
   isWithinNightWindow,
 } from '../lib/nightChat';
 import { NavApi, NavContext, Route } from '../lib/router';
-import { StoreProvider } from '../lib/store';
+import { StoreProvider, getStateOwner, setStateOwner } from '../lib/store';
 import { S21_Login } from '../screens/login';
 import { S22_Settings } from '../screens/settings';
 import { S01_Splash, S02_Welcome, S03_Privacy, S04_CreateCat, S04b_Interests, S05_FirstMeet } from '../screens/onboarding';
@@ -70,6 +70,13 @@ const AppShellInner = () => {
       return prev === active ? prev : active;
     });
     setNow((prev) => (sameMinute(prev, next) ? prev : next));
+  }, []);
+
+  // owner 도입 이전부터 로그인돼 있던 세션 백필 — 현 로컬 상태의 주인을 기록해 두어,
+  // 같은 계정으로 재로그인할 때 상태가 억울하게 리셋되지 않게 한다 (1회성 마이그레이션).
+  useEffect(() => {
+    const nickname = getNickname();
+    if (nickname && getToken() && !getStateOwner()) setStateOwner(nickname);
   }, []);
 
   useEffect(() => {

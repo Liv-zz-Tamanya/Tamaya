@@ -443,6 +443,45 @@ function reducer(state: State, action: Action): State {
 
 const LS_KEY = 'tamaya-state-v2'; // v2: 시드 일기 + selectedDay 추가 (구버전 자동 리셋)
 
+// ── 계정별 로컬 상태 경계 ────────────────────────────────────────────────────
+// 로컬 상태(LS_KEY)는 브라우저당 1개 blob이라 계정과 무관하게 이어진다.
+// 시드 데모 데이터(DEFAULT_STATE)는 비로그인 데모 전용으로 남기고, 실계정은
+// 빈 상태에서 시작한다. 상태의 주인(닉네임)을 별도 키에 기록해 두고, 다른
+// 계정 로그인 시 이전 사용자의 상태가 보이지 않도록 리셋 판정에 쓴다.
+const OWNER_KEY = 'tamaya-state-owner';
+
+/** 실계정 첫 시작용 빈 상태 — 시드 일기·포인트·스트릭·보상 없음. */
+export const emptyAccountState = (): State => ({
+  ...DEFAULT_STATE,
+  routines: seedRoutines(['health']), // 온보딩 관심사 선택이 다시 시드한다.
+  dayLog: emptyDayLog(),
+  diaries: [],
+  selectedDay: null,
+  selectedDate: null,
+  points: 0,
+  streak: 0,
+  level: 1,
+  unlockedItems: [],
+  equippedItem: null,
+});
+
+/** 현 로컬 상태의 주인 닉네임 (기록 전이면 null). */
+export const getStateOwner = (): string | null => {
+  try {
+    return localStorage.getItem(OWNER_KEY);
+  } catch {
+    return null;
+  }
+};
+
+export const setStateOwner = (nickname: string): void => {
+  try {
+    localStorage.setItem(OWNER_KEY, nickname);
+  } catch {
+    // ignore quota/unavailable
+  }
+};
+
 // 완전삭제(purge) 진행 중 persist 억제 — beforeunload/visibilitychange flush(PERF-04)가
 // localStorage.removeItem 직후의 reload 사이에 끼어들어 인메모리 state를 재기록,
 // 삭제를 되돌리는 것을 방지한다 (liv-I1 완전 삭제 보증).

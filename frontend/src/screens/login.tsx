@@ -1,7 +1,8 @@
 import { useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { CatSketch } from '../components/primitives';
 import { useNav } from '../lib/router';
-import { ApiError, checkNickname, loginWithNickname, signupWithNickname } from '../lib/api';
+import { ApiError, checkNickname, getNickname, loginWithNickname, signupWithNickname } from '../lib/api';
+import { emptyAccountState, getStateOwner, setStateOwner, useStore } from '../lib/store';
 
 // 21 · 닉네임 + 비밀번호 입력
 // 진입 모드(signup/login)는 welcome 화면에서 setInitialAuthMode로 전달받는다.
@@ -41,6 +42,7 @@ const labelStyle: CSSProperties = {
 
 export const S21_Login = () => {
   const nav = useNav();
+  const { dispatch } = useStore();
   // 마운트 시 1회 캡처 (이후 initialMode 변경과 무관).
   const [mode] = useState<Mode>(initialMode);
   const [nickname, setNickname] = useState('');
@@ -53,6 +55,19 @@ export const S21_Login = () => {
   const isSignup = mode === 'signup';
 
   const clearHint = () => setHint(null);
+
+  // 인증 성공 직후 로컬 상태의 소유권 정리.
+  // - 신규 가입: 시드 데모 데이터 대신 항상 빈 상태에서 시작.
+  // - 로그인: 로컬 상태의 주인이 다른 계정이면 리셋 (이전 사용자 기록 노출 차단).
+  //   서버에 있는 이 계정의 일기는 이후 diaries/merge 경로로 다시 합류한다.
+  const adoptLocalState = (isNewAccount: boolean) => {
+    const account = getNickname();
+    if (!account) return;
+    if (isNewAccount || getStateOwner() !== account) {
+      dispatch({ type: 'state/replace', state: emptyAccountState() });
+    }
+    setStateOwner(account);
+  };
 
   const doCheck = () => {
     const name = nickname.trim();
@@ -96,9 +111,11 @@ export const S21_Login = () => {
       try {
         if (isSignup) {
           await signupWithNickname(name, password);
+          adoptLocalState(true);
           nav.reset('privacy'); // 신규 → 온보딩(고양이 생성)으로
         } else {
           await loginWithNickname(name, password);
+          adoptLocalState(false);
           nav.reset('home-night'); // 기존 → 바로 홈으로
         }
       } catch (e) {
