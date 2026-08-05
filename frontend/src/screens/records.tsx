@@ -56,6 +56,7 @@ const diaryFromApi = (diary: DiaryResponse): DiaryEntry => {
     keywords: diary.keywords?.slice(0, 3) ?? [],
     body: diary.content,
     check: {},
+    tomorrow: diary.tomorrow ?? undefined,
     createdAt: Date.parse(diary.created_at) || Date.now(),
   };
 };

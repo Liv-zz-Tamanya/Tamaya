@@ -16,6 +16,7 @@ export type GeneratedDiaryResponse = {
   emotion: string;
   satisfaction: number;
   keywords?: string[];
+  tomorrow?: string | null; // 대화에서 언급된 '내일 한 가지' (없으면 null — BE가 지어내지 않음)
   chat_session_id?: string | null;
   created_at?: string;
 };
@@ -103,9 +104,11 @@ export async function sendAiChat(
 
   const run = async (): Promise<AiReply> => {
     const sessionId = await ensureSession(maxTurns);
+    // 마지막 턴은 서버가 클로징 멘트 + 일기 생성 LLM 호출 2회를 마친 뒤 응답한다 —
+    // 기본 8초로는 부족해 폴백으로 새는 주원인이라 채팅 왕복은 30초로 잡는다.
     const res = await apiFetch<SendMessageResponse>(
       `/api/v1/chat/sessions/${sessionId}/messages`,
-      { method: 'POST', body: { content: masked.text } },
+      { method: 'POST', body: { content: masked.text }, timeoutMs: 30_000 },
     );
     return {
       text: res.ai_message?.content ?? '',
@@ -130,5 +133,43 @@ export async function sendAiChat(
       return await run();
     }
     throw e;
+  }
+}
+
+/**
+ * 회고 마무리 실패 복구 — 대화를 다시 하지 않고 일기 생성만 재시도한다.
+ * 1) 캐시된 세션으로 POST /finalize (마지막 턴 타임아웃 등 생성 자체가 실패한 경우)
+ * 2) 실패 시 오늘 일기 조회 (서버는 생성을 끝냈는데 응답만 유실된 경우 —
+ *    세션이 이미 finalize돼 1)이 400으로 거부되는 상태를 날짜 조회로 회수)
+ */
+export async function recoverGeneratedDiary(
+  diaryDate: string,
+  opts?: { maxTurns?: ChatSessionMaxTurns },
+): Promise<GeneratedDiaryResponse | null> {
+  const maxTurns = opts?.maxTurns ?? 5;
+  let sessionId: string | null = null;
+  try {
+    sessionId = localStorage.getItem(sessionKey(maxTurns));
+  } catch {
+    // ignore
+  }
+  if (sessionId) {
+    try {
+      const diary = await apiFetch<GeneratedDiaryResponse>(
+        `/api/v1/diaries/${sessionId}/finalize`,
+        { method: 'POST', timeoutMs: 30_000 },
+      );
+      clearChatSessionCache(maxTurns);
+      return diary;
+    } catch {
+      // 이미 finalize된 세션(400)·세션 유실 등 — 아래 날짜 조회로 회수 시도.
+    }
+  }
+  try {
+    const diary = await apiFetch<GeneratedDiaryResponse>(`/api/v1/diaries/${diaryDate}`);
+    clearChatSessionCache(maxTurns);
+    return diary;
+  } catch {
+    return null;
   }
 }

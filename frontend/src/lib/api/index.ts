@@ -14,6 +14,7 @@ export {
 } from './auth';
 export {
   clearChatSessionCache,
+  recoverGeneratedDiary,
   sendAiChat,
   startAiChatSession,
   type AiReply,

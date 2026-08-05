@@ -29,6 +29,7 @@ export type GeneratedDiary = {
   emotion: string;
   satisfaction: number;
   keywords?: string[];
+  tomorrow?: string | null; // 대화에서 언급된 '내일 한 가지' — 없으면 화면에서 섹션 숨김
 };
 
 export type DiaryEntry = {

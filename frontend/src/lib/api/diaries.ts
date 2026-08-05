@@ -10,6 +10,7 @@ export type DiaryResponse = {
   emotion: string;
   satisfaction: number;
   keywords: string[];
+  tomorrow?: string | null;
   created_at: string;
   updated_at: string;
 };
