@@ -9,6 +9,7 @@ export {
   checkNickname,
   signupWithNickname,
   loginWithNickname,
+  logout,
   getNickname,
 } from './auth';
 export {

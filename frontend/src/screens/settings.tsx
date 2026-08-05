@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { BackButton, TabBar } from '../components/primitives';
 import { useNav } from '../lib/router';
 import { useStore } from '../lib/store';
-import { updateNightChatPreference } from '../lib/api';
+import { getNickname, logout, updateNightChatPreference } from '../lib/api';
 
 // 22 · Settings — character name, notifications, data, logout
 
@@ -50,19 +50,45 @@ export const S22_Settings = () => {
     }
   };
 
+  const [loggingOut, setLoggingOut] = useState(false);
+  const nickname = getNickname();
+
+  const doLogout = async () => {
+    if (loggingOut) return;
+    if (!window.confirm('로그아웃할까요? 기록은 계정에 남아 있어요.')) return;
+    setLoggingOut(true);
+    try {
+      await logout(); // 내부에서 실패를 삼키므로 항상 로컬 세션은 정리된다.
+    } finally {
+      setLoggingOut(false);
+      nav.reset('welcome');
+    }
+  };
+
   // 설정 화면에는 사용자에게 제공하는 항목만 둔다.
   const rows: {
     label: string;
     value: string;
     onClick?: () => void;
     danger?: boolean;
-  }[] = [{ label: '버전', value: 'v1.0 · tamaya.online' }];
+  }[] = [
+    { label: '버전', value: 'v1.0 · tamaya.online' },
+    // 닉네임 세션이 있을 때만 노출 — 익명/미로그인 상태에선 로그아웃할 대상이 없다.
+    ...(nickname
+      ? [{
+          label: loggingOut ? '로그아웃 중…' : '로그아웃',
+          value: `${nickname} 계정에서 나가기`,
+          onClick: () => void doLogout(),
+          danger: true,
+        }]
+      : []),
+  ];
 
   const rowNodes = rows.map((r, i) => {
     const rowContent = (
       <>
         <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: 14 }}>{r.label}</div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: r.danger ? 'var(--danger)' : undefined }}>{r.label}</div>
           <div className="tiny" style={{ marginTop: 3, color: 'var(--pencil)' }}>{r.value}</div>
         </div>
         {r.onClick && (
@@ -158,7 +184,7 @@ export const S22_Settings = () => {
             </div>
             {saveStatus && <div className="tiny" role="status" style={{ marginTop: 6, color: 'var(--pencil)' }}>{saveStatus}</div>}
           </div>
-          {rowNodes[0]}
+          {rowNodes}
         </div>
       </div>
       <TabBar active="home" />

@@ -134,5 +134,7 @@ export async function apiFetch<T>(path: string, opts: ApiOpts = {}): Promise<T> 
   if (!res.ok) {
     throw new ApiError(res.status, `API ${method} ${path} -> ${res.status}`);
   }
+  // 204 No Content(예: /auth/logout)는 body가 없어 json() 파싱이 터진다.
+  if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
