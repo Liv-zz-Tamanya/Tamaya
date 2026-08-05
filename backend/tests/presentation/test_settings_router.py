@@ -15,8 +15,14 @@ from app.infrastructure.config.dependencies import (
     get_clova_setting_repo,
 )
 from app.main import app
+from app.presentation.auth_deps import get_current_device_id
 
 _RAW_KEY = "sk-secret-value-1234"
+
+
+def _login_as(device_id: str) -> None:
+    # device_id는 이제 Bearer 세션에서 추출 — 테스트에서는 dependency로 고정한다.
+    app.dependency_overrides[get_current_device_id] = lambda: device_id
 
 
 class _FakeTester(ClovaConnectionTester):
@@ -68,8 +74,9 @@ def test_connection_test_empty_key_returns_400():
 def test_put_setting_stores_masked_only_not_raw():
     repo = _FakeRepo()
     app.dependency_overrides[get_clova_setting_repo] = lambda: repo
+    _login_as("dev-1")
     client = TestClient(app)
-    resp = client.put("/api/v1/settings/clova", json={"device_id": "dev-1", "api_key": _RAW_KEY})
+    resp = client.put("/api/v1/settings/clova", json={"api_key": _RAW_KEY})
 
     assert resp.status_code == 200
     body = resp.json()
@@ -86,12 +93,11 @@ def test_put_setting_twice_updates_masked():
     # 동일 device_id로 키를 교체하면 마스킹 프리뷰가 갱신된다(upsert 업데이트 경로)
     repo = _FakeRepo()
     app.dependency_overrides[get_clova_setting_repo] = lambda: repo
+    _login_as("dev-1")
     client = TestClient(app)
 
-    client.put("/api/v1/settings/clova", json={"device_id": "dev-1", "api_key": "sk-old-key-0001"})
-    resp = client.put(
-        "/api/v1/settings/clova", json={"device_id": "dev-1", "api_key": "sk-new-key-9999"}
-    )
+    client.put("/api/v1/settings/clova", json={"api_key": "sk-old-key-0001"})
+    resp = client.put("/api/v1/settings/clova", json={"api_key": "sk-new-key-9999"})
 
     assert resp.status_code == 200
     assert resp.json()["masked"] == "••••9999"
@@ -102,8 +108,9 @@ def test_put_setting_twice_updates_masked():
 def test_get_setting_existing_returns_masked():
     repo = _FakeRepo(ClovaSetting(device_id="dev-1", masked_key="••••1234", has_key=True))
     app.dependency_overrides[get_clova_setting_repo] = lambda: repo
+    _login_as("dev-1")
     client = TestClient(app)
-    resp = client.get("/api/v1/settings/clova", params={"device_id": "dev-1"})
+    resp = client.get("/api/v1/settings/clova")
 
     assert resp.status_code == 200
     body = resp.json()
@@ -114,10 +121,23 @@ def test_get_setting_existing_returns_masked():
 def test_get_setting_missing_returns_empty():
     repo = _FakeRepo()
     app.dependency_overrides[get_clova_setting_repo] = lambda: repo
+    _login_as("unknown")
     client = TestClient(app)
-    resp = client.get("/api/v1/settings/clova", params={"device_id": "unknown"})
+    resp = client.get("/api/v1/settings/clova")
 
     assert resp.status_code == 200
     body = resp.json()
     assert body["has_key"] is False
     assert body["masked"] == ""
+
+
+def test_get_setting_scoped_to_session_device_not_query():
+    """쿼리로 타인 device_id를 지정해도 세션 device_id 설정만 조회된다."""
+    repo = _FakeRepo(ClovaSetting(device_id="dev-other", masked_key="••••9999", has_key=True))
+    app.dependency_overrides[get_clova_setting_repo] = lambda: repo
+    _login_as("dev-1")
+    client = TestClient(app)
+    resp = client.get("/api/v1/settings/clova", params={"device_id": "dev-other"})
+
+    assert resp.status_code == 200
+    assert resp.json()["has_key"] is False  # dev-other 설정에 접근 불가

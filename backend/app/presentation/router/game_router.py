@@ -4,19 +4,21 @@ GET  /game/state
 POST /game/diary-complete
 POST /game/claim-reward/{reward_id}
 
-X-Device-Id 헤더 기반 device_id 인증 (MVP Phase 1 단계).
+device_id는 Bearer 토큰 세션에서 추출한다 — 기존 X-Device-Id 헤더 방식은
+헤더 값만 바꾸면 타인 게임 데이터를 조회·조작할 수 있었다.
 """
 
 from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.usecase.game_diary_complete import GameProgressUseCase
 from app.infrastructure.config.database import get_db
+from app.presentation.auth_deps import get_current_device_id
 
 router = APIRouter(prefix="/game", tags=["game"])
 
@@ -50,24 +52,12 @@ class ClaimRewardResponse(BaseModel):
     used_at: str | None
 
 
-# ─── 헬퍼 ───────────────────────────────────────────────────────────────────────
-
-
-def _require_device_id(x_device_id: str | None = Header(default=None)) -> str:
-    if not x_device_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="X-Device-Id 헤더 필요",
-        )
-    return x_device_id
-
-
 # ─── 라우트 ─────────────────────────────────────────────────────────────────────
 
 
 @router.get("/state", response_model=GameStateResponse, summary="게임 진행 상태 조회")
 async def get_game_state(
-    device_id: str = Depends(_require_device_id),
+    device_id: str = Depends(get_current_device_id),
     db: AsyncSession = Depends(get_db),
 ):
     usecase = GameProgressUseCase(db)
@@ -90,7 +80,7 @@ async def get_game_state(
 )
 async def diary_complete(
     body: DiaryCompleteRequest,
-    device_id: str = Depends(_require_device_id),
+    device_id: str = Depends(get_current_device_id),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -123,7 +113,7 @@ async def diary_complete(
 )
 async def claim_reward(
     reward_id: str,
-    device_id: str = Depends(_require_device_id),
+    device_id: str = Depends(get_current_device_id),
     db: AsyncSession = Depends(get_db),
 ):
     usecase = GameProgressUseCase(db)

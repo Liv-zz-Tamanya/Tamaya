@@ -13,7 +13,7 @@ class ClovaTestResponse(BaseModel):
 
 
 class ClovaSettingPutRequest(BaseModel):
-    device_id: str
+    # device_id는 본문이 아니라 Bearer 토큰 세션에서 추출한다(타 계정 설정 조작 방지).
     api_key: str
 
 
